@@ -1,0 +1,20 @@
+Package: SCoPE2.replication
+Title: SCopE2 Replication
+Version: 0.1.0
+Authors@R:
+    c(person("Christophe", "Vanderaa",
+	      email = "christophe.vanderaa@uclouvain.be",
+	      comment = c(ORCID = "0000-0001-7443-5427"),
+	      role = c("aut", "cre")),
+      person("Laurent", "Gatto",
+	      email = "laurent.gatto@uclouvain.be",
+	      comment = c(ORCID = "0000-0002-1520-2268"),
+	      role = "aut"))
+Description: Replication de the SCoPE2 analysis pipeline of by Specht
+    et al. Single-cell proteomic and transcriptomic analysis of
+    macrophage heterogeneity using SCoPE2. Genome Biol. 2021;22: 50
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
