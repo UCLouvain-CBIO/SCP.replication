@@ -13,6 +13,14 @@ Authors@R:
 Description: Replication de the SCoPE2 analysis pipeline of by Specht
     et al. Single-cell proteomic and transcriptomic analysis of
     macrophage heterogeneity using SCoPE2. Genome Biol. 2021;22: 50
+Depends:
+   SingleCellExperiment,
+   QFeatures,
+   scp,
+   scpdata
+Suggests:
+   tidyverse,
+   patchwork
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
