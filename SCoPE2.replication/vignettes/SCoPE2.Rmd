@@ -156,7 +156,6 @@ colData(scp) %>%
     geom_histogram(stat = "count") +
     xlab("Chromatographic batch") +
     theme_classic()
-export::graph2pdf(file = "../figs/drafts/batch_design.pdf", height = 3, width = 4)
 ```
 
 The dataset also contains a `peptides` assay and a
