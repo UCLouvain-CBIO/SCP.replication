@@ -3,14 +3,21 @@ title: "Replicate Specht et al. 2019 mass spectrometry-based single-cell proteom
 author:
   - Christophe Vanderaa^[christophe.vanderaa@uclouvain.be], Computational Biology, UCLouvain
   - Laurent Gatto, Computational Biology, UCLouvain
-date: \today
 abstract: "Recent advances in sample preparation, processing and mass spectrometry (MS) have allowed the emergence of MS-based single-cell proteomics (SCP). This vignette presents a robust and standardized workflow to reproduce the data analysis of SCoPE2, one of the pioneering works in the field developed by the Slavov Lab. The implementation uses well-defined Bioconductor classes that provide powerful tools for single-cell RNA sequencing and for shotgun proteomics. We demonstrate that our pipeline can reproduce the SCoPE2 analysis using only a few lines of code."
 output:
-  bookdown::html_document2:
-	code_folding: show
-	toc: true
-	toc_float: true
+  BiocStyle::html_document:
+    self_contained: yes
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    code_folding: show
 bibliography: refs.bib
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('SCoPE2.replication')`"
+vignette: >
+  %\VignetteIndexEntry{Complete replication of the SCoPE2 data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
@@ -21,9 +28,9 @@ bibliography: refs.bib
 #     toc: true
 #     toc_float: true
 knitr::opts_chunk$set(fig.width = 7,
-					  fig.height = 5,
-					  fig.align = "center",
-					  out.width = "70%")
+                      fig.height = 5,
+                      fig.align = "center",
+                      out.width = "70%")
 ```
 
 
@@ -139,16 +146,16 @@ the assays across the TMT and chromatographic batches.
 
 ```{r, fig.width = 4, fig.height = 3}
 colData(scp) %>%
-	data.frame %>%
-	select(c(Set, lcbatch)) %>%
-	unique %>%
-	mutate(TMT = ifelse(grepl("16plex", Set), "TMT16", "TMT11")) %>%
-	ggplot() +
-	aes(x = lcbatch,
-		fill = TMT) +
-	geom_histogram(stat = "count") +
-	xlab("Chromatographic batch") +
-	theme_classic()
+    data.frame %>%
+    select(c(Set, lcbatch)) %>%
+    unique %>%
+    mutate(TMT = ifelse(grepl("16plex", Set), "TMT16", "TMT11")) %>%
+    ggplot() +
+    aes(x = lcbatch,
+        fill = TMT) +
+    geom_histogram(stat = "count") +
+    xlab("Chromatographic batch") +
+    theme_classic()
 export::graph2pdf(file = "../figs/drafts/batch_design.pdf", height = 3, width = 4)
 ```
 
@@ -226,9 +233,9 @@ the different runs.
 
 ```{r plot_dims, message = FALSE}
 ggplot(data.frame(nPSMs)) +
-	aes(x = nPSMs) +
-	geom_histogram() +
-	geom_vline(xintercept = 500)
+    aes(x = nPSMs) +
+    geom_histogram() +
+    geom_vline(xintercept = 500)
 ```
 
 4 assays have very few number of PSMs, probably because those runs
@@ -275,14 +282,14 @@ for the PSM and proteins q-values, respectively.
 
 ```{r}
 scp <- pep2qvalue(scp,
-				  i = names(scp),
-				  PEP = "dart_PEP",
-				  rowDataName = "qvalue_psm")
+                  i = names(scp),
+                  PEP = "dart_PEP",
+                  rowDataName = "qvalue_psm")
 scp <- pep2qvalue(scp,
-				  i = names(scp),
-				  groupBy = "protein",
-				  PEP = "dart_PEP",
-				  rowDataName = "qvalue_protein")
+                  i = names(scp),
+                  groupBy = "protein",
+                  PEP = "dart_PEP",
+                  rowDataName = "qvalue_protein")
 ```
 
 We can extract the q-values from the `rowData` of several assays using
@@ -292,16 +299,16 @@ the q-values along with the DART-ID PEPs using `ggplot2` facets.
 
 ```{r, message=FALSE}
 rowDataToDF(scp,
-			i = names(scp),
-			vars = c("dart_PEP", "qvalue_psm", "qvalue_protein")) %>%
-	data.frame %>%
-	pivot_longer(cols = c("dart_PEP", "qvalue_psm", "qvalue_protein"),
-				 names_to = "measure") %>%
-	ggplot(aes(x = value)) +
-	geom_histogram() +
-	geom_vline(xintercept = 0.1) +
-	scale_x_log10() +
-	facet_grid(rows = vars(measure))
+            i = names(scp),
+            vars = c("dart_PEP", "qvalue_psm", "qvalue_protein")) %>%
+    data.frame %>%
+    pivot_longer(cols = c("dart_PEP", "qvalue_psm", "qvalue_protein"),
+                 names_to = "measure") %>%
+    ggplot(aes(x = value)) +
+    geom_histogram() +
+    geom_vline(xintercept = 0.1) +
+    scale_x_log10() +
+    facet_grid(rows = vars(measure))
 ```
 
 We filter the PSMs to control for a 1\% PSM and protein FDR. We can
@@ -311,7 +318,7 @@ easily perform this on our `QFeatures` object by using the
 
 ```{r filter_FDR}
 scp <- filterFeatures(scp,
-					  ~ qvalue_psm < 0.01 & qvalue_protein < 0.01)
+                      ~ qvalue_psm < 0.01 & qvalue_protein < 0.01)
 ```
 
 ## Filter out contaminants
@@ -323,7 +330,7 @@ the protein names from the `rowData`.
 
 ```{r filter_contaminants}
 scp <- filterFeatures(scp,
-					  ~ !grepl("REV|CON", protein))
+                      ~ !grepl("REV|CON", protein))
 ```
 
 ## Filter out noisy spectra
@@ -335,7 +342,7 @@ by MaxQuant and is readily available for filtering.
 
 ```{r filter_PIF}
 scp <- filterFeatures(scp,
-					  ~ !is.na(PIF) & PIF > 0.8)
+                      ~ !is.na(PIF) & PIF > 0.8)
 ```
 
 ## Filter out PSMs with high sample to carrier ratio
@@ -377,23 +384,23 @@ assay.
 
 ```{r computeSCR}
 scp <- computeSCR(scp,
-				  i = names(scp),
-				  colDataCol = "SampleType",
-				  carrierPattern = "Carrier",
-				  samplePattern = 4:16)
+                  i = names(scp),
+                  colDataCol = "SampleType",
+                  carrierPattern = "Carrier",
+                  samplePattern = 4:16)
 ```
 
 Before applying the filter, we plot the distribution of the mean SCR.
 
 ```{r, warning=FALSE, message=FALSE}
 rowDataToDF(scp,
-			i = names(scp),
-			vars = ".meanSCR") %>%
-	data.frame %>%
-	ggplot(aes(x = .meanSCR)) +
-	geom_histogram() +
-	geom_vline(xintercept = 0.1) +
-	scale_x_log10()
+            i = names(scp),
+            vars = ".meanSCR") %>%
+    data.frame %>%
+    ggplot(aes(x = .meanSCR)) +
+    geom_histogram() +
+    geom_vline(xintercept = 0.1) +
+    scale_x_log10()
 ```
 
 A great majority of the PSMs have a mean SCR that is lower than 10\%,
@@ -405,9 +412,9 @@ ratio of 0.5\%. We remove the PSMs for which the mean SCR exceeds the
 
 ```{r}
 scp <- filterFeatures(scp,
-					  ~ !is.na(.meanSCR) &
-						  !is.infinite(.meanSCR) &
-						  .meanSCR < 0.1)
+                      ~ !is.na(.meanSCR) &
+                          !is.infinite(.meanSCR) &
+                          .meanSCR < 0.1)
 ```
 
 # Normalize to reference
@@ -427,10 +434,10 @@ channel. Hence, from now on, the reference channels will contain only
 
 ```{r}
 scp <- divideByReference(scp,
-						 i = names(scp),
-						 colDataCol = "SampleType",
-						 samplePattern = ".",
-						 refPattern = "Reference")
+                         i = names(scp),
+                         colDataCol = "SampleType",
+                         samplePattern = ".",
+                         refPattern = "Reference")
 ```
 
 # Aggregate PSM data to peptide data
@@ -451,7 +458,7 @@ be applied.
 
 ```{r remove.duplicates}
 remove.duplicates <- function(x)
-	apply(x, 2, function(xx) xx[which(!is.na(xx))[1]] )
+    apply(x, 2, function(xx) xx[which(!is.na(xx))[1]] )
 ```
 
 The aggregated peptide assays must be given a name. We here used the
@@ -466,10 +473,10 @@ different batches to peptides.
 
 ```{r, message = FALSE}
 scp <- aggregateFeaturesOverAssays(scp,
-								   i = names(scp),
-								   fcol = "peptide",
-								   name = peptideAssays,
-								   fun = remove.duplicates)
+                                   i = names(scp),
+                                   fcol = "peptide",
+                                   name = peptideAssays,
+                                   fun = remove.duplicates)
 ```
 
 Under the hood, the `QFeatures` architecture preserves the
@@ -501,20 +508,20 @@ majority vote.
 
 ```{r, message=FALSE}
 scp %>%
-	rowDataToDF(i = names(scp)[1:173],
-				vars = c("peptide", "protein")) %>%
-	data.frame %>%
-	group_by(peptide) %>%
-	## The majority vote happens here
-	mutate(protein = names(sort(table(protein),
-								decreasing = TRUE))[1]) %>%
-	select(peptide, protein) %>%
-	filter(!duplicated(peptide, protein)) ->
-	ppMap
+    rowDataToDF(i = names(scp)[1:173],
+                vars = c("peptide", "protein")) %>%
+    data.frame %>%
+    group_by(peptide) %>%
+    ## The majority vote happens here
+    mutate(protein = names(sort(table(protein),
+                                decreasing = TRUE))[1]) %>%
+    select(peptide, protein) %>%
+    filter(!duplicated(peptide, protein)) ->
+    ppMap
 for (i in peptideAssays) {
-	pep <- rowData(scp[[i]])$peptide
-	rowData(scp@ExperimentList@listData[[i]])$protein <-
-		ppMap$protein[match(pep, ppMap$peptide)]
+    pep <- rowData(scp[[i]])$peptide
+    rowData(scp@ExperimentList@listData[[i]])$protein <-
+        ppMap$protein[match(pep, ppMap$peptide)]
 }
 ```
 
@@ -528,8 +535,8 @@ the assays.
 
 ```{r}
 scp <- joinAssays(scp,
-				  i = peptideAssays,
-				  name = "peptides")
+                  i = peptideAssays,
+                  name = "peptides")
 ```
 
 `joinAssays` has created a new assay called `peptides` that combines
@@ -567,10 +574,10 @@ at the protein level.
 
 ```{r}
 scp <- computeMedianCV_SCoPE2(scp,
-							  i = "peptides",
-							  proteinCol = "protein",
-							  peptideCol = "peptide",
-							  batchCol = "Set")
+                              i = "peptides",
+                              proteinCol = "protein",
+                              peptideCol = "peptide",
+                              batchCol = "Set")
 ```
 
 The computed CVs are stored in the `colData` of the `peptides_filter1` assay and
@@ -589,13 +596,13 @@ required information for plotting.
 
 ```{r, message = FALSE, warning = FALSE}
 getWithColData(scp, i = "peptides") %>%
-	colData %>%
-	data.frame %>%
-	filter(SampleType %in% c("Macrophage",  "Monocyte", "Blank")) %>%
-	ggplot(aes(x = MedianCV,
-			   fill = SampleType)) +
-	geom_histogram() +
-	geom_vline(xintercept = 0.365)
+    colData %>%
+    data.frame %>%
+    filter(SampleType %in% c("Macrophage",  "Monocyte", "Blank")) %>%
+    ggplot(aes(x = MedianCV,
+               fill = SampleType)) +
+    geom_histogram() +
+    geom_vline(xintercept = 0.365)
 ```
 
 We can see that the protein quantification for single-cells are much more
@@ -614,7 +621,7 @@ is for samples.
 
 ```{r}
 scp <- scp[, scp$MedianCV < 0.365 &
-			   scp$SampleType %in% c("Macrophage", "Monocyte"), ]
+               scp$SampleType %in% c("Macrophage", "Monocyte"), ]
 ```
 
 **@todo** this is slow and requires optimization.
@@ -639,21 +646,21 @@ mean relative intensities. The normalized data is stored in a separate assay.
 
 ```{r}
 scp %>%
-	## Scale columns with median
-	sweep(i = "peptides",
-		  MARGIN = 2,
-		  FUN = "/",
-		  STATS = colMedians(assay(.[["peptides"]]),
-							 na.rm = TRUE),
-		  name = "peptides_norm1") %>%
-	## Scale rows with mean
-	sweep(i = "peptides_norm1",
-		  MARGIN = 1,
-		  FUN = "/",
-		  STATS = rowMeans(assay(.[["peptides_norm1"]]),
-						   na.rm = TRUE),
-		  name = "peptides_norm2") ->
-	scp
+    ## Scale columns with median
+    sweep(i = "peptides",
+          MARGIN = 2,
+          FUN = "/",
+          STATS = colMedians(assay(.[["peptides"]]),
+                             na.rm = TRUE),
+          name = "peptides_norm1") %>%
+    ## Scale rows with mean
+    sweep(i = "peptides_norm1",
+          MARGIN = 1,
+          FUN = "/",
+          STATS = rowMeans(assay(.[["peptides_norm1"]]),
+                           na.rm = TRUE),
+          name = "peptides_norm2") ->
+    scp
 ```
 
 ## Remove peptides with high missing rate
@@ -664,8 +671,8 @@ remove those with more than 99 \% missing data. This is done using the
 
 ```{r}
 scp <- filterNA(scp,
-				i = "peptides_norm2",
-				pNA = 0.99)
+                i = "peptides_norm2",
+                pNA = 0.99)
 ```
 
 ## Log-transformation
@@ -675,9 +682,9 @@ to log-transform the data. SCoPE2 uses a base 2 log-transformation.
 
 ```{r}
 scp <- logTransform(scp,
-					base = 2,
-					i = "peptides_norm2",
-					name = "peptides_log")
+                    base = 2,
+                    i = "peptides_norm2",
+                    name = "peptides_log")
 ```
 
 ## The SCoPE2 peptide data
@@ -688,21 +695,21 @@ in the remainder of the workflow.
 
 ```{r}
 scp %>%
-	## Center columns with median
-	sweep(i = "peptides_log",
-		  MARGIN = 2,
-		  FUN = "-",
-		  STATS = colMedians(assay(.[["peptides_log"]]),
-							 na.rm = TRUE),
-		  name = "peptides_log_norm1") %>%
-	## Center rows with mean
-	sweep(i = "peptides_log_norm1",
-		  MARGIN = 1,
-		  FUN = "-",
-		  STATS = rowMeans(assay(.[["peptides_log_norm1"]]),
-						   na.rm = TRUE),
-		  name = "peptides_scp") ->
-	scp
+    ## Center columns with median
+    sweep(i = "peptides_log",
+          MARGIN = 2,
+          FUN = "-",
+          STATS = colMedians(assay(.[["peptides_log"]]),
+                             na.rm = TRUE),
+          name = "peptides_log_norm1") %>%
+    ## Center rows with mean
+    sweep(i = "peptides_log_norm1",
+          MARGIN = 1,
+          FUN = "-",
+          STATS = rowMeans(assay(.[["peptides_log_norm1"]]),
+                           na.rm = TRUE),
+          name = "peptides_scp") ->
+    scp
 ```
 
 We names the last assay `peptides_scp`. We will contrast this data
@@ -717,10 +724,10 @@ the median as a summarizing function.
 
 ```{r}
 scp <- aggregateFeatures(scp,
-						 i = "peptides_log",
-						 name = "proteins",
-						 fcol = "protein",
-						 fun = matrixStats::colMedians, na.rm = TRUE)
+                         i = "peptides_log",
+                         name = "proteins",
+                         fcol = "protein",
+                         fun = matrixStats::colMedians, na.rm = TRUE)
 ```
 
 # Process the protein data
@@ -736,21 +743,21 @@ subtract by the statistic (median or mean) instead of dividing.
 
 ```{r}
 scp %>%
-	## Center columns with median
-	sweep(i = "proteins",
-		  MARGIN = 2,
-		  FUN = "-",
-		  STATS = colMedians(assay(.[["proteins"]]),
-							 na.rm = TRUE),
-		  name = "proteins_norm1") %>%
-	## Center rows with mean
-	sweep(i = "proteins_norm1",
-		  MARGIN = 1,
-		  FUN = "-",
-		  STATS = rowMeans(assay(.[["proteins_norm1"]]),
-						   na.rm = TRUE),
-		  name = "proteins_norm2") ->
-	scp
+    ## Center columns with median
+    sweep(i = "proteins",
+          MARGIN = 2,
+          FUN = "-",
+          STATS = colMedians(assay(.[["proteins"]]),
+                             na.rm = TRUE),
+          name = "proteins_norm1") %>%
+    ## Center rows with mean
+    sweep(i = "proteins_norm1",
+          MARGIN = 1,
+          FUN = "-",
+          STATS = rowMeans(assay(.[["proteins_norm1"]]),
+                           na.rm = TRUE),
+          name = "proteins_norm2") ->
+    scp
 ```
 
 
@@ -762,11 +769,11 @@ over 75 \% missing values!
 
 ```{r, message=FALSE}
 longFormat(scp[, , "proteins_norm2"]) %>%
-	data.frame %>%
-	group_by(colname) %>%
-	summarize(missingness = mean(is.na(value))) %>%
-	ggplot(aes(x = missingness)) +
-	geom_histogram()
+    data.frame %>%
+    group_by(colname) %>%
+    summarize(missingness = mean(is.na(value))) %>%
+    ggplot(aes(x = missingness)) +
+    geom_histogram()
 ```
 
 The missing data is imputed using K nearest neighbors. The SCoPE2 script runs
@@ -775,9 +782,9 @@ to our `QFeatures` object.
 
 ```{r}
 scp <- scp_imputeKNN(scp,
-					 i = "proteins_norm2",
-					 name = "proteins_impd",
-					 k = 3)
+                     i = "proteins_norm2",
+                     name = "proteins_impd",
+                     k = 3)
 ```
 
 `QFeatures` also provides KNN imputation by calling to the `impute::impute.knn`
@@ -790,10 +797,10 @@ do not run in order to reproduce the SCoPE2 analysis.
 
 ```{r, eval = FALSE}
 scp <- impute(scp,
-			  i = "proteins_norm2",
-			  method = "knn",
-			  k = 3, rowmax = 1, colmax= 1,
-			  maxp = Inf, rng.seed = 1234)
+              i = "proteins_norm2",
+              method = "knn",
+              k = 3, rowmax = 1, colmax= 1,
+              maxp = Inf, rng.seed = 1234)
 ```
 
 ## Batch correction
@@ -829,8 +836,8 @@ for a protein if at least one of the batch contain constant values.
 batch <- colData(sce)$Set
 model <- model.matrix(~ SampleType, data = colData(sce))
 assay(sce) <- ComBatv3.34(dat = assay(sce),
-						  batch = batch,
-						  mod = model)
+                          batch = batch,
+                          mod = model)
 ```
 
 Finally, we add the batch corrected assay to the `QFeatures` object
@@ -838,11 +845,11 @@ and create the feature links.
 
 ```{r}
 scp %>%
-	addAssay(y = sce,
-			 name = "proteins_batchC") %>%
-	addAssayLinkOneToOne(from = "proteins_impd",
-						 to = "proteins_batchC") ->
-	scp
+    addAssay(y = sce,
+             name = "proteins_batchC") %>%
+    addAssayLinkOneToOne(from = "proteins_impd",
+                         to = "proteins_batchC") ->
+    scp
 ```
 
 ## The SCoPE2 protein data
@@ -852,21 +859,21 @@ performed an additional normalization step.
 
 ```{r}
 scp %>%
-	## Center columns with median
-	sweep(i = "proteins_batchC",
-		  MARGIN = 2,
-		  FUN = "-",
-		  STATS = colMedians(assay(.[["proteins_batchC"]]),
-							 na.rm = TRUE),
-		  name = "proteins_batchC_norm1") %>%
-	## Center rows with mean
-	sweep(i = "proteins_batchC_norm1",
-		  MARGIN = 1,
-		  FUN = "-",
-		  STATS = rowMeans(assay(.[["proteins_batchC_norm1"]]),
-						   na.rm = TRUE),
-		  name = "proteins_scp") ->
-	scp
+    ## Center columns with median
+    sweep(i = "proteins_batchC",
+          MARGIN = 2,
+          FUN = "-",
+          STATS = colMedians(assay(.[["proteins_batchC"]]),
+                             na.rm = TRUE),
+          name = "proteins_batchC_norm1") %>%
+    ## Center rows with mean
+    sweep(i = "proteins_batchC_norm1",
+          MARGIN = 1,
+          FUN = "-",
+          STATS = rowMeans(assay(.[["proteins_batchC_norm1"]]),
+                           na.rm = TRUE),
+          name = "proteins_scp") ->
+    scp
 ```
 
 We named the last assay `proteins_scp`. We will contrast this data
@@ -896,26 +903,26 @@ cells_scope2 <- colnames(peptides_SCoPE2)
 cells_scp <- colnames(scp[["peptides_scp"]])
 cells <- unique(c(cells_scope2, cells_scp))
 data.frame(SCoPE2 = cells %in% cells_scope2,
-		   scp = cells %in% cells_scp) %>%
-	mutate_all(function(x) ifelse(x, "present", "absent")) %>%
-	group_by(SCoPE2, scp) %>%
-	summarise(count = n()) %>%
-	mutate(success = SCoPE2 == "present" & scp == "present") %>%
-	ggplot() +
-	aes(x = SCoPE2,
-		y = scp,
-		col = success,
-		label = count) +
-	geom_point(aes(size = count)) +
-	geom_text(nudge_y = 0.2) +
-	scale_y_discrete(limits = c("absent", "present")) +
-	scale_color_manual(values = c("orange2", "green4")) +
-	theme_minimal() +
-	theme(legend.position = "none",
-			  axis.title.y = element_text(vjust = 0),
-			  axis.text.y = element_text(angle = 90, hjust = 0.5)) +
-	ggtitle("Filtered cells") ->
-	cell_sel
+           scp = cells %in% cells_scp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(SCoPE2, scp) %>%
+    summarise(count = n()) %>%
+    mutate(success = SCoPE2 == "present" & scp == "present") %>%
+    ggplot() +
+    aes(x = SCoPE2,
+        y = scp,
+        col = success,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    scale_y_discrete(limits = c("absent", "present")) +
+    scale_color_manual(values = c("orange2", "green4")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+              axis.title.y = element_text(vjust = 0),
+              axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    ggtitle("Filtered cells") ->
+    cell_sel
 cell_sel
 ```
 
@@ -936,26 +943,26 @@ peps_scope2 <- rownames(peptides_SCoPE2)
 peps_scp <- rownames(scp[["peptides_scp"]])
 peps <- unique(c(peps_scope2, peps_scp))
 data.frame(SCoPE2 = peps %in% peps_scope2,
-		   scp = peps %in% peps_scp) %>%
-	mutate_all(function(x) ifelse(x, "present", "absent")) %>%
-	group_by(SCoPE2, scp) %>%
-	summarise(count = n()) %>%
-	mutate(success = SCoPE2 == "present" & scp == "present") %>%
-	ggplot() +
-	aes(x = SCoPE2,
-		y = scp,
-		col = success,
-		label = count) +
-	geom_point(aes(size = count)) +
-	geom_text(nudge_y = 0.2) +
-	scale_y_discrete(limits = c("absent", "present")) +
-	scale_color_manual(values = c("orange2", "green4")) +
-	theme_minimal() +
-	theme(legend.position = "none",
-		  axis.title.y = element_text(vjust = 0),
-		  axis.text.y = element_text(angle = 90, hjust = 0.5)) +
-	ggtitle("Filtered peptides") ->
-	peptide_sel
+           scp = peps %in% peps_scp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(SCoPE2, scp) %>%
+    summarise(count = n()) %>%
+    mutate(success = SCoPE2 == "present" & scp == "present") %>%
+    ggplot() +
+    aes(x = SCoPE2,
+        y = scp,
+        col = success,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    scale_y_discrete(limits = c("absent", "present")) +
+    scale_color_manual(values = c("orange2", "green4")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title.y = element_text(vjust = 0),
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    ggtitle("Filtered peptides") ->
+    peptide_sel
 peptide_sel
 ```
 
@@ -969,20 +976,20 @@ accurately replicate the SCoPE2 peptide data.
 
 ```{r, echo=FALSE, fig.width = 3, fig.height = 3, message = FALSE}
 rows <- intersect(rownames(peptides_SCoPE2),
-				  rownames(scp[["peptides_scp"]]))
+                  rownames(scp[["peptides_scp"]]))
 cols <- intersect(colnames(peptides_SCoPE2),
-				  colnames(scp[["peptides_scp"]]))
+                  colnames(scp[["peptides_scp"]]))
 err <- assay(peptides_SCoPE2)[rows, cols] -
-	assay(scp[["peptides_scp"]])[rows, cols]
+    assay(scp[["peptides_scp"]])[rows, cols]
 data.frame(difference = as.vector(err[!is.na(err)])) %>%
-	mutate(difference = difference) %>%
-	ggplot() +
-	geom_histogram(aes(x = difference), bins = 50) +
-	xlab("SCoPE2 - scp") +
-	scale_y_continuous(labels = scales::scientific) +
-	theme_minimal() +
-	ggtitle("Peptide data") ->
-	peptide_diff
+    mutate(difference = difference) %>%
+    ggplot() +
+    geom_histogram(aes(x = difference), bins = 50) +
+    xlab("SCoPE2 - scp") +
+    scale_y_continuous(labels = scales::scientific) +
+    theme_minimal() +
+    ggtitle("Peptide data") ->
+    peptide_diff
 peptide_diff
 ```
 
@@ -1003,25 +1010,25 @@ prots_scope2 <- rownames(proteins_SCoPE2)
 prots_scp <- rownames(scp[["proteins_scp"]])
 prots <- unique(c(prots_scope2, prots_scp))
 data.frame(SCoPE2 = prots %in% prots_scope2,
-		   scp = prots %in% prots_scp) %>%
-	mutate_all(function(x) ifelse(x, "present", "absent")) %>%
-	group_by(SCoPE2, scp) %>%
-	summarise(count = n()) %>%
-	mutate(success = SCoPE2 == "present" & scp == "present") %>%
-	ggplot() +
-	aes(x = SCoPE2,
-		y = scp,
-		col = success,
-		label = count) +
-	geom_point(aes(size = count)) +
-	geom_text(nudge_y = 0.2) +
-	scale_color_manual(values = c("orange2", "green4")) +
-	theme_minimal() +
-	theme(legend.position = "none",
-		  axis.title.y = element_text(vjust = 0),
-		  axis.text.y = element_text(angle = 90, hjust = 0.5)) +
-	ggtitle("Filtered proteins") ->
-	protein_sel
+           scp = prots %in% prots_scp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(SCoPE2, scp) %>%
+    summarise(count = n()) %>%
+    mutate(success = SCoPE2 == "present" & scp == "present") %>%
+    ggplot() +
+    aes(x = SCoPE2,
+        y = scp,
+        col = success,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    scale_color_manual(values = c("orange2", "green4")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title.y = element_text(vjust = 0),
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    ggtitle("Filtered proteins") ->
+    protein_sel
 protein_sel
 ```
 
@@ -1038,19 +1045,19 @@ the batch correction and the data imputation in a later section.
 
 ```{r, echo=FALSE, fig.width = 3, fig.height = 3}
 rows <- intersect(rownames(proteins_SCoPE2),
-				  rownames(scp[["proteins_scp"]]))
+                  rownames(scp[["proteins_scp"]]))
 cols <- intersect(colnames(proteins_SCoPE2),
-				  colnames(scp[["proteins_scp"]]))
+                  colnames(scp[["proteins_scp"]]))
 err <- assay(proteins_SCoPE2)[rows, cols] -
-	assay(scp[["proteins_scp"]])[rows, cols]
+    assay(scp[["proteins_scp"]])[rows, cols]
 data.frame(difference = as.vector(err)) %>%
-	mutate(difference = difference) %>%
-	ggplot() +
-	geom_histogram(aes(x = difference), bins = 40) +
-	xlab("SCoPE2 - scp") +
-	theme_minimal() +
-	ggtitle("Protein data") ->
-	protein_diff
+    mutate(difference = difference) %>%
+    ggplot() +
+    geom_histogram(aes(x = difference), bins = 40) +
+    xlab("SCoPE2 - scp") +
+    theme_minimal() +
+    ggtitle("Protein data") ->
+    protein_diff
 protein_diff
 ```
 
@@ -1060,12 +1067,12 @@ authors.
 
 ```{r, fig.height = 6, fig.width = 9}
 cell_sel +
-	peptide_sel +
-	protein_sel +
-	plot_spacer() +
-	peptide_diff +
-	protein_diff +
-	plot_layout(ncol = 3)
+    peptide_sel +
+    protein_sel +
+    plot_spacer() +
+    peptide_diff +
+    protein_diff +
+    plot_layout(ncol = 3)
 ```
 
 
@@ -1090,18 +1097,18 @@ pcaRes <- eigen(Xcor)
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
 ## Start plotting
 data.frame(PC = pcaRes$vectors[, 1:2],
-		   colData(scp)[colnames(Xcor), ]) %>%
-	ggplot(aes(x = PC.1, y = PC.2, col = SampleType)) +
-	geom_point(alpha = 0.5) +
-	## Annotate plot
-	xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
-	ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
-	ggtitle("PCA plot of the processed protein data") +
-	## Adapt the visual style to match the preprint figure
-	scale_color_manual(name = "", values = c("#048ABF","#FF5733"),
-					   labels = c("Macrophages", "Monocytes")) +
-	theme_minimal() +
-	theme(legend.position = "top")
+           colData(scp)[colnames(Xcor), ]) %>%
+    ggplot(aes(x = PC.1, y = PC.2, col = SampleType)) +
+    geom_point(alpha = 0.5) +
+    ## Annotate plot
+    xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
+    ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
+    ggtitle("PCA plot of the processed protein data") +
+    ## Adapt the visual style to match the preprint figure
+    scale_color_manual(name = "", values = c("#048ABF","#FF5733"),
+                       labels = c("Macrophages", "Monocytes")) +
+    theme_minimal() +
+    theme(legend.position = "top")
 ```
 
 This plot allow us to draw the same conclusion as in the original preprint: (i)
@@ -1119,14 +1126,14 @@ protein data in just a few commands.
 ```{r}
 library(scater)
 getWithColData(scp, "proteins_scp") %>%
-	## Perform PCA, see ?runPCA for more info about arguments
-	runPCA(ncomponents = 50,
-		   ntop = Inf,
-		   scale = TRUE,
-		   exprs_values = 1,
-		   name = "PCA") %>%
-	## Plotting is performed in a single line of code
-	plotPCA(colour_by = "SampleType")
+    ## Perform PCA, see ?runPCA for more info about arguments
+    runPCA(ncomponents = 50,
+           ntop = Inf,
+           scale = TRUE,
+           exprs_values = 1,
+           name = "PCA") %>%
+    ## Plotting is performed in a single line of code
+    plotPCA(colour_by = "SampleType")
 ```
 
 This plot is different from the previous plot because no weighting is
@@ -1151,31 +1158,31 @@ the data is formated to a long format table that can easily be plugged in the
 
 ```{r, warning = FALSE, fig.width = 10, out.width = "100%"}
 scp %>%
-	## Get the features related to VIM (P08670)
-	subsetByFeature("P08670") %>%
-	## Format the `QFeatures` to a long format table
-	longFormat(colDataCols = c("Set", "SampleType", "Channel")) %>%
-	data.frame %>%
-	## Keep only the SCoPE2 set of interest
-	filter(Set == "191110S_LCB7_X_APNOV16plex2_Set_9") %>%
-	eez
-	tmp %>%
-	## This is used to preserve ordering of the samples and assays in ggplot2
-	mutate(assay = factor(assay, levels = names(scp)),
-		   Channel = sub("RI", "TMT-", Channel),
-		   Channel = factor(Channel, levels = unique(Channel))) %>%
-	## Start plotting
-	ggplot(aes(x = Channel, y = value, group = rowname, col = SampleType)) +
-	geom_point() +
-	## Plot every assay in a separate facet
-	facet_wrap(facets = vars(assay), scales = "free_y") +
-	## Annotate plot
-	xlab("Channels") +
-	ylab("Intensity (arbitrary units)") +
-	## Improve plot aspect
-	theme(axis.text.x = element_text(angle = 90),
-		  strip.text = element_text(hjust = 0),
-		  legend.position = "bottom")
+    ## Get the features related to VIM (P08670)
+    subsetByFeature("P08670") %>%
+    ## Format the `QFeatures` to a long format table
+    longFormat(colDataCols = c("Set", "SampleType", "Channel")) %>%
+    data.frame %>%
+    ## Keep only the SCoPE2 set of interest
+    filter(Set == "191110S_LCB7_X_APNOV16plex2_Set_9") %>%
+    eez
+    tmp %>%
+    ## This is used to preserve ordering of the samples and assays in ggplot2
+    mutate(assay = factor(assay, levels = names(scp)),
+           Channel = sub("RI", "TMT-", Channel),
+           Channel = factor(Channel, levels = unique(Channel))) %>%
+    ## Start plotting
+    ggplot(aes(x = Channel, y = value, group = rowname, col = SampleType)) +
+    geom_point() +
+    ## Plot every assay in a separate facet
+    facet_wrap(facets = vars(assay), scales = "free_y") +
+    ## Annotate plot
+    xlab("Channels") +
+    ylab("Intensity (arbitrary units)") +
+    ## Improve plot aspect
+    theme(axis.text.x = element_text(angle = 90),
+          strip.text = element_text(hjust = 0),
+          legend.position = "bottom")
 ```
 
 This graph can help us track the processing of the data.
@@ -1195,15 +1202,15 @@ data
 
 ```{r}
 scp <- aggregateFeatures(scp,
-						 i = "peptides_log",
-						 name = "proteins_robSum",
-						 fcol = "protein",
-						 fun = MsCoreUtils::robustSummary)
+                         i = "peptides_log",
+                         name = "proteins_robSum",
+                         fcol = "protein",
+                         fun = MsCoreUtils::robustSummary)
 aggregateFeatures(specht2019v3(),
-				  i = "peptides",
-				  name = "proteins_rs",
-				  fcol = "protein",
-				  fun = MsCoreUtils::robustSummary)
+                  i = "peptides",
+                  name = "proteins_rs",
+                  fcol = "protein",
+                  fun = MsCoreUtils::robustSummary)
 ```
 
 
@@ -1223,9 +1230,9 @@ library(nipals)
 library(GGally)
 sce <- getWithColData(scp, "peptides_log")
 pcaRes <- nipals(t(assay(sce)),
-				 ncomp = 5)
+                 ncomp = 5)
 df <- data.frame(colData(sce),
-				 pcaRes$scores)
+                 pcaRes$scores)
 ```
 
 We first check the amount of variance explained by the 5 first
@@ -1235,11 +1242,11 @@ components still capture a significant proportion of the variance.
 
 ```{r}
 data.frame(PC = paste0("PC", 1:5), ev = pcaRes$R2) %>%
-	ggplot() +
-	aes(x = PC,
-		y = ev * 100) +
-	geom_bar(stat = "identity") +
-	ylab("Explained variance (%)")
+    ggplot() +
+    aes(x = PC,
+        y = ev * 100) +
+    geom_bar(stat = "identity") +
+    ylab("Explained variance (%)")
 ```
 
 Let's first look at the batch effect on the first 5 components. This
@@ -1247,11 +1254,11 @@ is a overview of the PCA results:
 
 ```{r, fig.width = 10, fig.height = 10, message = FALSE}
 df %>%
-	ggpairs(aes(color = lcbatch,
-				alpha = 0.25),
-			columns = paste0("PC", 1:5),
-			legend = c(2,1)) +
-	theme(legend.position = "bottom")
+    ggpairs(aes(color = lcbatch,
+                alpha = 0.25),
+            columns = paste0("PC", 1:5),
+            legend = c(2,1)) +
+    theme(legend.position = "bottom")
 ```
 
 The chromatographic batches are perfectly separated in the first two
@@ -1259,12 +1266,12 @@ components:
 
 ```{r}
 df %>%
-	ggplot() +
-	aes(x = PC1,
-		y = PC2,
-		col = lcbatch) +
-	geom_point() +
-	theme(legend.position = "bottom")
+    ggplot() +
+    aes(x = PC1,
+        y = PC2,
+        col = lcbatch) +
+    geom_point() +
+    theme(legend.position = "bottom")
 ```
 
 In the two next components, the batches are no more separated and the
@@ -1272,19 +1279,19 @@ biological variation seems to captured:
 
 ```{r, fig.width=8}
 df %>%
-	ggplot() +
-	aes(x = PC3,
-		y = PC4,
-		col = lcbatch) +
-	geom_point() +
-	theme(legend.position = "bottom") +
-	df %>%
-	ggplot() +
-	aes(x = PC3,
-		y = PC4,
-		col = SampleType) +
-	geom_point() +
-	theme(legend.position = "bottom")
+    ggplot() +
+    aes(x = PC3,
+        y = PC4,
+        col = lcbatch) +
+    geom_point() +
+    theme(legend.position = "bottom") +
+    df %>%
+    ggplot() +
+    aes(x = PC3,
+        y = PC4,
+        col = SampleType) +
+    geom_point() +
+    theme(legend.position = "bottom")
 ```
 
 So this means that monocytes and macrophages effect we saw in the PCA
@@ -1300,127 +1307,127 @@ nNaRes <- nNA(peptides)
 
 ```{r}
 nNaRes$nNAcols %>%
-	data.frame(colData(scp)) %>%
-	ggplot() +
-	aes(x = pNA,
-		fill = lcbatch) +
-	geom_density(alpha = 0.5) +
-	xlab("Percentage missingness (%)") +
-	ggtitle("Missingness per cell")
+    data.frame(colData(scp)) %>%
+    ggplot() +
+    aes(x = pNA,
+        fill = lcbatch) +
+    geom_density(alpha = 0.5) +
+    xlab("Percentage missingness (%)") +
+    ggtitle("Missingness per cell")
 ```
 
 ```{r, fig.width=3, fig.height=4}
 scp <- countUniqueFeatures(scp,
-						   i = "peptides_log",
-						   rowDataCol = "protein",
-						   varName = "ProteinCounts")
+                           i = "peptides_log",
+                           rowDataCol = "protein",
+                           varName = "ProteinCounts")
 colData(scp) %>%
-	data.frame() %>%
-	ggplot() +
-	aes(x = ProteinCounts,
-		fill = lcbatch) +
-	geom_histogram() +
-	facet_grid(rows = vars(lcbatch), scales = "free_y") +
-	xlab("Protein count") +
-	ylab("Cell count") +
-	theme(legend.position = "none")
+    data.frame() %>%
+    ggplot() +
+    aes(x = ProteinCounts,
+        fill = lcbatch) +
+    geom_histogram() +
+    facet_grid(rows = vars(lcbatch), scales = "free_y") +
+    xlab("Protein count") +
+    ylab("Cell count") +
+    theme(legend.position = "none")
 ```
 
 
 ```{r, echo = FALSE}
 library(UpSetR)
 colData(scp) %>%
-	data.frame %>%
-	select(Set, lcbatch) %>%
-	unique %>%
-	group_by(lcbatch) %>%
-	slice_head(n = 2) %>%
-	mutate(sets = paste0(lcbatch, "_", 1:2)) ->
-	batch_sel
+    data.frame %>%
+    select(Set, lcbatch) %>%
+    unique %>%
+    group_by(lcbatch) %>%
+    slice_head(n = 2) %>%
+    mutate(sets = paste0(lcbatch, "_", 1:2)) ->
+    batch_sel
 rowData(scp)[batch_sel$Set] %>%
-	lapply(function(x) x$protein) %>%
-	fromList ->
-	lt
+    lapply(function(x) x$protein) %>%
+    fromList ->
+    lt
 cols <- RColorBrewer::brewer.pal(4, "Pastel1")[c(1, 3, 2, 4)]
 names(cols) <- unique(batch_sel$lcbatch)
 colnames(lt) <- batch_sel$sets
 upset(lt, nsets = 8, order.by = "freq", nintersects = 20,
-	  sets = colnames(lt), keep.order = TRUE,
-	  mainbar.y.label = NULL, mb.ratio = c(0.5,0.5),
-	  sets.bar.color = cols[batch_sel$lcbatch],
-	  set.metadata = list(data = batch_sel[, c("sets", "lcbatch")],
-						  plots = list(list(type = "matrix_rows",
-											column = "lcbatch",
-											colors = cols,
-											alpha = 0.6))))
+      sets = colnames(lt), keep.order = TRUE,
+      mainbar.y.label = NULL, mb.ratio = c(0.5,0.5),
+      sets.bar.color = cols[batch_sel$lcbatch],
+      set.metadata = list(data = batch_sel[, c("sets", "lcbatch")],
+                          plots = list(list(type = "matrix_rows",
+                                            column = "lcbatch",
+                                            colors = cols,
+                                            alpha = 0.6))))
 ```
 
 
 ```{r}
 nNaRes$nNArows %>%
-	data.frame(rowData(peptides)[nNaRes$nNArows$name, ]) %>%
-	mutate(Median = rowMedians(log2(assay(peptides)[nNaRes$nNArows$name, ]),
-						   na.rm = TRUE)) %>%
-	ggplot() +
-	aes(x = Median,
-		y = pNA) +
-	stat_density2d(aes(fill = ..density..^0.1),
-				   geom = "tile",
-				   contour = FALSE) +
-	scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256)) +
-	theme(legend.position = "none",
-		  panel.background = element_blank(),
-		  panel.grid.major = element_blank(),
-		  panel.grid.minor = element_blank(),
-		  panel.border = element_rect(colour = "black", fill = NA, size = 0.5)) +
-	ylab("Percentage missingness (%)") +
-	xlab("log median expression") +
-	ggtitle("Missingness per peptide")
+    data.frame(rowData(peptides)[nNaRes$nNArows$name, ]) %>%
+    mutate(Median = rowMedians(log2(assay(peptides)[nNaRes$nNArows$name, ]),
+                           na.rm = TRUE)) %>%
+    ggplot() +
+    aes(x = Median,
+        y = pNA) +
+    stat_density2d(aes(fill = ..density..^0.1),
+                   geom = "tile",
+                   contour = FALSE) +
+    scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256)) +
+    theme(legend.position = "none",
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_rect(colour = "black", fill = NA, size = 0.5)) +
+    ylab("Percentage missingness (%)") +
+    xlab("log median expression") +
+    ggtitle("Missingness per peptide")
 ```
 
 ```{r}
 proteins <- scp[["proteins"]]
 mat <- matrix(0,
-			  nrow = nrow(proteins),
-			  ncol = length(unique(colData(scp)$Set)),
-			  dimnames = list(rownames(proteins),
-							  unique(colData(scp)$Set)))
+              nrow = nrow(proteins),
+              ncol = length(unique(colData(scp)$Set)),
+              dimnames = list(rownames(proteins),
+                              unique(colData(scp)$Set)))
 for (batch in unique(colData(scp)$Set)) {
    x <- assay(proteins)[, rownames(colData(scp)[scp$Set == batch, ])]
    mat[, batch] <- as.numeric(rowSums(is.na(x)) < ncol(x))
 }
 res <- rowSums(mat)
 res %>%
-	data.frame %>%
-	ggplot() +
-	aes(x = .) +
-	geom_histogram(binwidth = 1) +
-	xlab("Amount of batches") +
-	ggtitle("Distribution of the number of proteins in batches")
+    data.frame %>%
+    ggplot() +
+    aes(x = .) +
+    geom_histogram(binwidth = 1) +
+    xlab("Amount of batches") +
+    ggtitle("Distribution of the number of proteins in batches")
 ```
 
 
 ```{r}
 lf <- longFormat(proteins)
 lf %>%
-	mutate(rowname = factor(rowname,
-							levels = names(sort(res, decreasing = TRUE)))) %>%
-	data.frame %>%
-	ggplot() +
-	aes(y = rowname,
-		x = colname,
-		fill = value) +
-	geom_tile() +
-	scale_fill_continuous(name = "log expression",
-						  na.value = "white") +
-	theme(axis.text = element_blank()) +
-	xlab("Single cells") +
-	ylab("Proteins") +
-	ggtitle("Protein expression matrix")
+    mutate(rowname = factor(rowname,
+                            levels = names(sort(res, decreasing = TRUE)))) %>%
+    data.frame %>%
+    ggplot() +
+    aes(y = rowname,
+        x = colname,
+        fill = value) +
+    geom_tile() +
+    scale_fill_continuous(name = "log expression",
+                          na.value = "white") +
+    theme(axis.text = element_blank()) +
+    xlab("Single cells") +
+    ylab("Proteins") +
+    ggtitle("Protein expression matrix")
 
 assay(proteins)[, ] %>%
-	t %>%
-	image
+    t %>%
+    image
 
 ```
 
@@ -1444,39 +1451,39 @@ m0Dat <- assay(sce[, sce$SampleType == "Macrophage"])
 ## Create a table with the rate of missingness for each cell type and
 ## compute the log fold change in median expression
 data.frame(m0Missing = rowMeans(is.na(m0Dat)) * 100,
-		   monoMissing = rowMeans(is.na(monoDat)) * 100,
-		   logFC = rowMedians(m0Dat, na.rm = TRUE) - rowMedians(monoDat, na.rm = TRUE)) %>%
-	## Trim log fold change to dampen the impact of outliers
-	mutate(logFC = ifelse(abs(logFC) > 1, 1 * sign(logFC), logFC)) %>%
-	## Start plotting
-	ggplot ->
-	p
+           monoMissing = rowMeans(is.na(monoDat)) * 100,
+           logFC = rowMedians(m0Dat, na.rm = TRUE) - rowMedians(monoDat, na.rm = TRUE)) %>%
+    ## Trim log fold change to dampen the impact of outliers
+    mutate(logFC = ifelse(abs(logFC) > 1, 1 * sign(logFC), logFC)) %>%
+    ## Start plotting
+    ggplot ->
+    p
 p +
-	## Plot rate of missingness in macrophages
-	geom_histogram(aes(x = m0Missing), bins = 100) +
-	theme_minimal() +
-	theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
-		  axis.ticks.x = element_blank()) +
-	plot_spacer() +
-	p +
-	## Plot missingness in macrophages vs missingness in monocytes
-	geom_point(aes(x = m0Missing, y = monoMissing, col = logFC)) +
-	geom_abline(slope = 1, intercept = 0, col = "grey30") +
-	theme(legend.position = "bottom") +
-	xlab("Missingness (%) in macrophages") +
-	ylab("Missingness (%) in monocytes") +
-	scale_color_gradient2(low = "#048ABF", mid = "bisque2", high = "#FF5733",
-						  breaks = c(-1, 1),
-						  labels = c("monocyte", "macrophage")) +
-	p +
-	## Plot rate of missingness in monocytes
-	geom_histogram(aes(y = monoMissing), bins = 100) +
-	theme_minimal() +
-	theme(axis.title.y = element_blank(), axis.text.y = element_blank(),
-		  axis.ticks.y = element_blank(),
-		  axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=0)) +
-	## Adjust plotting layout
-	plot_layout(widths = c(0.85, 0.15), heights = c(0.15, 0.85))
+    ## Plot rate of missingness in macrophages
+    geom_histogram(aes(x = m0Missing), bins = 100) +
+    theme_minimal() +
+    theme(axis.title.x = element_blank(), axis.text.x = element_blank(),
+          axis.ticks.x = element_blank()) +
+    plot_spacer() +
+    p +
+    ## Plot missingness in macrophages vs missingness in monocytes
+    geom_point(aes(x = m0Missing, y = monoMissing, col = logFC)) +
+    geom_abline(slope = 1, intercept = 0, col = "grey30") +
+    theme(legend.position = "bottom") +
+    xlab("Missingness (%) in macrophages") +
+    ylab("Missingness (%) in monocytes") +
+    scale_color_gradient2(low = "#048ABF", mid = "bisque2", high = "#FF5733",
+                          breaks = c(-1, 1),
+                          labels = c("monocyte", "macrophage")) +
+    p +
+    ## Plot rate of missingness in monocytes
+    geom_histogram(aes(y = monoMissing), bins = 100) +
+    theme_minimal() +
+    theme(axis.title.y = element_blank(), axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.x = element_text(angle = -90, vjust = 0.5, hjust=0)) +
+    ## Adjust plotting layout
+    plot_layout(widths = c(0.85, 0.15), heights = c(0.15, 0.85))
 ```
 
 We can see that most of the peptides have equal missingness in macrophages and
@@ -1494,56 +1501,56 @@ monocytes.
 ```{r, fig.height = 5, fig.width = 6}
 prots <- getWithColData(scp, "proteins_impd")
 nbIdentical <- apply(assay(prots),
-					 1,
-					 function(x) sum(duplicated(x)))
+                     1,
+                     function(x) sum(duplicated(x)))
 ## Top 1
 sel <- order(nbIdentical, decreasing = TRUE)[1]
 data.frame(exprs = assay(scp[["proteins_norm2"]])[sel, ],
-		   colnames = colnames(prots),
-		   colData(prots)) %>%
-	ggplot() +
-	aes(x = colnames,
-		col = SampleType,
-		y = exprs) +
-	geom_point(size = 0.9) +
-	ylab("log expression") +
-	xlab("") +
-	theme(legend.position = "none",
-		  axis.ticks.x = element_blank(),
-		  axis.text.x = element_blank()) +
-	plot_spacer() +
-	data.frame(`PCDH8: Highly missing` = assay(prots)["O95206", ], ## PCDH8
-		   `VIM: Not missing` = assay(prots)["P08670", ], ## VIM
-		   colnames = colnames(prots),
-		   colData(prots),
-		   check.names = FALSE ) %>%
-	pivot_longer(cols = c("PCDH8: Highly missing", "VIM: Not missing"),
-				 names_to = "type") %>%
-	ggplot() +
-	aes(x = colnames,
-		col = SampleType,
-		y = value) +
-	geom_point(size = 0.9) +
-	facet_wrap(~ type) +
-	ylab("Imputed log expression") +
-	xlab("Single cell") +
-	theme(legend.position = "bottom",
-		  axis.ticks.x = element_blank(),
-		  axis.text.x = element_blank()) +
-	plot_layout(design = "12\n33")
+           colnames = colnames(prots),
+           colData(prots)) %>%
+    ggplot() +
+    aes(x = colnames,
+        col = SampleType,
+        y = exprs) +
+    geom_point(size = 0.9) +
+    ylab("log expression") +
+    xlab("") +
+    theme(legend.position = "none",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank()) +
+    plot_spacer() +
+    data.frame(`PCDH8: Highly missing` = assay(prots)["O95206", ], ## PCDH8
+           `VIM: Not missing` = assay(prots)["P08670", ], ## VIM
+           colnames = colnames(prots),
+           colData(prots),
+           check.names = FALSE ) %>%
+    pivot_longer(cols = c("PCDH8: Highly missing", "VIM: Not missing"),
+                 names_to = "type") %>%
+    ggplot() +
+    aes(x = colnames,
+        col = SampleType,
+        y = value) +
+    geom_point(size = 0.9) +
+    facet_wrap(~ type) +
+    ylab("Imputed log expression") +
+    xlab("Single cell") +
+    theme(legend.position = "bottom",
+          axis.ticks.x = element_blank(),
+          axis.text.x = element_blank()) +
+    plot_layout(design = "12\n33")
 ```
 
 ```{r}
 data.frame(exprs = assay(prots)["O95206", ], ## PCDH8
-		   colnames = colnames(prots),
-		   colData(prots)) %>%
-	ggplot() +
-	aes(x = exprs,
-		col = SampleType,
-		fill = SampleType) +
-	geom_density(alpha = 0.5)
+           colnames = colnames(prots),
+           colData(prots)) %>%
+    ggplot() +
+    aes(x = exprs,
+        col = SampleType,
+        fill = SampleType) +
+    geom_density(alpha = 0.5)
 t.test(x = assay(prots)["O95206", prots$SampleType == "Macrophage"],
-	   y = assay(prots)["O95206", prots$SampleType == "Monocyte"])
+       y = assay(prots)["O95206", prots$SampleType == "Monocyte"])
 ```
 
 
