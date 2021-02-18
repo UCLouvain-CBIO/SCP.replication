@@ -13,7 +13,7 @@ output:
     code_folding: show
 bibliography: ref.bib
 date: "`r BiocStyle::doc_date()`"
-package: "`r BiocStyle::pkg_ver(SCoPE2.replication')`"
+package: "`r BiocStyle::pkg_ver('SCoPE2.replication')`"
 vignette: >
   %\VignetteIndexEntry{SCoPE2 replication}
   %\VignetteEngine{knitr::rmarkdown}
@@ -54,21 +54,29 @@ computational framework that is tailored for MS-SCP data. The SCoPE2
 dataset is an ideal dataset to showcase its robustness and its ease
 of use.
 
+
+Let's first load the replication package to make use of some helper
+functions.
+
+```{r}
+library("SCoPE2.replication")
+```
+
 ### Data framework and `scp`
 
 Our first contribution is the development of a new data framework that
 combines two existing Bioconductor classes: the `SingleCellExperiment`
-that provides an interface to many cutting edge methods for single-cell
-analysis and `QFeatures` that facilitates manipulation and processing
-of MS-based quantitative data. See the
-[`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html)
+that provides an interface to many cutting edge methods for
+single-cell analysis and `QFeatures` that facilitates manipulation and
+processing of MS-based quantitative data. See the [`scp`
+vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html)
 for more detailed information about the data structure. The `scp`
 package provides functionality for manipulating this MS-SCP data
 structure. `scp` is an extension to the `QFeatures` package. The
 emphasis is put on the standardization and the thorough documentation
 of the functions in order to (i) facilitate analysis for non-experts,
-(ii) provide an efficient environment for processing (large) MS-SCP data
-sets, (iii) be compatible for both multiplexed and label free
+(ii) provide an efficient environment for processing (large) MS-SCP
+data sets, (iii) be compatible for both multiplexed and label free
 quantification, the two main protocols for MS-SCP and (iv) facilitate
 the inclusion of external methods for promoting continuous improvement
 of the MS-SCP data analyses.
