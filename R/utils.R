@@ -295,7 +295,7 @@ countUniqueFeatures <- function(object,
 
 ##' KNN imputation
 ##'
-##' @title
+##' @title KNN imputation (for replication)
 ##'
 ##' @param obj
 ##'

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{scp_imputeKNN}
 \alias{scp_imputeKNN}
-\title{}
+\title{KNN imputation (for replication)}
 \usage{
 scp_imputeKNN(obj, i, name = "KNNimputedAssay", k = 3)
 }
