@@ -58,7 +58,7 @@ of use.
 Let's first load the replication package to make use of some helper
 functions.
 
-```{r}
+```{r, message = FALSE}
 library("SCoPE2.replication")
 ```
 
