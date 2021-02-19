@@ -1,30 +1,65 @@
-##' Previous version of ComBat (sva version 3.34.0) This is for
-##' compatibility with the replication of SCoPE2 (version2) and
-##' zhu2019EL.
-##'
 ##' @title ComBat v3.34 batch correction
 ##'
-##' @param dat
+##' Older version of ComBat (sva version 3.34.0). This is for
+##' compatibility with the replication of SCoPE2.
+##' 
+##' ComBat allows users to adjust for batch effects in datasets where
+##' the batch covariate is known, using methodology described in 
+##' Johnson et al. 2007. It uses either parametric or non-parametric 
+##' empirical Bayes frameworks for adjusting data for batch effects.
+##' Users are returned an expression matrix that has been corrected
+##' for batch effects. The input data are assumed to be cleaned and
+##' normalized before batch effect removal.
+##' 
+##' @param dat Genomic measure matrix (dimensions probe x sample) - 
+##'     for example, expression matrix
 ##'
-##' @param batch
+##' @param batch Batch covariate (only one batch allowed)
 ##'
-##' @param mod
+##' @param mod Model matrix for outcome of interest and other 
+##'     covariates besides batch
 ##'
-##' @param par.prior
+##' @param par.prior (Optional) TRUE indicates parametric adjustments
+##'     will be used, FALSE indicates non-parametric adjustments will
+##'     be used
 ##'
-##' @param prior.plots
+##' @param prior.plots (Optional) TRUE give prior plots with black as
+##'      a kernel estimate of the empirical batch effect density and 
+##'      red as the parametric
 ##'
-##' @param mean.only
+##' @param mean.only (Optional) FALSE If TRUE ComBat only corrects the
+##'     mean of the batch effect (no scale adjustment)
 ##'
-##' @param ref.batch
+##' @param ref.batch (Optional) NULL If given, will use the selected
+##'     batch as a reference for batch adjustment.
 ##'
-##' @param BPPARAM
+##' @param BPPARAM (Optional) BiocParallelParam for parallel operation
 ##'
 ##' @export
 ##'
 ##' @import sva
 ##'
-##' @return
+##' @return data A probe x sample genomic measure matrix, adjusted for batch effects.
+##' 
+##' @examples 
+##' library(bladderbatch)
+##' data(bladderdata)
+##' dat <- bladderEset[1:50,]
+##' 
+##' pheno = pData(dat)
+##' edata = exprs(dat)
+##' batch = pheno$batch
+##' mod = model.matrix(~as.factor(cancer), data=pheno)
+##' 
+##' # parametric adjustment
+##' combat_edata1 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
+##' 
+##' # non-parametric adjustment, mean-only version
+##' combat_edata2 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
+##' 
+##' # reference-batch version, with covariates
+##' combat_edata3 = ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
+##' 
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam")) {
     stopifnot(require(sva)) ## works for svq_3.37.0
@@ -237,28 +272,40 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     return(bayesdata)
 }
 
-##' Description of the function
-##'
 ##' @title Count Unique Features
+##' 
+##' This function counts the number of unique features per sample. A 
+##' grouping structure can be provided to count higher level features
+##' from assays, for example counting the number of unique proteins 
+##' from PSM data. 
 ##'
-##' @param object
+##' @param object An object of class `QFeatures`.
 ##'
-##' @param i
+##' @param i  A `numeric()` or `character()` vector indicating from 
+##'     which assays the `rowData` should be taken.
 ##'
-##' @param rowDataCol
-##'
-##' @param varName
+##' @param groupBy A `character(1)` indicating the variable name in 
+##'     the `rowData` that contains the grouping variable, for 
+##'     instance to count the unique number of peptides or proteins 
+##'     expressed in each samples (column). If `groupBy` is missing, 
+##'     the number of non zero elements per sample will be stored.
+##'     
+##' @param colDataName A `character(1)` giving the name of the new 
+##'     variable in the `colData` where the number of unique features
+##'     will be stored. The name cannot already exist in the 
+##'     `colData`.
 ##'
 ##' @export
 ##'
-##' @return
+##' @return An object of class `QFeatures`.
+##' 
 countUniqueFeatures <- function(object,
                                 i,
-                                rowDataCol = NULL,
-                                varName = "count") {
+                                groupBy = NULL,
+                                colDataName = "count") {
     ## Check the colData does not already contain the name
-    if (varName %in% colnames(colData(object)))
-        stop("'", varName, "' is already present in the colData.")
+    if (colDataName %in% colnames(colData(object)))
+        stop("'", colDataName, "' is already present in the colData.")
 
     snames <- unlist(colnames(object)[i])
     ## Avoid that a sample is contained in 2 different assays
@@ -269,8 +316,8 @@ countUniqueFeatures <- function(object,
     fcounts <- vector(length = length(snames), mode = "integer")
     names(fcounts) <- snames
 
-    if (is.null(rowDataCol)) {
-        ## If no rowData column is supplied, count the non-missing
+    if (is.null(groupBy)) {
+        ## If no  grouping is supplied, count the non-missing
         ## features per sample
         for (ii in i) {
             fcount <- apply(assay(object[[ii]]), 2, function(x) {
@@ -279,39 +326,56 @@ countUniqueFeatures <- function(object,
             fcounts[names(fcount)] <- fcount
         }
     } else {
-        ## Count the number of unique entries of rowDataCol
+        ## Count the number of unique entries of groupBy
         for (ii in i) {
             fcount <- apply(assay(object[[ii]]), 2, function(x) {
-                length(unique(rowData(object[[ii]])[!is.na(x), rowDataCol]))
+                length(unique(rowData(object[[ii]])[!is.na(x), groupBy]))
             })
             fcounts[names(fcount)] <- fcount
         }
     }
 
     ## Store the counts in the colData
-    colData(object)[names(fcounts), varName] <- fcounts
+    colData(object)[names(fcounts), colDataName] <- fcounts
     object
 }
 
-##' KNN imputation
-##'
 ##' @title KNN imputation (for replication)
 ##'
-##' @param obj
+##' The function imputes missing data using the k-nearest neighbours 
+##' (KNN) approach using Euclidean distance as a similarity measure 
+##' between the cells. This function was provided as part of the 
+##' SCoPE2 publication (Specht et al. 2021). 
+##' 
+##' 
+##' @param object A `QFeatures` object
 ##'
-##' @param i
+##' @param i  A `numeric()` or `character()` vector indicating from 
+##'     which assays the `rowData` should be taken.
 ##'
-##' @param name
+##' @param name A `character(1)` naming the new assay name. Default is
+##' `KNNimputedAssay`. 
 ##'
-##' @param k
+##' @param k An `integer(1)` giving the number of neighbours to use.
 ##'
 ##' @export
 ##'
-##' @return
-scp_imputeKNN <- function(obj, i, name = "KNNimputedAssay", k = 3){
+##' @return An object of class `QFeatures` containing an extra assay
+##'     with imputed values. 
+##' 
+##' @references Specht, Harrison, Edward Emmott, Aleksandra A. Petelski,
+##'     R. Gray Huffman, David H. Perlman, Marco Serra, Peter Kharchenko, 
+##'     Antonius Koller, and Nikolai Slavov. 2021. “Single-Cell Proteomic
+##'     and Transcriptomic Analysis of Macrophage Heterogeneity Using 
+##'     SCoPE2.” Genome Biology 22 (1): 50.
+##' 
+##' @source The implementation of the imputation was retrieved from
+##'     https://github.com/SlavovLab/SCoPE2
+##' 
+scp_imputeKNN <- function(object, i, name = "KNNimputedAssay", k = 3){
 
     oldi <- i
-    exp <- obj[[i]]
+    exp <- object[[i]]
     dat <- assay(exp)
 
     # Create a copy of the data, NA values to be filled in later
@@ -366,6 +430,6 @@ scp_imputeKNN <- function(obj, i, name = "KNNimputedAssay", k = 3){
     }
 
     assay(exp) <- dat.imp
-    obj <- addAssay(obj, exp, name = name)
-    addAssayLinkOneToOne(obj, from = oldi, to = name)
+    object <- addAssay(object, exp, name = name)
+    addAssayLinkOneToOne(object, from = oldi, to = name)
 }

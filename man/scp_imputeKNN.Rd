@@ -2,22 +2,46 @@
 % Please edit documentation in R/utils.R
 \name{scp_imputeKNN}
 \alias{scp_imputeKNN}
-\title{KNN imputation (for replication)}
+\title{KNN imputation (for replication)
+
+The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021).}
+\source{
+The implementation of the imputation was retrieved from
+https://github.com/SlavovLab/SCoPE2
+}
 \usage{
-scp_imputeKNN(obj, i, name = "KNNimputedAssay", k = 3)
+scp_imputeKNN(object, i, name = "KNNimputedAssay", k = 3)
 }
 \arguments{
-\item{obj}{}
+\item{object}{A \code{QFeatures} object}
 
-\item{i}{}
+\item{i}{A \code{numeric()} or \code{character()} vector indicating from
+which assays the \code{rowData} should be taken.}
 
-\item{name}{}
+\item{name}{A \code{character(1)} naming the new assay name. Default is
+\code{KNNimputedAssay}.}
 
-\item{k}{}
+\item{k}{An \code{integer(1)} giving the number of neighbours to use.}
 }
 \value{
-
+An object of class \code{QFeatures} containing an extra assay
+with imputed values.
 }
 \description{
-KNN imputation
+KNN imputation (for replication)
+
+The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021).
+}
+\references{
+Specht, Harrison, Edward Emmott, Aleksandra A. Petelski,
+R. Gray Huffman, David H. Perlman, Marco Serra, Peter Kharchenko,
+Antonius Koller, and Nikolai Slavov. 2021. “Single-Cell Proteomic
+and Transcriptomic Analysis of Macrophage Heterogeneity Using
+SCoPE2.” Genome Biology 22 (1): 50.
 }
