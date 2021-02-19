@@ -133,7 +133,7 @@ refer to as **assays**. Each assay contains expression data along with
 feature metadata. Below, we show the overview of the `scp`
 dataset.
 
-```{r data overview}
+```{r overview}
 scp
 ```
 
@@ -146,7 +146,7 @@ the technique. Notice that the assays were also acquired in 4
 chromatographic batches. Here is an overview of the distribution of
 the assays across the TMT and chromatographic batches.
 
-```{r, fig.width = 4, fig.height = 3}
+```{r plot_lcbatch, fig.width = 4, fig.height = 3}
 colData(scp) %>%
     data.frame %>%
     select(c(Set, lcbatch)) %>%
@@ -155,7 +155,7 @@ colData(scp) %>%
     ggplot() +
     aes(x = lcbatch,
         fill = TMT) +
-    geom_histogram(stat = "count") +
+    geom_bar(stat = "count") +
     xlab("Chromatographic batch") +
     theme_classic()
 ```
@@ -173,7 +173,7 @@ desired assay as a `SingleCellExperiment` object. On the other hand,
 using simple brackets `[row, col, assay]` subsets the desired
 elements/assays but preserves the `QFeatures` data structure.
 
-```{r}
+```{r extract_SCoPE2_assays}
 peptides_SCoPE2 <- scp[["peptides"]]
 proteins_SCoPE2 <- scp[["proteins"]]
 scp <- scp[, , -(178:179)]
@@ -212,7 +212,7 @@ assay `rowData`. The `QFeatures` package allows to quickly filter
 the rows of an assay by using these information. The available
 variables in the `rowData` are listed below for each assay.
 
-```{r}
+```{r rowDataNames}
 rowDataNames(scp)
 ```
 
@@ -487,7 +487,7 @@ information on relationships between assays. Notice that
 `aggregateFeaturesOverAssays` created as many new assays as the number
 of supplied assays.
 
-```{r}
+```{r overview2}
 scp
 ```
 
@@ -498,17 +498,19 @@ assays. We now combine all batches into a single assay. This can
 easily be done using the `joinAssays` function from the `QFeatures`
 package.
 
-We however need to account for an issue. The `joinAssays` will only
+## Consensus mapping of peptides to proteins
+
+We need to account for an issue in the data. The `joinAssays` will only
 keep the metadata variables that have the same value between matching
 rows. However, some peptide sequences map to one protein in one run
 and to another protein in another run. Hence, the protein sequence is
 not constant for all peptides and is removed during joining. It is
 important we keep the protein sequence in the `rowData` since we will
 later need it to aggregate peptides to proteins. To avoid this issue,
-we replace the problematic peptides to protein mappings through
+we replace the problematic peptides to protein mappings through a
 majority vote.
 
-```{r, message=FALSE}
+```{r set_consensus, message=FALSE}
 scp %>%
     rowDataToDF(i = names(scp)[1:173],
                 vars = c("peptide", "protein")) %>%
@@ -522,23 +524,47 @@ scp %>%
     ppMap
 for (i in peptideAssays) {
     pep <- rowData(scp[[i]])$peptide
-    ## TODO: using `@` is a bad idea!! I should find a way to optimize
-    ## rowData(scp[[i]])$protein <- ... without using `@` (maybe
-    ## contact M. Ramos)
+    ## TODO: using `@` is a bad idea!! Using 
+    ## rowData(scp[[i]])$protein <- ... is very inefficient and time
+    ## consuming (maybe contact M. Ramos)
     rowData(scp@ExperimentList@listData[[i]])$protein <-
         ppMap$protein[match(pep, ppMap$peptide)]
 }
 ```
 
-This code chunk is hard to read and is not standardized.  conceptu
+**TODO** discuss with Laurent. This code chunk is hard to read and is 
+not standardized, but SCoPE2 included shared peptides and finding. I 
+should check whether other R packages could already deal with this. It
+is an important point to mention here that this is completely missed 
+in the SCoPE2 analysis.
 
-**@todo** comment on this. The issue is that we are working with
-shared peptides... Discuss with Laurent.
+## Cleaning missing data
 
-Now that the peptides are correctly matched to proteins, we can join
-the assays.
+Another important step before we join the assays is to replace zero 
+and infinite values by `NA`s. The zeros can be biological zeros or 
+technical zeros and differentiating between the two types is not a 
+trivial task, they are therefore better considered as missing. The 
+infinite values arose during the normalization by the reference because
+the channel values are divide by a zero from the reference channel. 
+This artefact could easily be avoided if we had replace the zeros by 
+`NA`s at the beginning of the workflow, what we strongly recommend for
+future analyses. 
 
-```{r}
+The `infIsNA` and the `zeroIsNA` functions automatically detect 
+infinite and zero values, respectively, and replace them with `NA`s.
+Those two functions are provided by the `QFeatures` package.
+
+```{r set_missing}
+scp <- infIsNA(scp, i = peptideAssays)
+scp <- zeroIsNA(scp, i = peptideAssays)
+```
+
+## Join assays
+
+Now that the peptides are correctly matched to proteins and missing 
+values are correctly formatted, we can join the assays.
+
+```{r join_assays}
 scp <- joinAssays(scp,
                   i = peptideAssays,
                   name = "peptides")
@@ -547,96 +573,85 @@ scp <- joinAssays(scp,
 `joinAssays` has created a new assay called `peptides` that combines
 the previously aggregated peptide assays.
 
-```{r}
+```{r overview3}
 scp
-```
-
-# Format the missing data
-
-SCoPE2 performs a cleaning step were zero and infinite values are
-replaced by NAs. The `infIsNA` and the `zeroIsNA` functions are
-provided by the `QFeatures` package.
-
-```{r}
-scp <- infIsNA(scp, i = "peptides")
-scp <- zeroIsNA(scp, i = "peptides")
 ```
 
 # Filter single-cells based on median CV
 
-The SCoPE2 script proceeds with filtering the single-cell. The
+The SCoPE2 script proceeds with filtering the single-cells. The
 filtering is mainly based on the median coefficient of variation (CV)
 per cell. The median CV measures the consistency of quantification for
 a group of peptides that belong to a protein. We remove cells that
 exhibit high median CV over the different proteins. We compute the
 median CV per cell using the `medianCVperCell` function from the `scp`
-package. The function takes the `peptides_filter1` assay, protein and
-peptide information from the assay `rowData`, and the batch names in
-the `colData` of the `QFeatures` object. The peptide and batch
-information are required to perform normalization prior to the CV
-computation. Protein information is required since the CV are computed
-at the protein level.
+package. The function takes the protein information from the `rowData`
+of the assays that will tell how to group the features (peptides) when
+computing the CV. Note that we supply the peptide assays before 
+joining in a single assays (`i = peptideAssays`). This is because 
+SCoPE2 performs a custom normalization (`norm = "SCoPE2"`). Each row 
+in an assay is normalized by a scaling factor. This scaling factor is
+the row mean after dividing the columns by the median. The authors 
+retained CVs that are computed using at least 6 peptides (`nobs = 6`).
+See the methods section in @Specht2019-jm for more information. 
 
-```{r}
-scp <- computeMedianCV_SCoPE2(scp,
-                              i = "peptides",
-                              proteinCol = "protein",
-                              peptideCol = "peptide",
-                              batchCol = "Set")
-# scp <- medianCVperCell(scp,
-#                        i = peptideAssays,
-#                        groupBy = "protein",
-#                        nobs = 5,
-#                        na.rm = TRUE,
-#                        colDataName = "MedianCV",
-#                        norm = c("div.median", "mean"))
+```{r compute_medianCV}
+scp <- medianCVperCell(scp,
+                       i = peptideAssays,
+                       groupBy = "protein",
+                       nobs = 6,
+                       na.rm = TRUE,
+                       colDataName = "MedianCV",
+                       norm = "SCoPE2")
 ```
 
-The computed CVs are stored in the `colData` of the `peptides_filter1` assay and
-holds the median CV per cell computed using at least 5 observations (peptides).
+The computed CVs are stored in the `colData` and holds the median CV
+per cell computed using at least 6 observations (peptides).
 The main interest of computing the median CV per cell is to filter cells with
 reliable quantification. The blank samples are not expected to have reliable
 quantifications and hence can be used to estimate an empirical null distribution
 of the CV. This distribution helps defining a threshold that filters out
 single-cells that contain noisy quantification.
 
-The sample annotation is contained in the `colData` of the `QFeatures` object.
-We will therefore first transfer the sample annotation from the `QFeatures`
-object to the `SingleCellExperiment` assay using the `transferColDataToAssay`
-function. We then directly extract the assay `colData` that contains all the
-required information for plotting.
-
 ```{r, message = FALSE, warning = FALSE}
-getWithColData(scp, i = "peptides") %>%
-    colData %>%
+colData(scp) %>%
     data.frame %>%
     filter(SampleType %in% c("Macrophage",  "Monocyte", "Blank")) %>%
     ggplot(aes(x = MedianCV,
                fill = SampleType)) +
     geom_histogram() +
-    geom_vline(xintercept = 0.365)
+    geom_vline(xintercept = 0.365) 
 ```
 
-We can see that the protein quantification for single-cells are much more
-consistent within cells than the blank channels. A threshold of 0.4 best
-separates single-cells from empty channels.
+We can see that the protein quantification for single-cells are much 
+more consistent within cells than the blank channels. A threshold of 
+0.365 best separates single-cells from empty channels.
 
 We keep the cells that pass the median CV threshold. Furthermore, we
 keep macrophages and monocytes as those represent the samples of
-interest. Now the quality control and filtering is performed, we can
-remove the other channels.
-
-We have already demonstrated how to remove assays from the dataset,
-but we can apply a similar subsetting for the samples present in the
-`colData`. Recall that the second entry in the `[` subsetting method
-is for samples.
+interest. We can easily extract the sample names that pass the CV and
+sample type filter using `tidyverse` manipulations. 
 
 ```{r}
-scp <- scp[, scp$MedianCV < 0.365 &
-               scp$SampleType %in% c("Macrophage", "Monocyte"), ]
+colData(scp) %>% 
+    data.frame %>% 
+    rownames_to_column("cells") %>% 
+    filter(MedianCV < 0.365,
+           SampleType %in% c("Macrophage", "Monocyte")) %>% 
+    pull(cells) ->
+    keep
+head(keep)
 ```
 
-**@todo** this is slow and requires optimization.
+We have already demonstrated how to remove assays from the dataset,
+but we can apply a similar subsetting for the samples. Recall that the
+second entry in the `[` method is for subsetting sample names.
+
+```{r}
+scp <- scp[, keep, ]
+```
+
+**TODO** this is took 4.5 min, maybe could be optimized? 
 
 ```{r}
 scp
@@ -665,6 +680,8 @@ scp %>%
           STATS = colMedians(assay(.[["peptides"]]),
                              na.rm = TRUE),
           name = "peptides_norm1") %>%
+    ## TODO: same as?
+    # normalize(scp, i = "peptides", method = "div.median", name = "peptides_norm1")
     ## Scale rows with mean
     sweep(i = "peptides_norm1",
           MARGIN = 1,
@@ -762,6 +779,8 @@ scp %>%
           STATS = colMedians(assay(.[["proteins"]]),
                              na.rm = TRUE),
           name = "proteins_norm1") %>%
+    ## same as?
+    # TODO: normalize(scp, i = "proteins", method = "center.median", name = "proteins_norm1")
     ## Center rows with mean
     sweep(i = "proteins_norm1",
           MARGIN = 1,
@@ -1339,7 +1358,7 @@ nNaRes$nNAcols %>%
 scp <- countUniqueFeatures(scp,
                            i = "peptides_log",
                            rowDataCol = "protein",
-                           varName = "ProteinCounts")
+                           colDataName = "ProteinCounts")
 colData(scp) %>%
     data.frame() %>%
     ggplot() +
