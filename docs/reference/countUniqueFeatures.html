@@ -6,7 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Count Unique Features — countUniqueFeatures • SCoPE2.replication</title>
+<title>Count Unique Features
+
+This function counts the number of unique features per sample. A
+grouping structure can be provided to count higher level features
+from assays, for example counting the number of unique proteins
+from PSM data. — countUniqueFeatures • SCoPE2.replication</title>
 
 
 <!-- jquery -->
@@ -39,8 +44,17 @@
 
 
 
-<meta property="og:title" content="Count Unique Features — countUniqueFeatures" />
-<meta property="og:description" content="Description of the function" />
+<meta property="og:title" content="Count Unique Features
+
+This function counts the number of unique features per sample. A
+grouping structure can be provided to count higher level features
+from assays, for example counting the number of unique proteins
+from PSM data. — countUniqueFeatures" />
+<meta property="og:description" content="Count Unique Features
+This function counts the number of unique features per sample. A
+grouping structure can be provided to count higher level features
+from assays, for example counting the number of unique proteins
+from PSM data." />
 
 
 
@@ -115,43 +129,58 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Count Unique Features</h1>
+    <h1>Count Unique Features
+
+This function counts the number of unique features per sample. A
+grouping structure can be provided to count higher level features
+from assays, for example counting the number of unique proteins
+from PSM data.</h1>
     
     <div class="hidden name"><code>countUniqueFeatures.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Description of the function</p>
+    <p>Count Unique Features</p>
+<p>This function counts the number of unique features per sample. A
+grouping structure can be provided to count higher level features
+from assays, for example counting the number of unique proteins
+from PSM data.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>countUniqueFeatures</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>i</span>, rowDataCol <span class='op'>=</span> <span class='cn'>NULL</span>, varName <span class='op'>=</span> <span class='st'>"count"</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>countUniqueFeatures</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>i</span>, groupBy <span class='op'>=</span> <span class='cn'>NULL</span>, colDataName <span class='op'>=</span> <span class='st'>"count"</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>object</th>
-      <td></td>
+      <td><p>An object of class <code>QFeatures</code>.</p></td>
     </tr>
     <tr>
       <th>i</th>
-      <td></td>
+      <td><p>A <code><a href='https://rdrr.io/r/base/numeric.html'>numeric()</a></code> or <code><a href='https://rdrr.io/r/base/character.html'>character()</a></code> vector indicating from
+which assays the <code>rowData</code> should be taken.</p></td>
     </tr>
     <tr>
-      <th>rowDataCol</th>
-      <td></td>
+      <th>groupBy</th>
+      <td><p>A <code><a href='https://rdrr.io/r/base/character.html'>character(1)</a></code> indicating the variable name in
+the <code>rowData</code> that contains the grouping variable, for
+instance to count the unique number of peptides or proteins
+expressed in each samples (column). If <code>groupBy</code> is missing,
+the number of non zero elements per sample will be stored.</p></td>
     </tr>
     <tr>
-      <th>varName</th>
-      <td></td>
+      <th>colDataName</th>
+      <td><p>A <code><a href='https://rdrr.io/r/base/character.html'>character(1)</a></code> giving the name of the new
+variable in the <code>colData</code> where the number of unique features
+will be stored. The name cannot already exist in the
+<code>colData</code>.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    
-
-
+    <p>An object of class <code>QFeatures</code>.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
