@@ -16,7 +16,7 @@ Description: Replication de the SCoPE2 analysis pipeline of by Specht
 Depends:
    SingleCellExperiment,
    QFeatures,
-   scp (>= 1.1.4),
+   scp (>= 1.1.5),
    scpdata
 Imports:
    sva

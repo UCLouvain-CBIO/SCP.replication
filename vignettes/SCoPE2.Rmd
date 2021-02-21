@@ -522,21 +522,16 @@ scp %>%
     select(peptide, protein) %>%
     filter(!duplicated(peptide, protein)) ->
     ppMap
-for (i in peptideAssays) {
-    pep <- rowData(scp[[i]])$peptide
-    ## TODO: using `@` is a bad idea!! Using 
-    ## rowData(scp[[i]])$protein <- ... is very inefficient and time
-    ## consuming (maybe contact M. Ramos)
-    rowData(scp@ExperimentList@listData[[i]])$protein <-
-        ppMap$protein[match(pep, ppMap$peptide)]
-}
+consensus <- lapply(peptideAssays, function(i) {
+    ppMap$protein[match(rowData(scp[[i]])$peptide, ppMap$peptide)]
+})
+scp <- replaceRowDataCols(scp, peptideAssays, "protein", consensus)
 ```
 
 **TODO** discuss with Laurent. This code chunk is hard to read and is 
-not standardized, but SCoPE2 included shared peptides and finding. I 
-should check whether other R packages could already deal with this. It
-is an important point to mention here that this is completely missed 
-in the SCoPE2 analysis.
+not standardized. I should check whether other R packages could 
+already deal with this. It is an important point to mention here that 
+this is completely missed in the SCoPE2 analysis.
 
 ## Cleaning missing data
 
@@ -669,28 +664,28 @@ peptides based on missing data and log-transformation.
 The columns (samples) of the peptide data are first normalized by dividing the
 relative intensities by the median relative intensities. Then, the rows
 (peptide) are normalized by dividing the relative intensities by the
-mean relative intensities. The normalized data is stored in a separate assay.
+mean relative intensities. The first normalization is available from 
+the `normalize` function and accessible under the `div.mean` method.
+The second is not available from `normalize`, but is easily performed
+using the `sweep` function from the `QFeatures` package that is 
+inspired from `?base::sweep` function. 
 
 ```{r}
-scp %>%
-    ## Scale columns with median
-    sweep(i = "peptides",
-          MARGIN = 2,
-          FUN = "/",
-          STATS = colMedians(assay(.[["peptides"]]),
-                             na.rm = TRUE),
-          name = "peptides_norm1") %>%
-    ## TODO: same as?
-    # normalize(scp, i = "peptides", method = "div.median", name = "peptides_norm1")
-    ## Scale rows with mean
-    sweep(i = "peptides_norm1",
-          MARGIN = 1,
-          FUN = "/",
-          STATS = rowMeans(assay(.[["peptides_norm1"]]),
-                           na.rm = TRUE),
-          name = "peptides_norm2") ->
-    scp
+## Scale column with median
+scp <- normalize(scp, 
+                 i = "peptides", 
+                 method = "div.median", 
+                 name = "peptides_norm1")
+## Scale rows with mean
+scp <- sweep(i = "peptides_norm1", MARGIN = 1,
+             FUN = "/",
+             STATS = rowMeans(assay(scp[["peptides_norm1"]]),
+                              na.rm = TRUE),
+             name = "peptides_norm2")
 ```
+
+Each normalization step is stored in a separate assay. An important 
+aspect to note here is that 
 
 ## Remove peptides with high missing rate
 
@@ -723,22 +718,19 @@ an additional normalization step. This step is however not considered
 in the remainder of the workflow.
 
 ```{r}
-scp %>%
-    ## Center columns with median
-    sweep(i = "peptides_log",
-          MARGIN = 2,
-          FUN = "-",
-          STATS = colMedians(assay(.[["peptides_log"]]),
-                             na.rm = TRUE),
-          name = "peptides_log_norm1") %>%
-    ## Center rows with mean
-    sweep(i = "peptides_log_norm1",
-          MARGIN = 1,
-          FUN = "-",
-          STATS = rowMeans(assay(.[["peptides_log_norm1"]]),
-                           na.rm = TRUE),
-          name = "peptides_scp") ->
-    scp
+## Center columns with median
+scp <- normalize(scp, 
+                 i = "peptides_log", 
+                 method = "center.median", 
+                 name = "peptides_log_norm1")
+## Center rows with mean
+scp <- sweep(scp, 
+             i = "peptides_log_norm1",
+             MARGIN = 1,
+             FUN = "-",
+             STATS = rowMeans(assay(scp[["peptides_log_norm1"]]),
+                              na.rm = TRUE),
+             name = "peptides_scp")
 ```
 
 We names the last assay `peptides_scp`. We will contrast this data
@@ -766,29 +758,25 @@ the KNN algorithm) and batch correction (using the `ComBat` algorithm).
 
 ## Normalization
 
-Normalization is performed similarly to peptide normalization. We use the same
-functions, but since the data were log-transformed at the peptide level, we
-subtract by the statistic (median or mean) instead of dividing.
+Normalization is performed similarly to peptide normalization. We use
+the same functions, but since the data were log-transformed at the 
+peptide level, we subtract/center by the statistic (median or mean) 
+instead of dividing.
 
 ```{r}
-scp %>%
-    ## Center columns with median
-    sweep(i = "proteins",
-          MARGIN = 2,
-          FUN = "-",
-          STATS = colMedians(assay(.[["proteins"]]),
-                             na.rm = TRUE),
-          name = "proteins_norm1") %>%
-    ## same as?
-    # TODO: normalize(scp, i = "proteins", method = "center.median", name = "proteins_norm1")
-    ## Center rows with mean
-    sweep(i = "proteins_norm1",
-          MARGIN = 1,
-          FUN = "-",
-          STATS = rowMeans(assay(.[["proteins_norm1"]]),
-                           na.rm = TRUE),
-          name = "proteins_norm2") ->
-    scp
+## Center columns with median
+scp <- normalize(scp, 
+                 i = "proteins", 
+                 method = "center.median", 
+                 name = "proteins_norm1")
+## Center rows with mean
+scp <- sweep(scp, 
+             i = "proteins_norm1",
+             MARGIN = 1,
+             FUN = "-",
+             STATS = rowMeans(assay(scp[["proteins_norm1"]]),
+                              na.rm = TRUE),
+             name = "proteins_norm2")
 ```
 
 
@@ -889,22 +877,19 @@ Before exporting the data as `Proteins-processed.csv`, the authors
 performed an additional normalization step.
 
 ```{r}
-scp %>%
-    ## Center columns with median
-    sweep(i = "proteins_batchC",
-          MARGIN = 2,
-          FUN = "-",
-          STATS = colMedians(assay(.[["proteins_batchC"]]),
-                             na.rm = TRUE),
-          name = "proteins_batchC_norm1") %>%
-    ## Center rows with mean
-    sweep(i = "proteins_batchC_norm1",
-          MARGIN = 1,
-          FUN = "-",
-          STATS = rowMeans(assay(.[["proteins_batchC_norm1"]]),
-                           na.rm = TRUE),
-          name = "proteins_scp") ->
-    scp
+## Center columns with median
+scp <- normalize(scp, 
+                 i = "proteins_batchC", 
+                 method = "center.median", 
+                 name = "proteins_batchC_norm1")
+## Center rows with mean
+scp <- sweep(scp, 
+             i = "proteins_batchC_norm1",
+             MARGIN = 1,
+             FUN = "-",
+             STATS = rowMeans(assay(scp[["proteins_batchC_norm1"]]),
+                              na.rm = TRUE),
+             name = "proteins_scp")
 ```
 
 We named the last assay `proteins_scp`. We will contrast this data
@@ -914,6 +899,13 @@ fidelity of the replication.
 ```{r echo = FALSE, eval = FALSE, results = "hide"}
 # save(scp, file = "../extdata/vignette_final.RData")
 # load("../extdata/vignette_final.RData")
+# 
+# TODO: the more assay are added to the data set the longer it takes
+# to add new assays. This is because every time we change the 
+# experiments, colData or sampleMap the `MultiAssayExperiment:::.harmonize`
+# function is called to check the integrity and consistency of the 
+# data. This seems a little bit overkill to me. The workflow looks 
+# slow because of that...
 ```
 
 # Benchmarking the replication

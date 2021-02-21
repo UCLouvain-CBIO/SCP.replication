@@ -2,5 +2,6 @@
 
 export(ComBatv3.34)
 export(countUniqueFeatures)
+export(replaceRowDataCols)
 export(scp_imputeKNN)
 import(sva)

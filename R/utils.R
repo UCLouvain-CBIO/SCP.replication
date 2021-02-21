@@ -433,3 +433,56 @@ scp_imputeKNN <- function(object, i, name = "KNNimputedAssay", k = 3){
     object <- addAssay(object, exp, name = name)
     addAssayLinkOneToOne(object, from = oldi, to = name)
 }
+
+
+##' Replace columns in the rowData
+##' 
+##' The function replaces columns in the rowData of assays from a 
+##' `QFeatures` object. This function can also be used to remove column
+##' in the rowData (see examples).
+##'
+##' @param object An object of class `QFeatures`
+##' 
+##' @param i  A `numeric()` or `character()` vector indicating from 
+##'     which assays the `rowData` should be taken.
+##'     
+##' @param col A `numeric()` or `character()` vector indicating the 
+##'     column(s) to replace.
+##'     
+##' @param value A `list()` of same length as `i`. Each element should
+##'     contain the replacement values to insert in the rowData. If
+##'     `length(col) > 1`, each element should be a matrix with the 
+##'     same rows as its corresponding assay and the same number of 
+##'     columns as the length of col.
+##'
+##' @return An object of class `QFeatures`
+##' 
+##' @export
+##'
+##' @examples
+##' data("feat2")
+##' rowData(feat2)[[1]]
+##' ## Add a new column to all assay
+##' values <- lapply(rowData(feat2), function(x) rep("bar", nrow(x)))
+##' feat2 <- replaceRowDataCols(feat2, 1:3, "foo", values)
+##' rowData(feat2)[[1]]
+##' ## Update column
+##' values <- lapply(rowData(feat2), function(x) rep("barNew", nrow(x)))
+##' feat2 <- replaceRowDataCols(feat2, 1:3, "foo", values)
+##' rowData(feat2)[[1]]
+##' ## Remove column
+##' values <- lapply(1:3, function(x) NULL)
+##' feat2 <- replaceRowDataCols(feat2, 1:3, "foo", values)
+##' rowData(feat2)[[1]]
+replaceRowDataCols <- function(object, i, col, value) {
+    stopifnot(inherits(object, "QFeatures"))
+    stopifnot(is.list(value))
+    stopifnot(length(value) == length(i))
+    el <- experiments(object)
+    for (ii in i)
+        rowData(el[[ii]])[, col] <- value[[ii]]
+    BiocGenerics:::replaceSlots(object,
+                                ExperimentList = el,
+                                check = FALSE)
+}
+
