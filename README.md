@@ -1,4 +1,4 @@
-# SCoPE2 replication vignette
+# Single cell replication package
 
 Replication de the SCoPE2 analysis pipeline of
 
