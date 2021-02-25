@@ -1,5 +1,5 @@
-Package: SCoPE2.replication
-Title: SCopE2 Replication
+Package: SCP.replication
+Title: SCP Replication Vignettes
 Version: 0.1.0
 Authors@R:
     c(person("Christophe", "Vanderaa",
@@ -10,9 +10,8 @@ Authors@R:
               email = "laurent.gatto@uclouvain.be",
               comment = c(ORCID = "0000-0002-1520-2268"),
               role = "aut"))
-Description: Replication de the SCoPE2 analysis pipeline of by Specht
-    et al. Single-cell proteomic and transcriptomic analysis of
-    macrophage heterogeneity using SCoPE2. Genome Biol. 2021;22:50
+Description: Repository of vignettes about the replication of 
+    single-cell analyses.
 Depends:
    SingleCellExperiment,
    QFeatures,
@@ -24,7 +23,8 @@ Suggests:
    tidyverse,
    patchwork,
    BiocStyle,
-   knitr
+   knitr,
+   benchmarkme
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8

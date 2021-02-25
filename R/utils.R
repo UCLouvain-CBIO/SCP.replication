@@ -449,8 +449,9 @@ scp_imputeKNN <- function(object, i, name = "KNNimputedAssay", k = 3){
 ##' @param col A `numeric()` or `character()` vector indicating the 
 ##'     column(s) to replace.
 ##'     
-##' @param value A `list()` of same length as `i`. Each element should
-##'     contain the replacement values to insert in the rowData. If
+##' @param value A `list()` of same length as `i`. If `i` is provided 
+##'     as a character vector, the elements of `value` must be named
+##'     after `i`. Each element should contain the replacement values to insert in the rowData. If
 ##'     `length(col) > 1`, each element should be a matrix with the 
 ##'     same rows as its corresponding assay and the same number of 
 ##'     columns as the length of col.
@@ -478,6 +479,7 @@ replaceRowDataCols <- function(object, i, col, value) {
     stopifnot(inherits(object, "QFeatures"))
     stopifnot(is.list(value))
     stopifnot(length(value) == length(i))
+    if(is.character(i)) stopifnot(all(i %in% names(value)))
     el <- experiments(object)
     for (ii in i)
         rowData(el[[ii]])[, col] <- value[[ii]]
