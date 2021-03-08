@@ -13,7 +13,7 @@ output:
     code_folding: show
 bibliography: ref.bib
 date: "`r BiocStyle::doc_date()`"
-package: "`r BiocStyle::pkg_ver(SCP.replication')`"
+package: "`r BiocStyle::pkg_ver('SCP.replication')`"
 vignette: >
   %\VignetteIndexEntry{SCoPE2 replication}
   %\VignetteEngine{knitr::rmarkdown}
