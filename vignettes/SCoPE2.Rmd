@@ -1194,10 +1194,10 @@ timing <- Sys.time() - timeStart
 cat(timing[[1]], attr(timing, "units"))
 ```
 
-The final `specht2019v1` dataset size is:
+The final `scp` dataset size is:
 
 ```{r, echo=FALSE}
-format(object.size(specht2019v2), units = "GB")
+format(object.size(scp), units = "GB")
 ```
 
 
