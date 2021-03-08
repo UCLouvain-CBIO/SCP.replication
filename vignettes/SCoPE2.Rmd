@@ -1163,14 +1163,6 @@ getWithColData(scp, "proteins_scp") %>%
 This plot is different from the previous plot because no weighting is
 considered during the second PCA.
 
-```{r}
-## To remove when remainder of vignette is finished
-sessionInfo()
-knitr::opts_chunk$set(eval = FALSE)
-```
-
-
-
 # Conclusion
 
 This vignette demonstrates the standardization of the SCoPE2 data
