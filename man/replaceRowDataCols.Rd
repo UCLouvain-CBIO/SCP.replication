@@ -15,8 +15,9 @@ which assays the \code{rowData} should be taken.}
 \item{col}{A \code{numeric()} or \code{character()} vector indicating the
 column(s) to replace.}
 
-\item{value}{A \code{list()} of same length as \code{i}. Each element should
-contain the replacement values to insert in the rowData. If
+\item{value}{A \code{list()} of same length as \code{i}. If \code{i} is provided
+as a character vector, the elements of \code{value} must be named
+after \code{i}. Each element should contain the replacement values to insert in the rowData. If
 \code{length(col) > 1}, each element should be a matrix with the
 same rows as its corresponding assay and the same number of
 columns as the length of col.}
