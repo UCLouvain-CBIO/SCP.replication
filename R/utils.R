@@ -488,3 +488,55 @@ replaceRowDataCols <- function(object, i, col, value) {
                                 check = FALSE)
 }
 
+
+##' PCA plot suggested by SCoPE2
+##'
+##' The function performs a weighted principal component analysis (PCA)
+##' as suggested by Specht et al. The PCA is performed on the 
+##' correlation matrix where the rows (features) are weighted according
+##' to the sum of the correlation with the other rows.
+##' 
+##' @param object A `SingleCellExperiment` object
+##'
+##' @param center A `logical(1)` indicating whether the columns of the
+##'     weighted input matrix should be mean centered.
+##'     
+##' @param scale A `logical(1)` indicating whether the columns of the
+##'     weighted input matrix should be scaled to unit variance.
+##'     
+##' @return An object of class `eigen` containing the computed 
+##'     eigenvector and eigenvalues.
+##' 
+##' @export 
+##'
+##' @references 
+##' 
+##' Specht, Harrison, Edward Emmott, Aleksandra A. Petelski, R. Gray 
+##' Huffman, David H. Perlman, Marco Serra, Peter Kharchenko, Antonius
+##' Koller, and Nikolai Slavov. 2021. "Single-Cell Proteomic and
+##' Transcriptomic Analysis of Macrophage Heterogeneity Using SCoPE2.”
+##' Genome Biology 22 (1): 50.
+##' [link to article](http://dx.doi.org/10.1186/s13059-021-02267-5),
+##' [link to preprint](https://www.biorxiv.org/content/10.1101/665307v5)
+##' 
+##' @examples
+##' data("feat2")
+##' sce <- as(feat2[[3]], "SingleCellExperiment")
+##' pcaSCoPE2(sce)
+##' 
+pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
+    ## Extract the protein expression matrix
+    X <- assay(object)
+    ## Compute the weights
+    w <- rowSums(cor(t(X))^2)
+    ## Compute the PCs (code taken from the SCoPE2 script)
+    Xw <- diag(w) %*%  X
+    ## Optionally center and/or scale
+    if (center)
+        Xw <- sweep(Xw, 2, colMeans(Xw), "-")
+    if (scale)
+        Xw <- sweep(Xw, 2, colSds(Xw), "/")
+    Xcor <- cor(Xw)
+    eigen(Xcor)
+}
+
