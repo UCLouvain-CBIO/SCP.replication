@@ -367,15 +367,15 @@ table(scp$SampleType)
 In this dataset, `SampleType` gives the type of sample that is present
 in each TMT channel. The SCoPE2 protocol includes 5 types of samples:
 * The carrier channels (`Carrier`) contain 200 cell equivalents and
-  are meant to boost the peptide identification rate.
+are meant to boost the peptide identification rate.
 * The normalization channels (`Reference`) contain 5 cell equivalents
-  and are used to partially correct for between-run variation.
+and are used to partially correct for between-run variation.
 * The unused channels (`Unused`) are channels that are left empty due
-  to isotopic cross-contamination by the carrier channel.
+to isotopic cross-contamination by the carrier channel.
 * The blank channels (`Blank`) contain samples that do not contain any
-  cell but are processed as single-cell samples.
+cell but are processed as single-cell samples.
 * The single-cell sample channels contain the single-cell samples of
-  interest (`Macrophage` or `Monocyte`).
+interest (`Macrophage` or `Monocyte`).
 
 The `computeSCR` function expects the user to provide a pattern
 (following regular expression syntax) that uniquely identifies a
@@ -570,7 +570,7 @@ scp <- joinAssays(scp,
 the previously aggregated peptide assays.
 
 ```{r overview3}
-    scp
+scp
 ```
 
 # Filter single-cells based on median CV
@@ -873,7 +873,7 @@ scp %>%
     scp
 ```
 
-    ## The SCoPE2 protein data
+## The SCoPE2 protein data
 
 Before exporting the data as `Proteins-processed.csv`, the authors
 performed an additional normalization step.
@@ -901,13 +901,6 @@ fidelity of the replication.
 ```{r echo = FALSE, eval = FALSE, results = "hide"}
 # save.image(file = "../extdata/vignette_final.RData")
 # load("../extdata/vignette_final.RData")
-# 
-# TODO: the more assay are added to the data set the longer it takes
-# to add new assays. This is because every time we change the 
-# experiments, colData or sampleMap the `MultiAssayExperiment:::.harmonize`
-# function is called to check the integrity and consistency of the 
-# data. This seems a little bit overkill to me. The workflow looks 
-# slow because of that...
 ```
 
 # Benchmarking the replication
@@ -944,8 +937,8 @@ data.frame(SCoPE2 = cells %in% cells_scope2,
     scale_color_manual(values = c("orange2", "green4")) +
     theme_minimal() +
     theme(legend.position = "none",
-              axis.title.y = element_text(vjust = 0),
-              axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+          axis.title.y = element_text(vjust = 0),
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) +
     ggtitle("Filtered cells") ->
     cell_sel
 cell_sel
@@ -1102,50 +1095,55 @@ cell_sel +
 
 ## PCA
 
-To assess the separability between macrophages and monocytes, Specht and
-colleagues perform weighted principal component analysis (PCA) on the protein
-data. The weights are proportional to the amount of correlation between a
-protein and the other proteins. Computing the weighted PCA requires some manual
-implementation (taken from the SCoPE2 script). The authors use the expression
-matrix as input. We can easily get this matrix from the desired assay.
+To assess the separability between macrophages and monocytes, Specht 
+and colleagues perform weighted principal component analysis (PCA) on
+the protein data. The weights are proportional to the amount of 
+correlation between a protein and the other proteins. Computing the 
+weighted PCA requires some manual implementation (taken from the 
+SCoPE2 script). The authors use the expression matrix as input. We can
+easily get this matrix from the desired assay. We here re-compute the 
+PCA plot with the data provided by the authors. We wrapped the code to
+compute the weighted PCA plot in a dedicated function called 
+`pcaSCoEP2` that is accessible from within this replication package.
+The PCA is then plotted using `ggplot2`. 
 
 ```{r}
-## Extract the protein expression matrix
-X <- assay(scp[["proteins_scp"]])
-## Compute the weights
-w <- rowSums(cor(t(X))^2)
-## Compute the PCs (code taken from the SCoPE2 script)
-Xw <- diag(w) %*%  X
-Xcor <- cor(Xw)
-pcaRes <- eigen(Xcor)
+pcaRes <- pcaSCoPE2(proteins_SCoPE2)
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
-## Start plotting
 data.frame(PC = pcaRes$vectors[, 1:2],
-           colData(scp)[colnames(Xcor), ]) %>%
-    ggplot(aes(x = PC.1, y = PC.2, col = SampleType)) +
+           colData(proteins_SCoPE2)) %>%
+    ggplot(aes(x = PC.1, y = PC.2)) +
     geom_point(alpha = 0.5) +
-    ## Annotate plot
     xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
     ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
-    ggtitle("PCA plot of the processed protein data") +
-    ## Adapt the visual style to match the preprint figure
-    scale_color_manual(name = "", values = c("#048ABF","#FF5733"),
-                       labels = c("Macrophages", "Monocytes")) +
-    theme_minimal() +
-    theme(legend.position = "top")
+    aes(col = SampleType) +
+    ggtitle("SCoPE2")
 ```
 
-This plot allow us to draw the same conclusion as in the original preprint: (i)
-macropages and monocytes are well separated and (ii) macrophages are more
-spread-out than monocytes. However, the plot shows notable difference with the
-original figure: (i) more variance is explained by the PCA on the protein data
-derived from this vignette and (ii) macrophages and monocytes are best separated
-on the second PC rather than the first.
+Below is the resulting PCA when applied on the data processed using 
+the `scp` package.
 
-As a side note, the `scater` packages provides a suite of functions that perform
-and visualize dimension reduction for `SingleCellExperiment` objects. Since our
-assays are all `SingleCellExperiment` objects, we can perform regular PCA on the
-protein data in just a few commands.
+```{r}
+pcaRes <- pcaSCoPE2(scp[["proteins_scp"]])
+pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
+data.frame(PC = pcaRes$vectors[, 1:2],
+           colData(scp)) %>%
+    ggplot(aes(x = PC.1, y = PC.2)) +
+    geom_point(alpha = 0.5) +
+    xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
+    ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
+    aes(col = SampleType) +
+    ggtitle("SCoPE2")
+```
+
+These two plots are highly similar and further demonstrate our ability
+to reproduce the SCoPE2 analysis using `scp`. 
+
+As a side note, the `scater` Bioconductor packages provides a suite of
+functions that perform and visualize dimension reduction for 
+`SingleCellExperiment` objects. Since our assays are all 
+`SingleCellExperiment` objects, we can perform and store standard
+PCA on the protein data in just a few commands.
 
 ```{r}
 library(scater)
@@ -1163,18 +1161,15 @@ getWithColData(scp, "proteins_scp") %>%
 This plot is different from the previous plot because no weighting is
 considered during the second PCA.
 
-```{r}
-## To remove when remainder of vignette is finished
-sessionInfo()
-knitr::opts_chunk$set(eval = FALSE)
-```
-
-
-
 # Conclusion
 
-This vignette demonstrates the standardization of the SCoPE2 data
-processing by the `scp` and `QFeatures` package. We demonstrate the
+In this vignette, we have demonstrated that the `scp` package is able
+to accurately reproduce the analysis published in SCoPE2. We not only 
+support the reliability of the published work, but we also offer a
+formalization and standardization of the pipeline thanks to 
+easy-to-read and highly documented code. This workflow can serve as a
+starting ground to improve upon the current methods and to design new
+modelling tools dedicated to single-cell proteomics. 
 
 # Requirements
 
@@ -1202,12 +1197,11 @@ timing <- Sys.time() - timeStart
 cat(timing[[1]], attr(timing, "units"))
 ```
 
-The final `specht2019v1` dataset size is:
+The final `scp` dataset size is:
 
-```{r, echo=FALSE}
-format(object.size(specht2019v2), units = "GB")
+```{r, echo = FALSE}
+format(object.size(scp), units = "GB")
 ```
-
 
 ### Session info
 
