@@ -372,7 +372,7 @@ countUniqueFeatures <- function(object,
 ##' @source The implementation of the imputation was retrieved from
 ##'     https://github.com/SlavovLab/SCoPE2
 ##' 
-scp_imputeKNN <- function(object, i, name = "KNNimputedAssay", k = 3){
+imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
 
     oldi <- i
     exp <- object[[i]]

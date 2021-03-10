@@ -166,37 +166,49 @@
     note = {R package version 1.10.1},
   }
 
-@UNPUBLISHED{Specht2019-jm,
-  title    = "High-throughput single-cell proteomics quantifies the emergence
-              of macrophage heterogeneity",
-  author   = "Specht, Harrison and Emmott, Edward and Koller, Toni and Slavov,
-              Nikolai",
-  abstract = "The fate and physiology of individual cells are controlled by
-              networks of proteins. Yet, our ability to quantitatively analyze
-              protein networks in single cells has remained limited. To
-              overcome this barrier, we developed SCoPE2. It integrates
-              concepts from Single-Cell ProtEomics by Mass Spectrometry
-              (SCoPE-MS) with automated and miniaturized sample preparation,
-              substantially lowering cost and hands-on time. SCoPE2 uses
-              data-driven analytics to optimize instrument parameters for
-              sampling more ion copies per protein, thus supporting
-              quantification with improved count statistics. These advances
-              enabled us to analyze the emergence of cellular heterogeneity as
-              homogeneous monocytes differentiated into macrophage-like cells
-              in the absence of polarizing cytokines. We used SCoPE2 to
-              quantify over 2,000 proteins in 356 single monocytes and
-              macrophages in about 85 hours of instrument time, and the
-              quantified proteins allowed us to discern single cells by cell
-              type. Furthermore, the data uncovered a continuous gradient of
-              proteome states for the macrophage-like cells, suggesting that
-              macrophage heterogeneity may emerge even in the absence of
-              polarizing cytokines. Our methodology lays the foundation for
-              quantitative analysis of protein networks at single-cell
-              resolution. ![Figure][1] [1]: pending:yes",
-  journal  = "bioRxiv",
-  pages    = "665307",
-  month    =  jun,
-  year     =  2019,
+@ARTICLE{Specht2021-jm,
+  title    = "Single-cell proteomic and transcriptomic analysis of macrophage
+              heterogeneity using {SCoPE2}",
+  author   = "Specht, Harrison and Emmott, Edward and Petelski, Aleksandra A
+              and Huffman, R Gray and Perlman, David H and Serra, Marco and
+              Kharchenko, Peter and Koller, Antonius and Slavov, Nikolai",
+  abstract = "BACKGROUND: Macrophages are innate immune cells with diverse
+              functional and molecular phenotypes. This diversity is largely
+              unexplored at the level of single-cell proteomes because of the
+              limitations of quantitative single-cell protein analysis.
+              RESULTS: To overcome this limitation, we develop SCoPE2, which
+              substantially increases quantitative accuracy and throughput
+              while lowering cost and hands-on time by introducing automated
+              and miniaturized sample preparation. These advances enable us to
+              analyze the emergence of cellular heterogeneity as homogeneous
+              monocytes differentiate into macrophage-like cells in the absence
+              of polarizing cytokines. SCoPE2 quantifies over 3042 proteins in
+              1490 single monocytes and macrophages in 10 days of instrument
+              time, and the quantified proteins allow us to discern single
+              cells by cell type. Furthermore, the data uncover a continuous
+              gradient of proteome states for the macrophages, suggesting that
+              macrophage heterogeneity may emerge in the absence of polarizing
+              cytokines. Parallel measurements of transcripts by 10$\times$
+              Genomics suggest that our measurements sample 20-fold more
+              protein copies than RNA copies per gene, and thus, SCoPE2
+              supports quantification with improved count statistics. This
+              allowed exploring regulatory interactions, such as interactions
+              between the tumor suppressor p53, its transcript, and the
+              transcripts of genes regulated by p53. CONCLUSIONS: Even in a
+              homogeneous environment, macrophage proteomes are heterogeneous.
+              This heterogeneity correlates to the inflammatory axis of
+              classically and alternatively activated macrophages. Our
+              methodology lays the foundation for automated and quantitative
+              single-cell analysis of proteins by mass spectrometry and
+              demonstrates the potential for inferring transcriptional and
+              post-transcriptional regulation from variability across single
+              cells.",
+  journal  = "Genome Biol.",
+  volume   =  22,
+  number   =  1,
+  pages    = "50",
+  month    =  jan,
+  year     =  2021,
   language = "en"
 }
 
@@ -236,5 +248,44 @@
   pages    = "668863",
   month    =  jun,
   year     =  2019,
+  language = "en"
+}
+
+
+
+@ARTICLE{Tyanova2016-yj,
+  title    = "The {MaxQuant} computational platform for mass spectrometry-based
+              shotgun proteomics",
+  author   = "Tyanova, Stefka and Temu, Tikira and Cox, Juergen",
+  abstract = "MaxQuant is one of the most frequently used platforms for
+              mass-spectrometry (MS)-based proteomics data analysis. Since its
+              first release in 2008, it has grown substantially in
+              functionality and can be used in conjunction with more MS
+              platforms. Here we present an updated protocol covering the most
+              important basic computational workflows, including those designed
+              for quantitative label-free proteomics, MS1-level labeling and
+              isobaric labeling techniques. This protocol presents a complete
+              description of the parameters used in MaxQuant, as well as of the
+              configuration options of its integrated search engine, Andromeda.
+              This protocol update describes an adaptation of an existing
+              protocol that substantially modifies the technique. Important
+              concepts of shotgun proteomics and their implementation in
+              MaxQuant are briefly reviewed, including different quantification
+              strategies and the control of false-discovery rates (FDRs), as
+              well as the analysis of post-translational modifications (PTMs).
+              The MaxQuant output tables, which contain information about
+              quantification of proteins and PTMs, are explained in detail.
+              Furthermore, we provide a short version of the workflow that is
+              applicable to data sets with simple and standard experimental
+              designs. The MaxQuant algorithms are efficiently parallelized on
+              multiple processors and scale well from desktop computers to
+              servers with many cores. The software is written in C\# and is
+              freely available at http://www.maxquant.org.",
+  journal  = "Nat. Protoc.",
+  volume   =  11,
+  number   =  12,
+  pages    = "2301--2319",
+  month    =  dec,
+  year     =  2016,
   language = "en"
 }

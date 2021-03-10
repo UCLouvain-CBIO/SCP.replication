@@ -1,5 +1,5 @@
 ---
-title: "Replicate Specht et al. 2019 mass spectrometry-based single-cell proteomics analysis"
+title: "Reproduction of the SCoPE2 analysis (Specht et al. 2021)"
 author:
   - Christophe Vanderaa^[christophe.vanderaa@uclouvain.be], Computational Biology, UCLouvain
   - Laurent Gatto, Computational Biology, UCLouvain
@@ -35,9 +35,9 @@ timeStart <- Sys.time()
 
 # Introduction
 
-SCoPE2 (@Specht2019-jm) is the first mass spectrometry (MS)-based
+SCoPE2 (@Specht2021-jm) is the first mass spectrometry (MS)-based
 single cell proteomics (SCP) protocol that has been used to profile
-thousands of proteins in thousands of cells. This is a technical
+thousands of proteins in thousands of single-cells. This is a technical
 milestone for SCP and it opens the door for fine-grain understanding
 of biological processes within and between cells at the protein level.
 The emergence of SCP data leads to the need of new computational
@@ -51,35 +51,45 @@ suited for easy SCP data manipulation. This makes their workflow
 difficult to re-use for other analyses. Our goal is to bridge the gap
 between data acquisition and data interpretation by providing a new
 computational framework that is tailored for MS-SCP data. The SCoPE2
-dataset is an ideal dataset to showcase its robustness and its ease
-of use.
-
+dataset is an ideal dataset to showcase the application of our 
+standardized software solution.
 
 Let's first load the replication package to make use of some helper
-functions.
+functions. Those functions are only meant for this reproduction 
+vignette and are not designed for general use. 
 
 ```{r, message = FALSE}
 library("SCP.replication")
 ```
 
-### Data framework and `scp`
+### `scp` and the SCoPE2 workflow
 
-Our first contribution is the development of a new data framework that
-combines two existing Bioconductor classes: the `SingleCellExperiment`
-that provides an interface to many cutting edge methods for
-single-cell analysis and `QFeatures` that facilitates manipulation and
-processing of MS-based quantitative data. See the [`scp`
-vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html)
-for more detailed information about the data structure. The `scp`
-package provides functionality for manipulating this MS-SCP data
-structure. `scp` is an extension to the `QFeatures` package. The
-emphasis is put on the standardization and the thorough documentation
-of the functions in order to (i) facilitate analysis for non-experts,
-(ii) provide an efficient environment for processing (large) MS-SCP
-data sets, (iii) be compatible for both multiplexed and label free
-quantification, the two main protocols for MS-SCP and (iv) facilitate
-the inclusion of external methods for promoting continuous improvement
-of the MS-SCP data analyses.
+The SCoPE2 code provided along with the article can be retrieved from
+[this GitHub repository](https://github.com/SlavovLab/SCoPE2/blob/master/code/SCoPE2_analysis.R).
+Note that we here used the part of the script that performs the
+stringent feature selection (see the original paper for more details).
+The objective of this vignette is to replicate the SCoPE2 script while
+providing standardized, easy-to-read, and well documented code. 
+Therefore, our first contribution was to formalize the SCoPE2 script 
+into a conceptual flow chart.
+
+```{r SCoPE2_workflow, results='markup', fig.cap="Overview of the SCoPE2 workflow.", echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figs/workflow.png", error = FALSE)
+```
+
+Blue boxes highlight steps that are already routinely performed in 
+bulk proteomics. The orange boxes depict the steps that are specific to 
+single-cell applications and require new implementations. We 
+develop a new data framework dedicated to SCP data analysis that 
+combines two existing Bioconductor classes. The `SingleCellExperiment`
+class provides an interface to many cutting edge methods for single-cell analysis and the `QFeatures` class facilitates manipulation and 
+processing of MS-based quantitative data (blue boxes in the 
+flowchart). The 
+[`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html) 
+provides detailed information about the data structure. The `scp` 
+package extends the functionality of `QFeatures` for single-cell 
+application. `scp` offers a standardized implementation of the 
+single-cell steps in the flowchart above (orange boxes).
 
 The required packages for running this workflow are listed below.
 
@@ -103,26 +113,39 @@ formatted to a `QFeatures` object so that it is compatible with our
 software. The underlying data storage is based on the `ExperimentHub`
 package that provides a cloud-based storage infrastructure.
 
-The SCoPE2 dataset (@Specht2019-jm) is provided at different levels of
+The SCoPE2 dataset (@Specht2021-jm) is provided at different levels of
 processing:
 
 * The **raw data** files that were generated by the mass-spectrometer
-software.
+  software.
 * A **PSM data** table obtained from the MaxQuant software that
-performs spectrum identification and quantification. The provided
-table was further processed using DART-ID (@Chen2019-uc) to improve
-the identification rate.
-* A **peptide data** table obtained from the SCoPE2 analysis script.
+  performs spectrum identification and quantification. PSM stands for 
+  *peptide to spectrum match* and refers to a MS spectrum that could 
+  successfully be assigned to a peptide sequence. The provided PSM 
+  table was further processed using DART-ID (@Chen2019-uc) to improve
+  the identification rate.
+* A **peptide data** table obtained from the SCoPE2 analysis script. 
+  This is the data after the running the last step of the pipeline at
+  peptide level. 
 * A **protein data** table obtained as the final table from the SCoPE2
-analysis script.
+  analysis script. This is the data after the running the last step of
+  the pipeline at protein level. 
 
 The workflow starts with the PSM table and will generate the peptide
 and the protein data. The authors provided the PSM dataset as a data
-table (`data.frame`). The files can be downloaded from SCoPE2
-repository of the Slavov Lab [website](http://scope2.slavovlab.net/).
-The formatted SCoPE2 dataset can be retrieved from the `scpdata`
-package with the `specht2019v3()` function. Note that `v3` stands for
-the third version release of the data in October 2020.
+table (`data.frame`) in the R data environment called 
+[`raw.RData`](https://drive.google.com/drive/folders/1Zhjik_JFjCQNIVjg63-fooJ4K0HZxWjV).
+Peptide and protein data are shared as CSV files. We highly value the 
+effort the authors of SCoPE2 have made to publicly share all the data
+generated in their project, from raw files to final expression tables 
+(see the Slavov Lab [website](http://scope2.slavovlab.net/)).
+
+We formatted the SCoPE2 dataset following our data framework. The 
+formatted data can be retrieved from the `scpdata` package using the 
+`specht2019v3()` function. All datasets in `scpdata` are called after 
+the first author and the date of publication (the preprint and data
+were first published in 2019). `v3` stands for the third version of 
+the data that was released in October 2020.
 
 ```{r load_data}
 scp <- specht2019v3()
@@ -130,7 +153,13 @@ scp <- specht2019v3()
 
 The data contain 179 different `SingleCellExperiment` objects that we
 refer to as **assays**. Each assay contains expression data along with
-feature metadata. Below, we show the overview of the `scp`
+feature metadata. Each row in an assay represents a **feature** that 
+can either be a PSM, a peptide or a protein depending on the assay. Each 
+column in an assay represents a **sample**. In the SCoPE2 data, samples
+are acquired as a TMT channel because several sample are multiplexed 
+in a single MS run, hence each assay contains multiple columns. Most
+samples are single-cells, but some samples are blanks, references, 
+carriers, ... (see later). Below, we show the overview of the `scp` 
 dataset.
 
 ```{r overview}
@@ -146,7 +175,7 @@ the technique. Notice that the assays were also acquired in 4
 chromatographic batches. Here is an overview of the distribution of
 the assays across the TMT and chromatographic batches.
 
-```{r plot_lcbatch, fig.width = 4, fig.height = 3}
+```{r plot_lcbatch, echo = FALSE}
 colData(scp) %>%
     data.frame %>%
     select(c(Set, lcbatch)) %>%
@@ -162,10 +191,10 @@ colData(scp) %>%
 
 The dataset also contains a `peptides` assay and a
 `proteins` assay that hold peptide and protein level information,
-respectively. The objective of this vignette is to produce the
-`peptides` and `proteins` assays from the 177 PSM assays following the
-same procedure as the SCoPE2 script but using standardized
-functionalities.
+respectively. Those were provided by the authors. The objective of 
+this vignette is to produce the `peptides` and `proteins` assays from
+the 177 PSM assays following the same procedure as the SCoPE2 script 
+but using standardized functionalities.
 
 We extract the `peptides` and `proteins` assays and keep them for
 later benchmarking. Using double brackets `[[...]]` extracts the
@@ -179,36 +208,16 @@ proteins_SCoPE2 <- scp[["proteins"]]
 scp <- scp[, , -(178:179)]
 ```
 
-To avoid confusions during later benchmarking of the replication, we
-name the peptide and protein data sets generated by the SCoPE2 script
-`peptides_SCoPE2` and `proteins_SCoPE2`, respectively.
-
-## The SCoPE2 workflow
-
-We here give a schematic overview of the different processing steps
-performed by the SCoPE2 script. The r
-
-```{r SCoPE2_workflow, results='markup', fig.cap="Overview of the SCoPE2 workflow.", echo=FALSE, out.width='100%', fig.align='center'}
-knitr::include_graphics("figs/workflow.png", error = FALSE)
-```
-
-The SCoPE2 code provided along with the article can be retrieved from
-[this GitHub repository](https://github.com/SlavovLab/SCoPE2/blob/master/code/SCoPE2_analysis.R). Note that we here used the part of the script that performs the
-stringent feature selection (see the original paper for more details).
-
-The objective of this vignette is to replicate the SCoPE2 script while
-providing standardized, easy-to-read, and well documented code. We
-will demonstrate the success of the replication with a little
-benchmarking of our results against the data provided by the authors.
-Finally, we will perform some further data exploration to highlight
-the remaining challenges that still require to be tackled in MS-based
-SCP.
+To avoid naming confusions during later benchmarking of the 
+replication, we name the peptide and protein data sets generated by 
+the SCoPE2 script `peptides_SCoPE2` and `proteins_SCoPE2`, 
+respectively.
 
 # Filter the PSM data
 
-The SCoPE2 analysis starts with filtering low-confidence PSMs. Each
-PSM assay contains feature meta-information that are stored in the
-assay `rowData`. The `QFeatures` package allows to quickly filter
+After importing the data, the SCoPE2 analysis filters low-confidence
+PSMs. Each PSM assay contains feature meta-information that are stored
+in the assay `rowData`. The `QFeatures` package allows to quickly filter
 the rows of an assay by using these information. The available
 variables in the `rowData` are listed below for each assay.
 
@@ -251,8 +260,8 @@ scp <- scp[, , nPSMs > 500]
 ```
 
 You may notice that a warning is thrown when performing the subsetting
-step. This is because, as we expected, a few assays were dropped. We
-can find them back in the `metadata` slot:
+step. This is because, as we expected, a few assays were dropped. 
+Removed assays are listed in the `metadata` slot:
 
 ```{r metadata}
 metadata(scp)
@@ -262,24 +271,23 @@ metadata(scp)
 ## Filter out PSMs with high false discovery rate
 
 Next, SCoPE2 filters PSMs based on the false discovery rate (FDR) for
-identification. As mentioned in the introduction, the PSM data were
-already processed with DART-ID (@Chen2019-uc), a python software that
-updates the confidence in peptide identification using an Bayesian
-inference approach. DART-ID outputs for every PSM the updated
-posterior error probability (PEP). Filtering on the PEP is too
-conservative and it is rather advised to filter based on FDR
-(@Kall2008-hb). To control for the FDR, we need to compute q-values,
-that correspond to the minimal FDR threshold that would still select
-the associated feature.
+identification. The PSM data were already processed with DART-ID
+(@Chen2019-uc), a python software that updates the confidence in 
+peptide identification using an Bayesian inference approach. DART-ID 
+outputs for every PSM the updated posterior error probability (PEP).
+Filtering on the PEP is too conservative and it is rather advised to 
+filter based on FDR (@Kall2008-hb). To control for the FDR, we need to
+compute q-values, that correspond to the minimal FDR threshold that 
+would still select the associated feature.
 
-We can easily compute q-values from the PEPs computed by MaxQuant or
-updated by DART-ID using the `pep2qvalue` function. In the SCoPE
+We can use the `pep2qvalue` function to easily compute q-values from 
+the PEPs computed by MaxQuant or updated by DART-ID. In the SCoPE2
 workflow, the features are selected based on the FDR at PSM level and
-at protein level. The PEP information (`dart_PEP`) as well as the
-protein information (`protein`) are retrieved from the `rowData` of
-each assay. The function will store the computed q-values in the
-`rowData` and we give the name of `qvalue_psm` and `qvalue_protein`
-for the PSM and proteins q-values, respectively.
+at protein level. The DART-ID PEPs (`dart_PEP`) as well as the protein
+information (`protein`) are automatically retrieved from the `rowData`
+of each assay. The function will store the computed q-values back in
+the `rowData`. It will be stored under `qvalue_psm` and 
+`qvalue_protein` for the PSM and proteins q-values, respectively.
 
 ```{r}
 scp <- pep2qvalue(scp,
@@ -313,9 +321,9 @@ rowDataToDF(scp,
 ```
 
 We filter the PSMs to control for a 1\% PSM and protein FDR. We can
-easily perform this on our `QFeatures` object by using the
-`filterFeatures` function. The q-values are directly accessed from the
-`rowData` of each assay.
+perform this on our `QFeatures` object by using the `filterFeatures`
+function. The q-values are directly accessed from the `rowData` of 
+each assay.
 
 ```{r filter_FDR}
 scp <- filterFeatures(scp,
@@ -349,16 +357,16 @@ scp <- filterFeatures(scp,
 ## Filter out PSMs with high sample to carrier ratio
 
 The PSMs are next filtered based on the sample to carrier ratio (SCR),
-that is the reporter ion intensity of a single-cell sample divided by
-the reporter ion intensity of the carrier (200 cells) acquired during
+that is the TMT ion intensity of a single-cell sample divided by
+the TMT ion intensity of the carrier (200 cells) acquired during
 the same run as the sample. It is expected that the carrier
 intensities are much higher than the single-cell intensities. We
 implemented the `computeSCR` function that computes the SCR for each
 PSM averaged over all samples of interest in a given assay. A PSM is
 removed when the mean SCR exceeds 10 \%. To perform this, we need to
 tell the function which columns are the samples of interest and which
-is the carrier. The `colData` of the `QFeatures` object is used to
-define this.
+column is the carrier. The `colData` of the `QFeatures` object is used 
+to define this.
 
 ```{r}
 table(scp$SampleType)
@@ -366,16 +374,17 @@ table(scp$SampleType)
 
 In this dataset, `SampleType` gives the type of sample that is present
 in each TMT channel. The SCoPE2 protocol includes 5 types of samples:
+
 * The carrier channels (`Carrier`) contain 200 cell equivalents and
-are meant to boost the peptide identification rate.
+  are meant to boost the peptide identification rate.
 * The normalization channels (`Reference`) contain 5 cell equivalents
-and are used to partially correct for between-run variation.
+  and are used to partially correct for between-run variation.
 * The unused channels (`Unused`) are channels that are left empty due
-to isotopic cross-contamination by the carrier channel.
+  to isotopic cross-contamination by the carrier channel.
 * The blank channels (`Blank`) contain samples that do not contain any
-cell but are processed as single-cell samples.
+  cell but are processed as single-cell samples.
 * The single-cell sample channels contain the single-cell samples of
-interest (`Macrophage` or `Monocyte`).
+  interest (`Macrophage` or `Monocyte`).
 
 The `computeSCR` function expects the user to provide a pattern
 (following regular expression syntax) that uniquely identifies a
@@ -390,6 +399,14 @@ scp <- computeSCR(scp,
                   carrierPattern = "Carrier",
                   samplePattern = 4:16)
 ```
+
+In this step, we supplied numeric entries as `samplePattern` instead 
+of a regular expression pattern. This is to replicate the SCoPE2 
+analysis. We refrain from using a numeric pattern (as indicated by 
+the warning above) because this can lead to unnoticed artefacts. In 
+fact, the empty channels of the TMT-16 runs but not TMT-11 channels
+are here also used to compute the average SCR which could have been 
+avoided when using a character pattern.
 
 Before applying the filter, we plot the distribution of the mean SCR.
 
@@ -406,8 +423,8 @@ rowDataToDF(scp,
 ```
 
 A great majority of the PSMs have a mean SCR that is lower than 10\%,
-as expected. Interestingly, the mode of the distribution is located at
-~1\%. This is expected since every sample channel contains a
+as expected. Interestingly, the mode of the distribution is located 
+close to 1\%. This is expected since every sample channel contains a
 single-cell and the carrier contains 200 cells leading to an expected
 ratio of 0.5\% (dashed line). We remove the PSMs for which the mean
 SCR exceeds the 10\% threshold.
@@ -424,15 +441,15 @@ scp <- filterFeatures(scp,
 In order to partially correct for between-run variation, SCoPE2
 computes relative reporter ion intensities. This means that
 intensities measured for single-cells are divided by the reference
-channel containing 5-cell equivalents. We use the `divideByReference`
+channel (5-cell equivalents). We use the `divideByReference`
 function that divides channels of interest by the reference channel.
 Similarly to `computeSCR`, we can point to the samples and the
 reference columns in each assay using the annotation contained in the
 `colData`. We will here divide all columns (using the regular
 expression wildcard `.`) by the reference channel (`Reference`).
 Notice that when taking all samples we also include the reference
-channel. Hence, from now on, the reference channels will contain only
-`1`s.
+channel itself. Hence, from now on, the reference channels will 
+contain only ones.
 
 ```{r}
 scp <- divideByReference(scp,
@@ -500,7 +517,7 @@ package.
 
 ## Consensus mapping of peptides to proteins
 
-We need to account for an issue in the data. The `joinAssays` will only
+We need to account for an issue in the data. `joinAssays` will only
 keep the metadata variables that have the same value between matching
 rows. However, some peptide sequences map to one protein in one run
 and to another protein in another run. Hence, the protein sequence is
@@ -529,17 +546,23 @@ names(consensus) <- peptideAssays
 scp <- replaceRowDataCols(scp, peptideAssays, "protein", consensus)
 ```
 
-**TODO** discuss with Laurent. This code chunk is hard to read and is 
-not standardized. I should check whether other R packages could 
-already deal with this. It is an important point to mention here that 
-this is completely missed in the SCoPE2 analysis.
+This code chunk is hard to read, but this issue should represent a
+special case and we therefore don't consider this step worth 
+standardizing. Some peptides are mapped to different proteins because 
+the TMT-11 and TMT-16 data sets were analysed separately in MaxQuant. 
+Razor peptides, *i.e.* peptides that are found in several protein 
+groups, are assigned to the protein group with most peptides (@Tyanova2016-yj,) and this can vary from one analysis to another. 
+Therefore, inconsistent peptide mapping should not occur when all runs
+are preprocessed at once. We will see later that this issue does not
+impair the replication of the SCoPE2 analysis, but it recalls that 
+mapping of shared peptides to proteins is not a trivial task.
 
 ## Cleaning missing data
 
 Another important step before we join the assays is to replace zero 
 and infinite values by `NA`s. The zeros can be biological zeros or 
-technical zeros and differentiating between the two types is not a 
-trivial task, they are therefore better considered as missing. The 
+technical zeros and differentiating between the two types is a 
+difficult task, they are therefore better considered as missing. The 
 infinite values arose during the normalization by the reference because
 the channel values are divide by a zero from the reference channel. 
 This artefact could easily be avoided if we had replace the zeros by 
@@ -589,7 +612,7 @@ SCoPE2 performs a custom normalization (`norm = "SCoPE2"`). Each row
 in an assay is normalized by a scaling factor. This scaling factor is
 the row mean after dividing the columns by the median. The authors 
 retained CVs that are computed using at least 6 peptides (`nobs = 6`).
-See the methods section in @Specht2019-jm for more information. 
+See the methods section in @Specht2021-jm for more information. 
 
 ```{r compute_medianCV}
 scp <- medianCVperCell(scp,
@@ -601,13 +624,12 @@ scp <- medianCVperCell(scp,
                        norm = "SCoPE2")
 ```
 
-The computed CVs are stored in the `colData` and holds the median CV
-per cell computed using at least 6 observations (peptides).
-The main interest of computing the median CV per cell is to filter cells with
-reliable quantification. The blank samples are not expected to have reliable
-quantifications and hence can be used to estimate an empirical null distribution
-of the CV. This distribution helps defining a threshold that filters out
-single-cells that contain noisy quantification.
+The computed CVs are stored in the `colData`. We can now filter cells
+that have reliable quantifications. The blank samples are not expected
+to have reliable quantifications and hence can be used to estimate a
+null distribution of the CV. This distribution helps defining a
+threshold that filters out single-cells that contain noisy 
+quantification.
 
 ```{r, message = FALSE, warning = FALSE}
 colData(scp) %>%
@@ -620,13 +642,13 @@ colData(scp) %>%
 ```
 
 We can see that the protein quantification for single-cells are much 
-more consistent within cells than the blank channels. A threshold of 
-0.365 best separates single-cells from empty channels.
+more consistent within single-cell channels than within blank channels.
+A threshold of 0.365 best separates single-cells from empty channels.
 
 We keep the cells that pass the median CV threshold. Furthermore, we
 keep macrophages and monocytes as those represent the samples of
-interest. We can easily extract the sample names that pass the CV and
-sample type filter using `tidyverse` manipulations. 
+interest. We can extract the sample names that pass the CV and sample
+type filters using `tidyverse` manipulations. 
 
 ```{r}
 colData(scp) %>% 
@@ -643,33 +665,28 @@ We have already demonstrated how to remove assays from the dataset,
 but we can apply a similar subsetting for the samples. Recall that the
 second entry in the `[` method is for subsetting sample names.
 
-```{r}
+```{r, subsetting_cells}
 scp <- scp[, keep, ]
-```
-
-**TODO** this is took 4.5 min, maybe could be optimized? 
-
-```{r}
 scp
 ```
 
-
 # Process the peptide data
 
-In the SCoPE2 analysis, the peptide data is first transformed before it is
-aggregated to proteins. The transformation steps are: normalization, filter
-peptides based on missing data and log-transformation.
+In the SCoPE2 analysis, the peptide data is first transformed before 
+it is aggregated to proteins. The transformation steps are: 
+normalization, filter peptides based on missing data and 
+log-transformation.
 
 ## Normalization
 
-The columns (samples) of the peptide data are first normalized by dividing the
-relative intensities by the median relative intensities. Then, the rows
-(peptide) are normalized by dividing the relative intensities by the
-mean relative intensities. The first normalization is available from 
-the `normalize` function and accessible under the `div.mean` method.
-The second is not available from `normalize`, but is easily performed
-using the `sweep` function from the `QFeatures` package that is 
-inspired from `?base::sweep` function. 
+The columns (samples) of the peptide data are first normalized by 
+dividing the relative intensities by the median relative intensities.
+Then, the rows (peptides) are normalized by dividing the relative 
+intensities by the mean relative intensities. The first normalization
+is available from the `normalize` function and accessible under the
+`div.median` method. The second is not available from `normalize`, but
+is easily performed using the `sweep` function from the `QFeatures` 
+package that is inspired from the `base::sweep` function. 
 
 ```{r}
 ## Scale column with median
@@ -686,14 +703,13 @@ scp <- sweep(scp,
              name = "peptides_norm2")
 ```
 
-Each normalization step is stored in a separate assay. An important 
-aspect to note here is that 
+Each normalization step is stored in a separate assay. 
 
 ## Remove peptides with high missing rate
 
-Peptides that contain many missing values are not informative. Therefore, we
-remove those with more than 99 \% missing data. This is done using the
-`filterNA` function from `QFeatures`.
+Peptides that contain many missing values are not informative. 
+Therefore, we remove those with more than 99 \% missing data. This is
+done using the `filterNA` function from `QFeatures`.
 
 ```{r}
 scp <- filterNA(scp,
@@ -703,8 +719,10 @@ scp <- filterNA(scp,
 
 ## Log-transformation
 
-The last processing step of the peptide data before aggregating to proteins is
-to log-transform the data. SCoPE2 uses a base 2 log-transformation.
+The last processing step of the peptide data before aggregating to 
+proteins is to log-transform the data. SCoPE2 uses a base 2 
+log-transformation and this is implemented in `logTransform` in the
+`QFeatures`.
 
 ```{r}
 scp <- logTransform(scp,
@@ -735,15 +753,15 @@ scp <- sweep(scp,
              name = "peptides_scp")
 ```
 
-We names the last assay `peptides_scp`. We will contrast this data
+We name the last assay `peptides_scp`. We will contrast this data
 matrix to `peptides_SCoPE2` later in this vignette to assess the
-fidelity of the replication.
+accuracy of the replication.
 
 # Aggregate peptide data to protein data
 
-Similarly to aggregating PSM data to peptide data, we can aggregate peptide data
-to protein data using the `aggregateFeatures` function. Note that we here use
-the median as a summarizing function.
+Similarly to aggregating PSM data to peptide data, we can aggregate 
+peptide data to protein data using the `aggregateFeatures` function. 
+Note that we here use the median as a summarizing function.
 
 ```{r}
 scp <- aggregateFeatures(scp,
@@ -755,8 +773,8 @@ scp <- aggregateFeatures(scp,
 
 # Process the protein data
 
-The protein data is processed in three steps: normalization, imputation (using
-the KNN algorithm) and batch correction (using the `ComBat` algorithm).
+The protein data is processed in three steps: normalization, 
+imputation and batch correction.
 
 ## Normalization
 
@@ -802,18 +820,21 @@ KNN with k = 3. We made a wrapper around the author's code to apply imputation
 to our `QFeatures` object.
 
 ```{r}
-scp <- scp_imputeKNN(scp,
-                     i = "proteins_norm2",
-                     name = "proteins_impd",
-                     k = 3)
+scp <- imputeKnnSCoPE2(scp,
+                       i = "proteins_norm2",
+                       name = "proteins_impd",
+                       k = 3)
 ```
 
-`QFeatures` also provides KNN imputation by calling to the `impute::impute.knn`
-function. However, the implementation is different in the sense that SCoPE2
-performs KNN imputation in the sample space, meaning that data from neighbouring
-cells are used to impute, whereas `impute::impute.knn` performs KNN imputation
-in the gene space, meaning that data from neighbouring genes are used to impute
-the missing values. We provide the code for KNN imputation with `QFeatures` but
+`QFeatures` provides the `impute` function that serves as an interface
+to different imputation algorithms among which the KNN algorithm from
+`impute::impute.knn`. However, the KNN implementation in SCoPE2 and in 
+`impute.knn` are different.  SCoPE2 performs KNN imputation in the 
+sample space, meaning that data from neighbouring cells are used to 
+impute the central cell, whereas `impute::impute.knn` performs KNN 
+imputation in the feature space, meaning that data from neighbouring 
+features are used to impute the missing values from the central 
+features. We provide the code for KNN imputation with `QFeatures` but
 do not run in order to reproduce the SCoPE2 analysis.
 
 ```{r, eval = FALSE}
@@ -829,29 +850,29 @@ scp <- impute(scp,
 The final step is to model the remaining batch effects and correct for
 it. The data were acquired as a series of MS runs. Recall we had 177
 assays at the beginning of the workflow. Each MS run can be subjected
-to small technical perturbations that lead to differences in the data.
-This can be corrected to avoid attributing biological effects to
+to technical perturbations that lead to differences in the data. This
+must be accounted for to avoid attributing biological effects to 
 technical effects. The `ComBat` algorithm (@Johnson2007-nc) is used in
-the SCoPE2 script  to correct for those batch effects. `ComBat` is
-part of the `sva` package. It requires a batch variable, in this case
-the LC-MS/MS run, and adjusts for batch effects, while protecting
-variables of interest, the sample type in this case. All the
+the SCoPE2 script to correct for those batch effects. `ComBat` is part
+of the `sva` package. It requires a batch variable, in this case the
+LC-MS/MS run, and adjusts for batch effects, while protecting 
+variables of interest, the sample type in this case. All the 
 information is contained in the `colData` of the `QFeatures` object.
-We first extract the assays with the associate `colData`.
+We first extract the assays with the associated `colData`.
 
 ```{r}
 sce <- getWithColData(scp, "proteins_impd")
 ```
 
 We next store the batch variable and create the design matrix. We then
-call the functions and overwrite the data matrix. Recall the data
-matrix can be accessed using the `assay` function. Note also that we
-here use `ComBatv3.34` that was loaded at the beginning of the
-vignette (not shown). This function was taken from an older version of
-the `sva` package (version `3.34.0`). This is to replicate the SCoPE2
-results. More recent versions have implemented a check for
-within-batch invariant proteins that will ignore batch correction
-for a protein if at least one of the batch contain constant values.
+perform the batch correction and overwrite the data matrix. Recall the 
+data matrix can be accessed using the `assay` function. Note also that 
+we here use the `ComBatv3.34` function that is provided in this 
+package. This function was taken from an older version of the `sva` 
+package (version `3.34.0`). This is to replicate the SCoPE2 results. 
+More recent versions will avoid batch correction for proteins that 
+show no variance within at least one batch and this occurs for a 
+significant proportion of the proteins (artefact of imputation).
 
 ```{r, results='hide', message=FALSE}
 batch <- colData(sce)$Set
@@ -896,7 +917,7 @@ scp <- sweep(scp,
 
 We named the last assay `proteins_scp`. We will contrast this data
 matrix to `proteins_SCoPE2` later in the next section to assess the
-fidelity of the replication.
+accuracy of the replication.
 
 ```{r echo = FALSE, eval = FALSE, results = "hide"}
 # save.image(file = "../extdata/vignette_final.RData")
@@ -906,8 +927,8 @@ fidelity of the replication.
 # Benchmarking the replication
 
 We will now compare the data that were provided by Specht and
-colleagues with the data generated in this vignette. We compare the
-peptide and the protein data.
+colleagues with the data generated in this vignette. We will compare 
+the peptide and the protein data.
 
 ## Compare the selected cells
 
@@ -916,7 +937,7 @@ coefficient of variation per cell. We will check that we could indeed
 reproduce the SCoPE2 cell filter. Note that the peptide and protein
 data contain the same set of cells.
 
-```{r, echo=FALSE, fig.width = 3, fig.height = 3, message = FALSE}
+```{r, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
 cells_scope2 <- colnames(peptides_SCoPE2)
 cells_scp <- colnames(scp[["peptides_scp"]])
 cells <- unique(c(cells_scope2, cells_scp))
@@ -946,16 +967,17 @@ cell_sel
 
 The `scp` filtering step keeps 37 additional cells compared to SCoPE2.
 
-
 ## Compare peptide data
 
 The SCoPE2 and the `scp` peptide data have comparable dimensions,
-although they are not exactly the same. Our workflow kept 10
-additional peptides out of 9364. Similarly to the filtered cells, this
-difference is negligible and demonstrate an almost perfect replication
-of the filtering steps.
+although they are not exactly the same. The `scp` peptide data 
+contains 17 peptides that were not selected by SCoPE2 and SCoPE2 
+selected 38 peptides that were not selected in this replication. The 
+two analyses agree on 9316 peptides. Similarly to the filtered cells, 
+the differences are negligible and demonstrate an almost perfect 
+replication of the feature filtering steps.
 
-```{r, echo=FALSE, fig.width = 3, fig.height = 3, message = FALSE}
+```{r, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
 peps_scope2 <- rownames(peptides_SCoPE2)
 peps_scp <- rownames(scp[["peptides_scp"]])
 peps <- unique(c(peps_scope2, peps_scp))
@@ -983,15 +1005,13 @@ data.frame(SCoPE2 = peps %in% peps_scope2,
 peptide_sel
 ```
 
-To assess the difference between the data matrices, we intersect the
+To assess the differences between the data matrices, we intersect the
 peptides and the cells to have comparable matrices. The range of the
 differences between the 2 datasets is contained in -0.2 and 0.2, with
-a very sharp . This
-corresponds to approximately 2 \% of the total range of the data
-(-8.941, 6.166). Therefore, we can say that the `scp` workflow could
-accurately replicate the SCoPE2 peptide data.
+a very sharp peak around 0. Therefore, we can say that the `scp` 
+workflow could accurately replicate the SCoPE2 peptide data.
 
-```{r, echo=FALSE, fig.width = 3, fig.height = 3, message = FALSE}
+```{r, echo=FALSE, fig.width = 5 fig.height = 5, message = FALSE}
 rows <- intersect(rownames(peptides_SCoPE2),
                   rownames(scp[["peptides_scp"]]))
 cols <- intersect(colnames(peptides_SCoPE2),
@@ -1013,14 +1033,9 @@ peptide_diff
 ## Compare protein data
 
 Similarly to the peptide data, the SCoPE2 and the `scp` protein data
-contain different but highly overlapping (99.28 \%) sets of proteins.
-It is expected to see more proteins in the `scp` results with respect
-to `SCoPE2` because this was already seen for the peptide data. However,
-some proteins are only found in SCoPE2. This is a consequence of the
-remapping of peptides to proteins that occurred when joining together
-all the peptides assays in one. This step was required by `scp` to
-properly aggregate peptides to proteins, but was not considered in the
-SCoPE2 workflow.
+contain different but highly overlapping (>99 \%) sets of proteins,
+indicating a successful replication of the aggregation of the protein
+data.
 
 ```{r, echo=FALSE, fig.height = 3, fig.width = 3, message = FALSE}
 prots_scope2 <- rownames(proteins_SCoPE2)
@@ -1050,15 +1065,10 @@ protein_sel
 ```
 
 The range of differences between SCoPE2 and `scp` is much wider for
-the protein data than for the peptide data. The range of the
-differences between the `scp` and the SCoPE2 data is (-3.06, 2.66)
-and this comparable to the range of the SCoPE2 protein expression
-values. However, 99 \% of the differences are lying in (-0.45, 0.82)
-and there is a sharp peak around 0. This indicates that the small
-differences observed at peptide level have propagated during protein
-imputation, batch correction and normalization. This is problematic as
-it indicates that at least one of those steps is unstable. We will
-the batch correction and the data imputation in a later section.
+the protein data than for the peptide data. Still, there is a sharp
+peak around 0 indicating no dramatic bias was introduced. The small
+differences observed at peptide level may have propagated during protein
+imputation, batch correction and normalization. 
 
 ```{r, echo=FALSE, fig.width = 3, fig.height = 3}
 rows <- intersect(rownames(proteins_SCoPE2),
@@ -1078,45 +1088,32 @@ data.frame(difference = as.vector(err)) %>%
 protein_diff
 ```
 
-To summarize, here is an overview of the differences between our
-results using `scp` and the expected results obtained by the `SCoPE2`
-authors.
-
-```{r, fig.height = 6, fig.width = 9}
-cell_sel +
-    peptide_sel +
-    protein_sel +
-    plot_spacer() +
-    peptide_diff +
-    protein_diff +
-    plot_layout(ncol = 3)
-```
-
-
 ## PCA
 
 To assess the separability between macrophages and monocytes, Specht 
 and colleagues perform weighted principal component analysis (PCA) on
-the protein data. The weights are proportional to the amount of 
-correlation between a protein and the other proteins. Computing the 
-weighted PCA requires some manual implementation (taken from the 
-SCoPE2 script). The authors use the expression matrix as input. We can
-easily get this matrix from the desired assay. We here re-compute the 
-PCA plot with the data provided by the authors. We wrapped the code to
-compute the weighted PCA plot in a dedicated function called 
-`pcaSCoEP2` that is accessible from within this replication package.
-The PCA is then plotted using `ggplot2`. 
+the protein data. The weights are applied to the protein space and the
+weight of a protein is proportional to the amount of correlation 
+between that protein and the other proteins. The implementation of the 
+weighted PCA was taken from the SCoPE2 script and wrapped in the
+`pcaSCoPE2` function that is accessible from within this replication 
+package. We compute the PCA on the SCopE2 protein data and plot the 
+results. This is figure 4a in @Specht2021-jm.
 
 ```{r}
 pcaRes <- pcaSCoPE2(proteins_SCoPE2)
+## Compute percent explained variance
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
+## Plot PCA
 data.frame(PC = pcaRes$vectors[, 1:2],
            colData(proteins_SCoPE2)) %>%
-    ggplot(aes(x = PC.1, y = PC.2)) +
+    ggplot() +
+    aes(x = PC.1, 
+        y = PC.2,
+        col = SampleType)
     geom_point(alpha = 0.5) +
     xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
     ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
-    aes(col = SampleType) +
     ggtitle("SCoPE2")
 ```
 
@@ -1125,25 +1122,28 @@ the `scp` package.
 
 ```{r}
 pcaRes <- pcaSCoPE2(scp[["proteins_scp"]])
+## Compute percent explained variance
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
+## Plot PCA
 data.frame(PC = pcaRes$vectors[, 1:2],
            colData(scp)) %>%
-    ggplot(aes(x = PC.1, y = PC.2)) +
+    ggplot() +
+    aes(x = PC.1, 
+        y = PC.2,
+        col = SampleType)
     geom_point(alpha = 0.5) +
     xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
     ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
-    aes(col = SampleType) +
     ggtitle("SCoPE2")
 ```
 
-These two plots are highly similar and further demonstrate our ability
-to reproduce the SCoPE2 analysis using `scp`. 
+These two plots are highly similar and further demonstrate the ability
+to accurately reproduce the SCoPE2 analysis using `scp`. 
 
 As a side note, the `scater` Bioconductor packages provides a suite of
-functions that perform and visualize dimension reduction for 
-`SingleCellExperiment` objects. Since our assays are all 
-`SingleCellExperiment` objects, we can perform and store standard
-PCA on the protein data in just a few commands.
+functions to perform dimension reduction for `SingleCellExperiment` 
+objects. Since our assays are all `SingleCellExperiment` objects, we
+can perform and store standard PCA on the protein data in just a few commands.
 
 ```{r}
 library(scater)
@@ -1158,15 +1158,15 @@ getWithColData(scp, "proteins_scp") %>%
     plotPCA(colour_by = "SampleType")
 ```
 
-This plot is different from the previous plot because no weighting is
-considered during the second PCA.
+This plot is different from the previous plot because this PCA is not 
+weighted.
 
 # Conclusion
 
 In this vignette, we have demonstrated that the `scp` package is able
 to accurately reproduce the analysis published in SCoPE2. We not only 
 support the reliability of the published work, but we also offer a
-formalization and standardization of the pipeline thanks to 
+formalization and standardization of the pipeline by means of 
 easy-to-read and highly documented code. This workflow can serve as a
 starting ground to improve upon the current methods and to design new
 modelling tools dedicated to single-cell proteomics. 
@@ -1175,10 +1175,9 @@ modelling tools dedicated to single-cell proteomics.
 
 ### Hardware and software
 
-Useful information about the hardware and software specifications that
-build the vignette is available below.
+The system details of the machine that built the vignette are:
 
-```{r, echo = FALSE}
+```{r, echo = FALSE, message = FALSE}
 sd <- benchmarkme::get_sys_details()
 cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
     "R version: R.", sd$r_version$major, ".", sd$r_version$minor, 
@@ -1197,7 +1196,9 @@ timing <- Sys.time() - timeStart
 cat(timing[[1]], attr(timing, "units"))
 ```
 
-The final `scp` dataset size is:
+### Memory
+
+The final `scp` memory size is:
 
 ```{r, echo = FALSE}
 format(object.size(scp), units = "GB")
