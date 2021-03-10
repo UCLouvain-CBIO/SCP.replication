@@ -13,7 +13,7 @@ output:
     code_folding: show
 bibliography: ref.bib
 date: "`r BiocStyle::doc_date()`"
-package: "`r BiocStyle::pkg_ver('SCoPE2.replication')`"
+package: "`r BiocStyle::pkg_ver('SCP.replication')`"
 vignette: >
   %\VignetteIndexEntry{SCoPE2 replication}
   %\VignetteEngine{knitr::rmarkdown}
@@ -564,12 +564,12 @@ and infinite values by `NA`s. The zeros can be biological zeros or
 technical zeros and differentiating between the two types is a 
 difficult task, they are therefore better considered as missing. The 
 infinite values arose during the normalization by the reference because
-the channel values are divide by a zero from the reference channel. 
-This artefact could easily be avoided if we had replace the zeros by 
+the channel values are divide by a zero from the reference channel.
+This artefact could easily be avoided if we had replace the zeros by
 `NA`s at the beginning of the workflow, what we strongly recommend for
-future analyses. 
+future analyses.
 
-The `infIsNA` and the `zeroIsNA` functions automatically detect 
+The `infIsNA` and the `zeroIsNA` functions automatically detect
 infinite and zero values, respectively, and replace them with `NA`s.
 Those two functions are provided by the `QFeatures` package.
 
@@ -580,7 +580,7 @@ scp <- zeroIsNA(scp, i = peptideAssays)
 
 ## Join assays
 
-Now that the peptides are correctly matched to proteins and missing 
+Now that the peptides are correctly matched to proteins and missing
 values are correctly formatted, we can join the assays.
 
 ```{r join_assays}
@@ -606,11 +606,11 @@ exhibit high median CV over the different proteins. We compute the
 median CV per cell using the `medianCVperCell` function from the `scp`
 package. The function takes the protein information from the `rowData`
 of the assays that will tell how to group the features (peptides) when
-computing the CV. Note that we supply the peptide assays before 
-joining in a single assays (`i = peptideAssays`). This is because 
-SCoPE2 performs a custom normalization (`norm = "SCoPE2"`). Each row 
+computing the CV. Note that we supply the peptide assays before
+joining in a single assays (`i = peptideAssays`). This is because
+SCoPE2 performs a custom normalization (`norm = "SCoPE2"`). Each row
 in an assay is normalized by a scaling factor. This scaling factor is
-the row mean after dividing the columns by the median. The authors 
+the row mean after dividing the columns by the median. The authors
 retained CVs that are computed using at least 6 peptides (`nobs = 6`).
 See the methods section in @Specht2021-jm for more information. 
 
@@ -638,7 +638,7 @@ colData(scp) %>%
     ggplot(aes(x = MedianCV,
                fill = SampleType)) +
     geom_histogram() +
-    geom_vline(xintercept = 0.365) 
+    geom_vline(xintercept = 0.365)
 ```
 
 We can see that the protein quantification for single-cells are much 
@@ -651,11 +651,11 @@ interest. We can extract the sample names that pass the CV and sample
 type filters using `tidyverse` manipulations. 
 
 ```{r}
-colData(scp) %>% 
-    data.frame %>% 
-    rownames_to_column("cells") %>% 
+colData(scp) %>%
+    data.frame %>%
+    rownames_to_column("cells") %>%
     filter(MedianCV < 0.365,
-           SampleType %in% c("Macrophage", "Monocyte")) %>% 
+           SampleType %in% c("Macrophage", "Monocyte")) %>%
     pull(cells) ->
     keep
 head(keep)
@@ -690,9 +690,9 @@ package that is inspired from the `base::sweep` function.
 
 ```{r}
 ## Scale column with median
-scp <- normalize(scp, 
-                 i = "peptides", 
-                 method = "div.median", 
+scp <- normalize(scp,
+                 i = "peptides",
+                 method = "div.median",
                  name = "peptides_norm1")
 ## Scale rows with mean
 scp <- sweep(scp,
@@ -703,7 +703,8 @@ scp <- sweep(scp,
              name = "peptides_norm2")
 ```
 
-Each normalization step is stored in a separate assay. 
+Each normalization step is stored in a separate assay. An important
+aspect to note here is that
 
 ## Remove peptides with high missing rate
 
@@ -739,12 +740,12 @@ in the remainder of the workflow.
 
 ```{r}
 ## Center columns with median
-scp <- normalize(scp, 
-                 i = "peptides_log", 
-                 method = "center.median", 
+scp <- normalize(scp,
+                 i = "peptides_log",
+                 method = "center.median",
                  name = "peptides_log_norm1")
 ## Center rows with mean
-scp <- sweep(scp, 
+scp <- sweep(scp,
              i = "peptides_log_norm1",
              MARGIN = 1,
              FUN = "-",
@@ -779,18 +780,18 @@ imputation and batch correction.
 ## Normalization
 
 Normalization is performed similarly to peptide normalization. We use
-the same functions, but since the data were log-transformed at the 
-peptide level, we subtract/center by the statistic (median or mean) 
+the same functions, but since the data were log-transformed at the
+peptide level, we subtract/center by the statistic (median or mean)
 instead of dividing.
 
 ```{r}
 ## Center columns with median
-scp <- normalize(scp, 
-                 i = "proteins", 
-                 method = "center.median", 
+scp <- normalize(scp,
+                 i = "proteins",
+                 method = "center.median",
                  name = "proteins_norm1")
 ## Center rows with mean
-scp <- sweep(scp, 
+scp <- sweep(scp,
              i = "proteins_norm1",
              MARGIN = 1,
              FUN = "-",
@@ -901,12 +902,12 @@ performed an additional normalization step.
 
 ```{r}
 ## Center columns with median
-scp <- normalize(scp, 
-                 i = "proteins_batchC", 
-                 method = "center.median", 
+scp <- normalize(scp,
+                 i = "proteins_batchC",
+                 method = "center.median",
                  name = "proteins_batchC_norm1")
 ## Center rows with mean
-scp <- sweep(scp, 
+scp <- sweep(scp,
              i = "proteins_batchC_norm1",
              MARGIN = 1,
              FUN = "-",
@@ -1180,8 +1181,8 @@ The system details of the machine that built the vignette are:
 ```{r, echo = FALSE, message = FALSE}
 sd <- benchmarkme::get_sys_details()
 cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
-    "R version: R.", sd$r_version$major, ".", sd$r_version$minor, 
-    " (svn: ", sd$r_version$`svn rev`, ")\n",  
+    "R version: R.", sd$r_version$major, ".", sd$r_version$minor,
+    " (svn: ", sd$r_version$`svn rev`, ")\n",
     "RAM: ", round(sd$ram / 1E9, 1), " GB\n",
     "CPU: ", sd$cpu$no_of_cores, " core(s) - ", sd$cpu$model_name, "\n",
     sep = "")
