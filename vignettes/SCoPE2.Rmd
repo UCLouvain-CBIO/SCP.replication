@@ -306,7 +306,7 @@ the `rowDataToDF` function. It takes the `rowData` of interest and
 returns a single `DataFrame` table with variables of interest. We plot
 the q-values along with the DART-ID PEPs using `ggplot2` facets.
 
-```{r, message=FALSE}
+```{r qvalue_plot, message=FALSE}
 rowDataToDF(scp,
             i = names(scp),
             vars = c("dart_PEP", "qvalue_psm", "qvalue_protein")) %>%
@@ -410,7 +410,7 @@ avoided when using a character pattern.
 
 Before applying the filter, we plot the distribution of the mean SCR.
 
-```{r, warning=FALSE, message=FALSE}
+```{r meanSCR_plot, warning=FALSE, message=FALSE}
 rowDataToDF(scp,
             i = names(scp),
             vars = "MeanSCR") %>%
@@ -631,7 +631,7 @@ null distribution of the CV. This distribution helps defining a
 threshold that filters out single-cells that contain noisy 
 quantification.
 
-```{r, message = FALSE, warning = FALSE}
+```{r medianCV_plot, message = FALSE, warning = FALSE}
 colData(scp) %>%
     data.frame %>%
     filter(SampleType %in% c("Macrophage",  "Monocyte", "Blank")) %>%
@@ -807,7 +807,7 @@ The protein data contains a lot of missing values. The graph below shows the
 distribution of the proportion missingness in cells. Cells contain on average
 over 75 \% missing values!
 
-```{r, message=FALSE}
+```{r missing_plot, message=FALSE}
 longFormat(scp[, , "proteins_norm2"]) %>%
     data.frame %>%
     group_by(colname) %>%
@@ -938,7 +938,7 @@ coefficient of variation per cell. We will check that we could indeed
 reproduce the SCoPE2 cell filter. Note that the peptide and protein
 data contain the same set of cells.
 
-```{r, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
+```{r benchm_cell_filt, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
 cells_scope2 <- colnames(peptides_SCoPE2)
 cells_scp <- colnames(scp[["peptides_scp"]])
 cells <- unique(c(cells_scope2, cells_scp))
@@ -978,7 +978,7 @@ two analyses agree on 9316 peptides. Similarly to the filtered cells,
 the differences are negligible and demonstrate an almost perfect 
 replication of the feature filtering steps.
 
-```{r, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
+```{r benchm_pep_filt, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
 peps_scope2 <- rownames(peptides_SCoPE2)
 peps_scp <- rownames(scp[["peptides_scp"]])
 peps <- unique(c(peps_scope2, peps_scp))
@@ -1012,7 +1012,7 @@ differences between the 2 datasets is contained in -0.2 and 0.2, with
 a very sharp peak around 0. Therefore, we can say that the `scp` 
 workflow could accurately replicate the SCoPE2 peptide data.
 
-```{r, echo=FALSE, fig.width = 5 fig.height = 5, message = FALSE}
+```{r benchm_pep_diff, echo=FALSE, fig.width = 5, fig.height = 5, message = FALSE}
 rows <- intersect(rownames(peptides_SCoPE2),
                   rownames(scp[["peptides_scp"]]))
 cols <- intersect(colnames(peptides_SCoPE2),
@@ -1038,7 +1038,7 @@ contain different but highly overlapping (>99 \%) sets of proteins,
 indicating a successful replication of the aggregation of the protein
 data.
 
-```{r, echo=FALSE, fig.height = 3, fig.width = 3, message = FALSE}
+```{r benchm_prot_filt, echo=FALSE, fig.height = 5, fig.width = 5, message = FALSE}
 prots_scope2 <- rownames(proteins_SCoPE2)
 prots_scp <- rownames(scp[["proteins_scp"]])
 prots <- unique(c(prots_scope2, prots_scp))
@@ -1071,7 +1071,7 @@ peak around 0 indicating no dramatic bias was introduced. The small
 differences observed at peptide level may have propagated during protein
 imputation, batch correction and normalization. 
 
-```{r, echo=FALSE, fig.width = 3, fig.height = 3}
+```{r benchm_prot_diff, echo=FALSE, fig.width = 5, fig.height = 5}
 rows <- intersect(rownames(proteins_SCoPE2),
                   rownames(scp[["proteins_scp"]]))
 cols <- intersect(colnames(proteins_SCoPE2),
@@ -1101,7 +1101,7 @@ weighted PCA was taken from the SCoPE2 script and wrapped in the
 package. We compute the PCA on the SCopE2 protein data and plot the 
 results. This is figure 4a in @Specht2021-jm.
 
-```{r}
+```{r PCA_SCoPE2}
 pcaRes <- pcaSCoPE2(proteins_SCoPE2)
 ## Compute percent explained variance
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
@@ -1111,7 +1111,7 @@ data.frame(PC = pcaRes$vectors[, 1:2],
     ggplot() +
     aes(x = PC.1, 
         y = PC.2,
-        col = SampleType)
+        col = SampleType) +
     geom_point(alpha = 0.5) +
     xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
     ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
@@ -1121,7 +1121,7 @@ data.frame(PC = pcaRes$vectors[, 1:2],
 Below is the resulting PCA when applied on the data processed using 
 the `scp` package.
 
-```{r}
+```{r PCA_scp}
 pcaRes <- pcaSCoPE2(scp[["proteins_scp"]])
 ## Compute percent explained variance
 pcaPercentVar <- round(pcaRes$values[1:2] / sum(pcaRes$values) * 100)
@@ -1131,7 +1131,7 @@ data.frame(PC = pcaRes$vectors[, 1:2],
     ggplot() +
     aes(x = PC.1, 
         y = PC.2,
-        col = SampleType)
+        col = SampleType) +
     geom_point(alpha = 0.5) +
     xlab(paste0("PC1 (", pcaPercentVar[1], "%)")) +
     ylab(paste0("PC2 (", pcaPercentVar[2], "%)")) +
@@ -1146,7 +1146,7 @@ functions to perform dimension reduction for `SingleCellExperiment`
 objects. Since our assays are all `SingleCellExperiment` objects, we
 can perform and store standard PCA on the protein data in just a few commands.
 
-```{r}
+```{r PCA_scater}
 library(scater)
 getWithColData(scp, "proteins_scp") %>%
     ## Perform PCA, see ?runPCA for more info about arguments
