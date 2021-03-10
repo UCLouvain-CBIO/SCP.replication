@@ -14,7 +14,7 @@ Description: Repository of vignettes about the replication of
     single-cell analyses.
 Depends:
    SingleCellExperiment,
-   QFeatures,
+   QFeatures (>= 1.1.3),
    scp (>= 1.1.5),
    scpdata
 Imports:
