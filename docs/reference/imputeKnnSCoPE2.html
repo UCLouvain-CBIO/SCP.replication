@@ -6,7 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • SCP.replication</title>
+<title>KNN imputation (for replication)
+
+The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021). — imputeKnnSCoPE2 • SCP.replication</title>
 
 
 <!-- jquery -->
@@ -39,7 +44,17 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="KNN imputation (for replication)
+
+The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021). — imputeKnnSCoPE2" />
+<meta property="og:description" content="KNN imputation (for replication)
+The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021)." />
 
 
 
@@ -58,7 +73,7 @@
   </head>
 
   <body data-spy="scroll" data-target="#toc">
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -112,87 +127,68 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
-    </div>
-
-    <table class="ref-index">
-
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
-
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      
-      
-    </tbody><tbody>
-      
-      
-      <tr>
-        
-        <td>
-          <p><code><a href="ComBatv3.34.html">ComBatv3.34()</a></code> </p>
-        </td>
-        <td><p>ComBat v3.34 batch correction
-
-Older version of ComBat (sva version 3.34.0). This is for
-compatibility with the replication of SCoPE2.
-
-ComBat allows users to adjust for batch effects in datasets where
-the batch covariate is known, using methodology described in
-Johnson et al. 2007. It uses either parametric or non-parametric
-empirical Bayes frameworks for adjusting data for batch effects.
-Users are returned an expression matrix that has been corrected
-for batch effects. The input data are assumed to be cleaned and
-normalized before batch effect removal.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="countUniqueFeatures.html">countUniqueFeatures()</a></code> </p>
-        </td>
-        <td><p>Count Unique Features
-
-This function counts the number of unique features per sample. A
-grouping structure can be provided to count higher level features
-from assays, for example counting the number of unique proteins
-from PSM data.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="imputeKnnSCoPE2.html">imputeKnnSCoPE2()</a></code> </p>
-        </td>
-        <td><p>KNN imputation (for replication)
+    <h1>KNN imputation (for replication)
 
 The function imputes missing data using the k-nearest neighbours
 (KNN) approach using Euclidean distance as a similarity measure
 between the cells. This function was provided as part of the
-SCoPE2 publication (Specht et al. 2021).</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="pcaSCoPE2.html">pcaSCoPE2()</a></code> </p>
-        </td>
-        <td><p>PCA plot suggested by SCoPE2</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="replaceRowDataCols.html">replaceRowDataCols()</a></code> </p>
-        </td>
-        <td><p>Replace columns in the rowData</p></td>
-      </tr>
-    </tbody>
-    </table>
-  </div>
+SCoPE2 publication (Specht et al. 2021).</h1>
+    
+    <div class="hidden name"><code>imputeKnnSCoPE2.Rd</code></div>
+    </div>
 
+    <div class="ref-description">
+    <p>KNN imputation (for replication)</p>
+<p>The function imputes missing data using the k-nearest neighbours
+(KNN) approach using Euclidean distance as a similarity measure
+between the cells. This function was provided as part of the
+SCoPE2 publication (Specht et al. 2021).</p>
+    </div>
+
+    <pre class="usage"><span class='fu'>imputeKnnSCoPE2</span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>i</span>, name <span class='op'>=</span> <span class='st'>"KNNimputedAssay"</span>, k <span class='op'>=</span> <span class='fl'>3</span><span class='op'>)</span></pre>
+
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>object</th>
+      <td><p>A <code>QFeatures</code> object</p></td>
+    </tr>
+    <tr>
+      <th>i</th>
+      <td><p>A <code><a href='https://rdrr.io/r/base/numeric.html'>numeric()</a></code> or <code><a href='https://rdrr.io/r/base/character.html'>character()</a></code> vector indicating from
+which assays the <code>rowData</code> should be taken.</p></td>
+    </tr>
+    <tr>
+      <th>name</th>
+      <td><p>A <code><a href='https://rdrr.io/r/base/character.html'>character(1)</a></code> naming the new assay name. Default is
+<code>KNNimputedAssay</code>.</p></td>
+    </tr>
+    <tr>
+      <th>k</th>
+      <td><p>An <code><a href='https://rdrr.io/r/base/integer.html'>integer(1)</a></code> giving the number of neighbours to use.</p></td>
+    </tr>
+    </table>
+
+    <h2 class="hasAnchor" id="source"><a class="anchor" href="#source"></a>Source</h2>
+
+    <p>The implementation of the imputation was retrieved from
+https://github.com/SlavovLab/SCoPE2</p>
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>An object of class <code>QFeatures</code> containing an extra assay
+with imputed values.</p>
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Specht, Harrison, Edward Emmott, Aleksandra A. Petelski,
+R. Gray Huffman, David H. Perlman, Marco Serra, Peter Kharchenko,
+Antonius Koller, and Nikolai Slavov. 2021. “Single-Cell Proteomic
+and Transcriptomic Analysis of Macrophage Heterogeneity Using
+SCoPE2.” Genome Biology 22 (1): 50.</p>
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">
       <h2 data-toc-skip>Contents</h2>
