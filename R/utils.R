@@ -134,13 +134,13 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     }
     else {
         grand.mean <- crossprod(n.batches/n.array, B.hat[1:n.batch,
-                                                         ])
+        ])
     }
     if (!NAs) {
         if (!is.null(ref.batch)) {
             ref.dat <- dat[, batches[[ref]]]
             var.pooled <- ((ref.dat - t(design[batches[[ref]],
-                                               ] %*% B.hat))^2) %*% rep(1/n.batches[ref], n.batches[ref])
+            ] %*% B.hat))^2) %*% rep(1/n.batches[ref], n.batches[ref])
         }
         else {
             var.pooled <- ((dat - t(design %*% B.hat))^2) %*%
@@ -151,7 +151,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         if (!is.null(ref.batch)) {
             ref.dat <- dat[, batches[[ref]]]
             var.pooled <- rowVars(ref.dat - t(design[batches[[ref]],
-                                                     ] %*% B.hat), na.rm = TRUE)
+            ] %*% B.hat), na.rm = TRUE)
         }
         else {
             var.pooled <- rowVars(dat - t(design %*% B.hat),
@@ -223,8 +223,8 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
             }
             else {
                 temp <- sva:::it.sol(s.data[, batches[[i]]], gamma.hat[i,
-                                                                       ], delta.hat[i, ], gamma.bar[i], t2[i], a.prior[i],
-                                     b.prior[i])
+                ], delta.hat[i, ], gamma.bar[i], t2[i], a.prior[i],
+                b.prior[i])
                 gamma.star <- temp[1, ]
                 delta.star <- temp[2, ]
             }
@@ -244,7 +244,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
             temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),
                                gamma.hat[i, ], delta.hat[i, ])
             list(gamma.star = temp[1, ], delta.star = temp[2,
-                                                           ])
+            ])
         }, BPPARAM = BPPARAM)
         for (i in 1:n.batch) {
             gamma.star[i, ] <- results[[i]]$gamma.star
@@ -260,8 +260,8 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     j <- 1
     for (i in batches) {
         bayesdata[, i] <- (bayesdata[, i] - t(batch.design[i,
-                                                           ] %*% gamma.star))/(sqrt(delta.star[j, ]) %*% t(rep(1,
-                                                                                                               n.batches[j])))
+        ] %*% gamma.star))/(sqrt(delta.star[j, ]) %*% t(rep(1,
+                                                            n.batches[j])))
         j <- j + 1
     }
     bayesdata <- (bayesdata * (sqrt(var.pooled) %*% t(rep(1,
@@ -305,52 +305,52 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
 ##'     https://github.com/SlavovLab/SCoPE2
 ##' 
 imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
-
+    
     oldi <- i
     exp <- object[[i]]
     dat <- assay(exp)
-
+    
     # Create a copy of the data, NA values to be filled in later
     dat.imp<-dat
-
+    
     # Calculate similarity metrics for all column pairs (default is Euclidean distance)
     dist.mat<-as.matrix( dist(t(dat)) )
     #dist.mat<-as.matrix(as.dist( dist.cosine(t(dat)) ))
-
+    
     # Column names of the similarity matrix, same as data matrix
     cnames<-colnames(dist.mat)
-
+    
     # For each column in the data...
     for(X in cnames){
-
+        
         # Find the distances of all other columns to that column
         distances<-dist.mat[, X]
-
+        
         # Reorder the distances, smallest to largest (this will reorder the column names as well)
         distances.ordered<-distances[order(distances, decreasing = F)]
-
+        
         # Reorder the data matrix columns, smallest distance to largest from the column of interest
         # Obviously, first column will be the column of interest, column X
         dat.reordered<-dat[ , names(distances.ordered ) ]
-
+        
         # Take the values in the column of interest
         vec<-dat[, X]
-
+        
         # Which entries are missing and need to be imputed...
         na.index<-which( is.na(vec) )
-
+        
         # For each of the missing entries (rows) in column X...
         for(i in na.index){
-
+            
             # Find the most similar columns that have a non-NA value in this row
             closest.columns<-names( which( !is.na(dat.reordered[i, ])  ) )
-
+            
             # If there are more than k such columns, take the first k most similar
             if( length(closest.columns)>k ){
                 # Replace NA in column X with the mean the same row in k of the most similar columns
                 vec[i]<-mean( dat[ i, closest.columns[1:k] ] )
             }
-
+            
             # If there are less that or equal to k columns, take all the columns
             if( length(closest.columns)<=k ){
                 # Replace NA in column X with the mean the same row in all of the most similar columns
@@ -360,7 +360,7 @@ imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
         # Populate a the matrix with the new, imputed values
         dat.imp[,X]<-vec
     }
-
+    
     assay(exp) <- dat.imp
     object <- addAssay(object, exp, name = name)
     addAssayLinkOneToOne(object, from = oldi, to = name)
@@ -419,6 +419,37 @@ replaceRowDataCols <- function(object, i, col, value) {
                                 ExperimentList = el,
                                 check = FALSE)
 }
+
+#' longRowData
+#'
+#' @param object 
+#' @param i 
+#' @param rowDataCols 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' 
+#' print("TODO")
+longRowData <- function(object, i, rowDataCols) {
+    ## Extract the rowData and column names from the desired assay(s)
+    rdlist <- rowData(object)[i] 
+    rdNames <- rowDataNames(object)[i]
+    ## Check the rowDataCols argument 
+    if (missing(rowDataCols)) {
+        rowDataCols <- unique(unlist(rdNames))
+    }
+    ## Check that the selected columns exist in all rowData
+    for (ii in seq_along(rdNames)) {
+        if(!all(rowDataCols %in% rdNames[[ii]]))
+            stop("Some 'rowDataCols' are not found in the rowData.")
+    }
+    ## Subset the rowData
+    rdlist <- lapply(rdlist, function(x) x[, rowDataCols])
+    do.call(rbind, rdlist)
+}
+
 
 
 ##' PCA plot suggested by SCoPE2

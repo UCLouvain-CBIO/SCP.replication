@@ -1,0 +1,1269 @@
+---
+title: "Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)"
+author: 
+  - Christophe Vanderaa^[christophe.vanderaa@uclouvain.be], Computational Biology, UCLouvain
+  - Laurent Gatto, Computational Biology, UCLouvain
+date: \today
+abstract: "This vignette presents a robust and standardized workflow to reproduce the data analysis published in Zhu et al. (2019, eLife), the first article to have published a trajectory analysis on mass spectrometry (MS)-based single-cell proteomics (SCP) data. The replication of the analysis is performed using the scp package. This package is based on well-defined Bioconductor classes that provide powerful tools for single-cell RNA sequencing and for MS-based proteomics. We demonstrate that the scp package can be applied to label-free SCP data and can be used to highlight some issues in the data."
+output:
+  bookdown::html_document2: 
+    code_folding: show
+    toc: true
+    toc_float: true
+bibliography: ref.bib
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(fig.width = 7, 
+                      fig.height = 5)
+```
+
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+## Store current time for later record
+timeStart <- Sys.time()
+```
+
+# Introduction 
+
+The hair-cell development study (@Zhu2019-ja) is the first study to 
+apply developmental trajectory analysis to mass spectrometry (MS)-based
+single-cell proteomics (SCP) data. It is also the first paper to apply
+SCP to a biological research question as a tool rather than as a proof
+of concept. This makes reproducing the analysis very appealing as it 
+allows to demonstrate our newly developed software is suited for 
+answering biologically meaningful questions and provides a robust tool
+for standardized and reproducible research. 
+
+The research question here is to better characterize the 
+differentiation of supporting cells into hair cells in the utricle of 
+E15 chick embryos. MS-SCP was conducted on samples containing 
+between 1 and 20 cells. The 20-cell samples were used to perform 
+differential expression analysis between hair cells from supporting 
+cells. The single-cell samples were used to conduct developmental 
+trajectory analysis. This later analysis will be the focus of this 
+vignette.
+
+No code is provided to reproduce the original results. The data was 
+analysed to some extend in Excel and differential expression analysis 
+and trajectory analysis were perform in R using the `limma` and 
+`CellTrails` packages, respectively. Our attempt of reproduction is 
+solely based on the methods section. 
+
+Before starting, we load the replication package to make use of some
+helper functions. Those functions are only meant for this reproduction 
+vignette and are not designed for general use. 
+
+```{r, message = FALSE}
+library("SCP.replication")
+```
+
+### `scp` workflow and data structure
+
+The data processing workflow we carry out in this vignette is inferred
+from the methods section of the paper. Since no reproducible data 
+analysis script was provided, we are not able to accurately evaluate 
+the accuracy of the replication of the results and will rely on the 
+information in the article to assess whether we can come up with the 
+same conclusions.
+
+To perform SCP data analysis, we have developed a new data framework 
+that combines two existing Bioconductor classes. The `SingleCellExperiment`
+class provides an interface to many cutting edge methods for 
+single-cell analysis and the `QFeatures` class facilitates 
+manipulation and processing of MS-based quantitative data. The 
+[`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html) 
+provides detailed information about the data structure. The `scp` 
+package extends the functionality of `QFeatures` for single-cell 
+application.
+
+The required packages for running this workflow are listed below.
+
+```{r libraries}
+## Core packages of this workflow
+library(SingleCellExperiment)
+library(QFeatures)
+library(scpdata)
+library(scp)
+## Utility packages for data manipulation and visualization
+library(tidyverse)
+library(patchwork)
+## Other packages
+library(biomaRt)
+library(CellTrails)
+library(scater)
+library(sva)
+library(splines)
+```
+
+### `scpdata` and the SCoPE2 dataset
+
+We also implemented a data package called `scpdata`. It distributes
+published MS-SCP datasets, such as the dataset that will be analysed 
+in this vignette. The data were downloaded from the data source 
+provided in the publication and formatted to a `QFeatures` object so 
+that it is compatible with our software. The underlying data storage 
+is based on the `ExperimentHub` package that provides a cloud-based 
+storage infrastructure.
+
+The SCoPE2 dataset (@Specht2021-jm) is provided at different levels of
+processing:
+
+The data can be retrieved from the `scpdata` package using the 
+`zhu2019EL()`. The dataset that is analysed in this vignette is called
+`scp`. 
+
+```{r load_data}
+# adapt when the data are updated on EH
+# scp <- zhu2019EL()
+load("~/PhD/.localdata/scpdata/zhu2019EL.Rda")
+scp <- zhu2019EL
+```
+
+The data contain 62 different `SingleCellExperiment` objects that we
+refer to as **assays**. Each assay contains expression data along with
+feature metadata. Each row in an assay represents a **feature** that 
+can either be a PSM, a peptide or a protein depending on the assay. 
+Each column in an assay represents a **sample**. Below, we show the 
+overview of the `scp` dataset.
+
+```{r overview}
+scp
+```
+
+The 60 first are the peptide to spectrum match (PSM) for each run.
+PSMs were quantified and identified by MaxQuant (@Tyanova2016-yj). The
+samples were acquired using a label-free protocol meaning that every 
+run contains an individual sample and therefore every assay contains 
+a single column. The before last assay contains the peptide 
+quantifications and the last assay contains the protein 
+quantifications, both also generated by MaxQuant.
+
+The sample annotation can be found in the `colData` of the dataset. 
+There three important annotation fields: 
+
+- `Cells.per.well`: the samples contains either 0 (blank), 1 
+(single-cell), 3, 5, or 20 cells
+- `FM1.43.signal`: single-cells from chicken utricles were first 
+separated using FACS based on FM1-43 labelling, which was reported to 
+label more strongly hair cells than supporting cells (@Zhu2019-ja).
+- `Experiment`: the samples were acquired in two separate experiments
+(batches). From the MS file names (see `Raw.file` in the `colData`),
+the two experiments seemed to be acquired with one year interval.
+
+```{r}
+colData(scp)
+```
+
+Throughout the vignette, we will `ggplot2` from the `tidyverse` 
+project (@Wickham2019-fz) to visualize the data. For example, we can
+show the distribution of the number of cells per sample according to 
+the experiment and the FM1-43 signal. 
+
+```{r}
+colData(scp) %>%
+    data.frame %>%
+    ggplot() +
+    aes(x = as.factor(Cells.per.well), 
+        fill = FM1.43.signal) +
+    geom_bar(stat = "count", position = "dodge") +
+    facet_grid(~ Experiment, labeller = label_both)
+```
+
+# Data processing
+
+## Add iBAQ assay
+
+The author ran MaxQuant with iBAQ computation enabled. Those values 
+are currently stored in the `rowData` of the `proteins` assays. We 
+will add an additional assay containing the iBAQ values. We can easily
+create a new assay of class `SingleCellExperiment` from a data table 
+using the `readSingleCellExperiment` function. We first extract the 
+`rowData` and we retrieve the columns that contains the iBAQ values 
+(those column names start with `iBAQ`). 
+
+```{r get_iBAQ}
+ibaqData <- rowData(scp)[["proteins"]]
+ibaqCols <- grep("^iBAQ.", colnames(ibaqData), value = TRUE)
+head(ibaqCols)
+```
+
+Next, we can supply the data table and the iBAQ quantification columns
+to `readSingleCellExperiment`. We use the `Protein` information in the 
+table to set the row names of the assay. Finally, we adapt to column 
+names to match the column names in the `scp` data set. 
+
+```{r create_iBAQ_SCE}
+ibaqSCE <- readSingleCellExperiment(table = data.frame(ibaqData),
+                                    ecol = ibaqCols,
+                                    fnames = "Protein")
+colnames(ibaqSCE) <- sub("iBAQ.", "", colnames(ibaqSCE))
+```
+
+We add the iBAQ assay in the `scp` data set using the `addAssay` 
+function. We also preserve the one-to-one relationship between 
+protein quantifications and the iBAQ quantifications using the 
+`addAssayLinkOneToOne`.
+
+```{r addAssay}
+scp <- addAssay(scp, ibaqSCE, name = "proteins_iBAQ")
+scp <- addAssayLinkOneToOne(scp, from = "proteins", to = "proteins_iBAQ")
+```
+
+In the article, the authors claim that:
+
+> (...) the total iBAQ attributed to keratins (e.g., human skin 
+contamination) was only 0.1% of the total (...)
+
+Let's check this by first computing the total iBAQ across all samples.
+We can access the quantification data using the `assay` method. 
+
+```{r}
+iBAQ <- assay(scp[["proteins_iBAQ"]])
+iBAQtotal <- sum(iBAQ, na.rm = TRUE)
+```
+
+To compute the total iBAQ for contaminating proteins, we need to 
+select only the contaminating proteins. This is performed using the 
+`filterFeatures` function which will keep features that pass a filter
+applied on the `rowData` variables. In this case, the 
+`Potential.contaminant` field generated by MaxQuant allows to easily 
+filter out contaminating proteins. Note that we ignore `P07477` 
+corresponding to trypsin because the author's claim is about keratin 
+contamination.
+
+```{r filter_iBAQ}
+scpfilt <- filterFeatures(scp, ~ Potential.contaminant == "+" & 
+                              !grepl("P07477", Protein))
+```
+
+We can now compute the total iBAQ for the contaminating proteins. 
+
+```{r}
+iBAQ <- assay(scpfilt[["proteins_iBAQ"]])
+iBAQContam <- sum(iBAQ,  na.rm = TRUE)
+cat("Proportion of contaminating iBAQ signal:", 
+    round(iBAQContam / iBAQtotal * 100, 2), "%\n")
+```
+
+Surprisingly, the proportion of contaminating iBAQ signal that we 
+compute here is about 30 \% which is much higher than the reported 
+0.1 \%.
+
+## Remove decoys and contaminating proteins
+
+As shown above, a significant proportion of the quantification is 
+attributed to contaminating proteins. We will therefore remove those 
+along with decoy peptides. This step is not mentioned in the 
+article, but this is commonly applied and will avoid artefacts. 
+
+```{r}
+scp <- filterFeatures(scp,
+                      ~ Reverse != "+" & 
+                          Potential.contaminant != "+")
+```
+
+## Format missing data
+
+In MS-SCP, zeros can be biological zeros or technical zeros and 
+distinguishing the two types is a difficult task, they are therefore 
+better considered as missing to avoid artefacts in downstream 
+analyses. The `zeroIsNA` function automatically detects zero values
+and replace them with `NA`s. Those two functions are provided by the
+`QFeatures` package.
+
+```{r set_missing}
+scp <- zeroIsNA(scp, i = names(scp))
+```
+
+# Technical performance
+
+In this section, we reproduce some of the plots in figure 1. This 
+figure depicts different technical aspects of the data 
+such as number of detected unique peptides and protein groups, or the 
+distribution of iBAQ values. We also propose additional plots to 
+further assess the quality of the acquisition. 
+
+```{r figure1, results='markup', fig.cap="Figures 1 from Zhu et al. 2019.", echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figs/zhu2019EL-figure1.jpg", error = FALSE)
+```
+
+
+## Number of proteins vs number of cells
+
+Let's assess the number of protein groups identified in each sample 
+with respect to the number of cells in the sample. The authors were
+also interested whether the cell type would influence the number of 
+identified peptides. Only the data from experiment 1 is used to 
+generate the plot (see legend of Figure 1 in article).
+
+Counting the number of proteins per sample is straightforward thanks 
+to the `countUniqueFeatures` function from `QFeatures`. We select
+the protein assay, count the number of unique protein groups (the 
+function will automatically ignore missing data) and store the counts
+in a new variable in the `colData` (we call it here `Protein_counts`).
+
+```{r protein_count}
+scp <- countUniqueFeatures(scp, i = "proteins",
+                           colDataName = "Protein_counts")
+```
+
+We can plot the counts from the colData, but we first filter the data
+coming from experiment 1 and average the counts to replicate the 
+figure in the article. This is performed using functionality from the 
+`dplyr` package.
+
+```{r protein_count_average}
+colData(scp) %>% 
+    data.frame %>% 
+    ## Take only Experiment 1
+    filter(Experiment == "1") %>%
+    ## Compute mean and standard error per cell number
+    group_by(FM1.43.signal, Cells.per.well) %>%
+    summarise(mean = mean(Protein_counts),
+              stderr = sd(Protein_counts) / sqrt(length(Protein_counts))) ->
+    df
+```
+
+We then plot the data using `ggplot2`. 
+
+```{r Protein_count_plot, fig.widht = 3, fig.height = 3}
+ggplot(df) +
+    aes(x = Cells.per.well,
+        y = mean,
+        group = FM1.43.signal,
+        color = FM1.43.signal) +
+    geom_errorbar(aes(ymin = mean - stderr,
+                      ymax = mean + stderr),
+                  color = "grey", width = 0.5) +
+    geom_smooth(method = 'lm', 
+                formula = y ~ poly(x, 2), 
+                color = "grey", lwd =0.5, se = FALSE) + 
+    geom_point(size = 2) +
+    ## Customize the plot aspect to match the figure design
+    theme_classic() +
+    scale_color_manual(values = c("green3",  "black")) +
+    ylab("Proteins or groups") +
+    xlab("# cells")
+```
+
+This plot replicates the figure 1G in the article. More features are 
+found in the FM1-43 high cells compared to the FM1-43 low cells. 
+
+## Number of peptides vs number of cells
+
+The authors also showed the number of unique peptides identified in 
+each sample with respect to the number of cells in the sample. They 
+further split this information based on the FM1-43 signal level and on 
+the type of identification (direct MS/MS matching or match between 
+run) when applicable. Only the data from experiment 1 is used to 
+generate the plot (see legend of Figure 1 in article).
+
+Counting the peptides could be again performed using 
+`countUniqueFeatures`, but since we want to count with respect to the 
+type of identification method, we will need some more sophisticated 
+code. First, we collect the PSM meta-information contained in the 
+`rowData` of the assays. This is where the type of identification 
+method (`Type`) is stored. 
+
+```{r collect_rowData, message=FALSE}
+rd <- longRowData(scp, i = 1:60, 
+                  rowDataCols = c("Sequence", "Type", "Sample.name"))
+```
+
+Next, we combine the rowData with the sample annotation contained in 
+the `colData`. This is performed using the `left_join` function from 
+`dplyr`. The sample name is used as common variable to control the data
+joining. Joining the two tables allow to include information about the
+FM1-43 signal and the number of cells per sample. 
+
+```{r join_colData}
+df <- left_join(data.frame(rd), 
+                data.frame(colData(scp)),
+                by = "Sample.name")
+```
+
+We next constrain the data to only samples from experiment 1. We also
+encode the type of PSM identification method to be either direct 
+matching (MS/MS) or match between run (MBR).
+
+```{r, message=FALSE}
+df <- filter(df, Experiment == "1")
+df <- mutate(df, Type = ifelse(Type == "MULTI-MATCH", "MBR", "MS/MS"))
+```
+
+We then compute the number of feature per sample and per 
+identification type. The counts are also averaged to plot the mean 
+counts and associated standard error.
+
+```{r count_peptides, message=FALSE}
+df %>% 
+    ## Count the number of peptides in each sample per identification type
+    group_by(FM1.43.signal, Cells.per.well, Type, Sample.name) %>%
+    summarise(n = n()) %>%
+    ## Compute the average count
+    group_by(FM1.43.signal, Cells.per.well, Type) %>%
+    summarise(mean = mean(n),
+              stderr = sd(n)/sqrt(length(n))) ->
+    df
+```
+
+Finally, we plot the data using `ggplot2`. 
+
+```{r, fig.height=3, fig.width=6}
+ggplot(df) +
+    aes(x = Cells.per.well,
+        y = mean,
+        shape = Type,
+        fill = FM1.43.signal) +
+    geom_errorbar(aes(ymin = mean - stderr, 
+                      ymax = mean + stderr),
+                  color = "grey", 
+                  width = 0.5) +
+    stat_smooth(method = 'lm', 
+                formula = y ~ poly(x, 2), 
+                color = "grey", 
+                lwd =0.5, se = FALSE) + 
+    geom_point(size = 2) +
+    facet_grid( ~ FM1.43.signal,
+                labeller = labeller(.cols = label_both)) +
+    ## Customize the plot aspect to match the figure design
+    theme_classic() +
+    scale_fill_manual(values = c("green3",  "black"), guide = FALSE) +
+    scale_shape_manual(values = c(22, 21)) +
+    ylab("Unique peptides") +
+    xlab("# cells")
+```
+
+This graph replicates figure 1 D and E in the article. There is an 
+almost linear trend between number of peptides and the number of cells
+per sample when considering direct MS/MS identification. This plot 
+also shows that more features are found in the FM1-43 high cells 
+compared to the FM1-43 low cells. 
+
+## Total iBAQ vs number of cells
+
+Figure 1F in the article shows the distribution of the total iBAQ with 
+respect to the number of cells per samples. It is expected that 
+samples with more cells exhibit more signal and this plot assess 
+whether the quantification is linear with respect to the number of 
+cells present in the sample. 
+
+Again, the data is taken from experiment 1. We first extract the 
+quantitative data along with sample annotation. We use the 
+`longFormat` function to collect the data as a long table format that 
+is particularly useful to work with `ggplot2`. 
+
+```{r}
+longdat <- longFormat(scp[, , "proteins_iBAQ"],
+                      colDataCols = c("Sample.name", "Experiment",
+                                      "Cells.per.well", "FM1.43.signal"))
+```
+
+As for the number of proteins and peptides, we compute the average and
+standard error of the iBAQ values over the number of cells per sample
+and the FM1-43 signal. We also again constrain the data only to data
+generated by experiment 1. 
+
+```{r, fig.width = 3, fig.height = 3}
+df <- filter(data.frame(longdat), Experiment == 1)
+df %>% 
+    ## Compute the total iBAQ
+    group_by(Sample.name, FM1.43.signal, Cells.per.well) %>%
+    summarise(total = sum(value, na.rm = TRUE)) %>%
+    ## Compute mean and standard error per cell number
+    group_by(FM1.43.signal, Cells.per.well) %>%
+    summarise(mean = mean(total),
+              stderr = sd(total)/sqrt(length(total))) ->
+    df
+```
+
+Finally, we plot the data.
+
+```{r, fig.width = 3, fig.height = 3}
+ggplot(df) +
+    aes(x = Cells.per.well,
+        y = mean, 
+        group = FM1.43.signal,
+        color = FM1.43.signal) + 
+    geom_errorbar(aes(ymin = mean - stderr, 
+                      ymax = mean + stderr),
+                  color = "grey", 
+                  width = 0.5) +
+    geom_smooth(method = 'lm', 
+                formula = y ~ poly(x, 2), 
+                color = "grey", 
+                lwd =0.5, se = FALSE) + 
+    geom_point(size = 2) +
+    ## Customize the plot aspect
+    theme_classic() +
+    scale_color_manual(values = c("green3",  "black"), guide = FALSE) +
+    ylab("total iBAQ") +
+    xlab("# cells")
+```
+
+Again, the above figure accurately reproduces figure 1F from the 
+article.
+
+## Total iBAQ in single-cells
+
+Another quality check is to plot the iBAQ distribution for 
+single-cells and blank samples. This distribution is shown for samples
+coming from experiment 2 that contains more single-cell samples. The 
+authors showed that the total iBAQ is not a good criterion to 
+distinguish blank and single-cell samples. 
+
+Using the same table generated by `longFormat`, we filter the data 
+generated by experiment 2 and only containing blank or single-cells 
+samples. FM1-43 signal coming from blanks is considered as noise, and
+we sume the total iBAQ for each sample. 
+
+```{r}
+filter(data.frame(longdat), 
+       Experiment == 2 & Cells.per.well <= 1) %>% 
+    ## M1-43 signal from blanks is noise
+    mutate(FM1.43.signal = ifelse(Cells.per.well == 0, 
+                                  "noise", FM1.43.signal)) %>% 
+    ## Compute total iBAQ
+    group_by(Sample.name, FM1.43.signal) %>%
+    summarise(tiBAQ = sum(value, na.rm = TRUE)) ->
+    df
+```
+
+We plot the distribution of the total iBAQ.
+
+```{r, fig.width = 5, fig.height = 3}
+ggplot(df) + 
+    aes(x = tiBAQ, 
+        fill = FM1.43.signal) +
+    geom_histogram(binwidth = 5E5,
+                   position = "dodge") +
+    ## Customize the plot aspect
+    theme_classic() +
+    scale_fill_manual(values = c("green3", "black", "red")) +
+    scale_x_continuous(labels = scales::scientific) +
+    xlab("Total iBAQ")
+```
+
+Surprisingly, this plot does not reporduce figure 1H. We do not 
+observe the same values for the total iBAQ and the number of samples 
+is different (we have 21, while the article shows 23 samples). The 
+value ranges are also different: $(0, 2.10^6)$ against $(0, 4.10^6)$.
+
+## Number of proteins in single-cells
+
+While the total iBAQ cannot distinguish blanks from single cells, the
+distribution of the number of proteins identified can separate 
+single cells from blank samples. Recall that we already stored the 
+protein counts in the `colData`. We can filter those counts to contain
+data only for experiment 2 and blank and single-cell samples.
+
+```{r, fig.width = 5, fig.height = 3}
+colData(scp) %>% 
+    data.frame %>% 
+    ## Keep only single cells or blanks coming from experiment 2
+    filter(Experiment == 2 & 
+               Cells.per.well <= 1) %>%
+    mutate(FM1.43.signal = ifelse(Cells.per.well == 0, 
+                                  "noise", FM1.43.signal)) %>% 
+    ## Plot
+    ggplot() +
+    aes(x = Protein_counts, 
+        fill = FM1.43.signal) +
+    geom_histogram(binwidth = 20,
+                   position = "dodge") +
+    ## Customize the plot aspect
+    theme_classic() +
+    scale_fill_manual(values = c("green3", "black", "red")) +
+    xlab("Proteins or groups")    
+```
+
+This plot should replicate figure 1I in the article. Surprisingly, we
+observe the same values for single-cell samples (except there are 2
+missing samples), but the blank samples are are not all contained in
+the 0-20 protein bin! Furthermore, binning the data is misleading. A 
+better plot is shown below. More than half of the single-cell samples
+have **less or equal** identified proteins compared to blank samples.
+
+```{r, fig.width = 4, fig.height = 3}
+colData(scp) %>% 
+    data.frame %>% 
+    ## Keep only single cells or blanks coming from experiment 2
+    filter(Experiment == 2 & 
+               Cells.per.well <= 1) %>%
+    mutate(FM1.43.signal = ifelse(Cells.per.well == 0, 
+                                  "noise", FM1.43.signal)) %>% 
+    ## Plot
+    ggplot() +
+    aes(y = Protein_counts, 
+        x = FM1.43.signal) +
+    geom_boxplot() +
+    geom_jitter(aes(col = FM1.43.signal), height = 0) +
+    ## Customize the plot aspect
+    theme_classic() +
+    scale_colour_manual(values = c("green3", "black", "red"))
+```
+
+## Intensity distribution within single-cells
+
+An aspect of the data that has been overlooked in the original article 
+is the distribution of the PSM intensities in individual cells. Since 
+the number of single-cells is rather low, we can easily show all 
+distributions on a single figure. Furthermore, we can also include the 
+type of identification as additional information. This is stored in 
+the PSM assays. 
+
+We collect the data using the same functionality as presented before. 
+
+```{r}
+longFormat(scp[, , 1:60],
+           colDataCols = c("Cells.per.well", "FM1.43.signal"),
+           rowDataCols = "Type") %>%
+    data.frame %>%
+    ## Keep only single cells and blanks
+    filter(Cells.per.well <= 1) %>%
+    ## Clean data
+    mutate(Cells.per.well = as.factor(Cells.per.well),
+           FM1.43.signal = ifelse(Cells.per.well == 0, 
+                                  "noise", FM1.43.signal),
+           Type = ifelse(Type == "MULTI-MATCH", "MBR", "MS/MS")) ->
+    df
+```
+
+We plot the PSM intensities for each sample separately. The 
+distribution within each sample is best summarized using boxplots. We
+colour the PSMs based on the peptide identification method. 
+
+```{r, fig.width = 8, fig.height = 4}
+ggplot(df) +
+    aes(x = assay, 
+        y = value,
+        colour = Type) +
+    geom_boxplot(colour = "grey40", outlier.colour = "transparent") +
+    geom_jitter(alpha = 0.5, size = 0.75) +
+    facet_grid(~ FM1.43.signal, scales = "free_x", 
+               space = "free_x", labeller = label_both) +
+    scale_y_log10() +
+    ## Customize the plot aspect
+    scale_color_manual(values = c("grey40", "orange2")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90),
+          legend.position = "bottom") +
+    ylab("PSM intensity") +
+    xlab("Sample")
+```
+
+Two observations can be drawn from this plot:
+
+1. We can clearly notice that MBR allows to increase the sensitivity 
+of the identification as low intensity PSMs are mostly identified 
+by MBR. This is expected as low intensity PSMs have an associated 
+spectrum that is harder to identify. However, it is surprising to 
+see that the PSMs with highest intensities are also identified 
+using MBR, those PSMs could be artefacts from the matching. 
+2. Many samples (n = 11) have low number of PSMs. Those samples cannot 
+be differentiated from blanks (three last samples) and this indicates 
+that the run failed for those samples. We would advice to remove 
+those samples from the analysis. 
+
+# Developmental trajectory analysis
+
+This part of the analysis is truly single-cell analysis. The 
+developmental trajectory analysis infers the developmental states and
+paths that the acquired are following or have achieved and hence 
+elucidating the mechanisms of differentiation of supporting cells 
+towards specialized hair cells in the utricle.
+
+## The workflow
+
+The method section for this analysis mentions: 
+
+> For single-cell analysis, we filtered all identifications that were 
+robustly detected in at least five cells, leaving a total of 75 
+proteins (or protein groups). The iBAQ values for proteins in the 30 
+single cells were normalized to the median of the cells’ mean 
+expression and log2-transformed; non detected values were kept as 
+zeros to avoid imputation artifacts. The empirical Bayes framework 
+available in the sva R package was used to remove the batch covariate, 
+while accounting for the FM1-43 levels as covariate of interest. The 
+same framework has been used previously to correct for batch effects 
+in protein mass spectrometry data. The resulting values are referred 
+to as log2-normalized iBAQ (niBAQ) units. The relationship between 
+protein expression variance and its average expression was fitted 
+using a log-log cubic smoothing spline with four degrees of freedom; 
+37 proteins with a higher average expression than a log2niBAQ value of
+1.0 and a higher variance than the fit (Figure 4A) were kept for 
+dimensionality reduction. The lower-dimensional manifold(four 
+dimensions) was computed and a trajectory was inferred using the 
+CellTrails R package. Protein expression dynamics were calculated by 
+fitting the rolling mean with a window size of five of the log2 niBAQ 
+values and the pseudotime axis using a cubic smoothing spline function 
+with 4-degrees of freedom.
+
+The results of the trajectory analysis on the SCP data is shown in 
+figure 4 in the paper. 
+
+```{r figure4, results='markup', fig.cap="Figure 4 from Zhu et al. 2019.", echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figs/zhu2019EL-figure4.jpg", error = FALSE)
+```
+
+First, we subset the data to keep only single-cell data. Note that we 
+use `drop = TRUE` to drop any MS run that does not contain a single 
+cell.
+
+```{r}
+scp <- scp[, scp$Cells.per.well == 1, drop = TRUE]
+scp
+```
+
+We can already see there is an issue with respect to the method 
+section. They document an analysis on 30 single-cells, but we here see
+that only 28 cells are present in this dataset. Furthermore, as 
+mentioned in the previous section, some single-cell runs have failed 
+and should be removed. This seriously limits the trust we can have in
+the results.
+
+## Feature selection based on protein detection rate
+
+The first selection filter applied by the authors is to keep only 
+proteins that are identified in at least 5 cells.
+
+```{r}
+sel <- rowSums(!is.na(assay(scp[["proteins_iBAQ"]]))) >= 5
+sel <- names(sel)[sel]
+## TODO the data became inconsistent!!
+# scp <- scp[sel, , ]
+scp[["proteins_iBAQ"]] <- scp[["proteins_iBAQ"]][sel, ]
+scp[["proteins_iBAQ"]]
+```
+
+We are left with 81 selected proteins against 75 proteins kept by
+the authors. Before proceeding with the workflow, we will assess the 
+overlap between the selected proteins in this vignette and the 
+selected proteins in the article. Figure 4E provides a heatmap with
+the names of the 75 selected proteins. 
+
+```{r}
+selpaper <- c("LRRC59", "PGM1", "HBBA", "ERP44", "KRT7", "SRSF6", 
+              "TPM3", "RAN", "HSP90B1", "AGR3", "TMSB4X", "HIST1H101",
+              "EEF1A2", "PDIA3", "EEF2", "CAPRIN1", "ARID4A", "RPN1",
+              "CCT7", "CNN2", "HIST2H3", "PPIA", "ARF3", "HSPA5",
+              "GST2L", "SYN3", "DPYSL2", "CLTC", "ANXA2", "VDA2",
+              "PKM", "VIM", "RAB15", "ACTG1", "CIRBP", "YWHAE",
+              "HNRNPA2B1", "H2AFV", "HNRNPM", "RPS27A", "GOT2", 
+              "HNRNPH2", "HNRNPH3", "LDHB", "HSPA8", "TUBB4B", 
+              "ZC3H14", "MYO6", "ATP5A1W", "PRDX1", "HSPE1", "CALM2",
+              "TUBA1A1", "ENO1", "OCM", "GAPDH", "LOC107051177", 
+              "CALB2", "CKB", "SLC25A6", "OTOF", "MDH2", "HSP90AA1",
+              "ATP5F1B", "CALR", "MDH1", "CRABP1", "RPS28", "PGK1", 
+              "HIST1H2B5L", "HIST1H4D", "COX4I1", "TPI1", "RTN1", 
+              "TXN")
+```
+
+The proteins names in the `sce` data are encoded as Ensembl ID. We 
+convert them to protein symbols using the `biomaRt` package.
+
+```{r}
+gallus <- useMart("ensembl", dataset = "ggallus_gene_ensembl")
+conversionDF <- getBM(values = sel,
+                      attributes = c("ensembl_peptide_id", "uniprot_gn_symbol"), 
+                      filters = "ensembl_peptide_id",
+                      mart = gallus)
+## Remove duplicate gene symbol
+conversionDF <- conversionDF[conversionDF$uniprot_gn_symbol != "CRABP-I", ]
+conversionDF <- conversionDF[!duplicated(conversionDF$ensembl_peptide_id), ]
+selscp <- conversionDF$uniprot_gn_symbol
+```
+
+We next plot the number of proteins found only in this replication,
+only in the paper, or in both the replication and paper. 
+
+```{r, fig.width = 3, fig.height = 3}
+allprots <- unique(c(selscp, selpaper))
+data.frame(paper = allprots %in% selpaper,
+           scp = allprots %in% selscp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(paper, scp) %>%
+    summarise(count = n()) %>%
+    ggplot() +
+    aes(x = paper,
+        y = scp,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    ## Customize the plot aspect
+    scale_size_continuous(limits = c(0, 50)) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) 
+```
+
+There is only about 60 \% overlap between the proteins selected here
+and the proteins selected in the paper. This already means it is 
+impossible to accurately replicate the trajectory analysis results 
+since the data sets do not agree from the start.
+
+## Normalization
+
+The single-cells were normalized to the median of the cells’ mean 
+expression. 
+
+We first compute the normalization factor. The normalization factor 
+for each cell is the mean iBAQ of the cell. We then scale the factor 
+by the median of the factor.
+
+```{r}
+## Compute sample mean
+scp[["proteins_iBAQ"]] %>%
+    assay %>%
+    apply(2, mean, na.rm = TRUE) -> 
+    nf
+## Scale by the median 
+nf <- nf / median(nf)
+```
+
+Then, we apply the resulting normalization factor to the data and 
+create a new assay. This can be done using the `sweep` method that 
+behaves like the base `sweep` function for matrices, but takes a 
+`QFeatures` object and an index to the assay to modify. A new assay 
+we call `proteins_niBAQ` is added to the dataset. 
+
+```{r}
+scp <- sweep(scp,
+             i = "proteins_iBAQ",
+             MARGIN = 2, ## (by column)
+             FUN = "/", 
+             STATS = nf,
+             name = "proteins_niBAQ")
+```
+
+## Log-transformation
+
+The normalized values are then log-transformed. This is implemented in
+the `logTransform` function in `QFeatures`. We use a base 2 
+log-transformation as indicated in the methods section. The function
+will add a new assay that we call `proteins_log2niBAQ`. 
+
+```{r}
+scp <- logTransform(scp,
+                    base = 2,
+                    i = "proteins_niBAQ",
+                    name = "proteins_log2niBAQ")
+```
+
+## Imputation
+
+Missing data in the log-transformed assay are imputed with zeros. We
+replicate this using the `impute` function from `QFeatures`, 
+specifying the `zero` method. 
+
+```{r}
+scp <- impute(scp, 
+              i = "proteins_log2niBAQ", 
+              method = "zero")
+```
+
+## Batch correction 
+
+Next, the data is batch corrected using the `ComBat` algorithm. The 
+algorithm requires a design matrix to protect the covariate against 
+the batch correction and therefore include `FM1.43.signal` in the 
+model. We also need to supply the covariate that indicates the batch 
+structure we want to correct against, `Experiment` in this case. 
+
+```{r}
+## Get the colData of the assay of interest
+cd <- colData(getWithColData(scp, "proteins_log2niBAQ"))
+## Build the design matrix for batch correction
+model <- model.matrix(~ FM1.43.signal, data = cd)
+## Get the batch covariate
+batch <- cd$Experiment
+```
+
+We then extract the data matrix containing the quantitative values 
+and run `ComBat`. Note that we here use the `ComBatv3.34` function 
+that is provided in the `SCP.replication` package. This function was 
+taken from an older version of the `sva` package (version `3.34.0`). 
+This is to use the same software as in the article. More recent 
+versions will avoid batch correction for proteins that show no 
+variance within at least one batch and this occurs for 16 out of 81 
+proteins.
+
+```{r}
+sce <- scp[["proteins_log2niBAQ"]]
+## Perform batch correction
+assay(sce) <- ComBatv3.34(dat = assay(sce), 
+                          batch = batch, 
+                          mod = model)
+## Add assay
+scp <- addAssay(scp, 
+                sce, 
+                name = "proteins_log2niBAQ_bc")
+scp <- addAssayLinkOneToOne(scp,
+                            from = "proteins_log2niBAQ",
+                            to = "proteins_log2niBAQ_bc")
+```
+
+## Fitting the trajectory
+
+The trajectory fitting is performed using `CellTrails`. `CellTrails` 
+is a Bioconductor package initially developed to perform trajectory 
+analysis on single-cell RNA sequencing (scRNA-Seq) data 
+(@Ellwanger2018-vn). The software is provided with high quality 
+documentation, such as a user 
+[guide](https://dcellwanger.github.io/CellTrails-handbook/).
+
+`CellTrails` relies on the `SingleCellExperiment` data class. Since 
+our framework also relies on `SingleCellExperiment`, our dataset can 
+be readily supplied to `CellTrails`. We only need to extract the assay
+of interest, that is the log-normalized and batch correct protein iBAQ
+values.
+
+```{r}
+sce <- getWithColData(scp, "proteins_log2niBAQ_bc")
+sce
+```
+
+`CellTrails` assumes that the data was processed using a classical 
+scRNA-Seq pipeline and expect the assay to be called `logcounts`. 
+Hence, we adapt the name of the data matrix although quantitative data
+**are not** logcounts.
+
+```{r}
+assayNames(sce) <- "logcounts"
+```
+
+There are several steps to run `CellTrails`, each step containing 
+several parameters. Only little information is available from the 
+methods section and will therefore heavily rely on the `CellTrails` 
+user guide and assume that default parameters were applied. 
+
+### Select highly variable proteins
+
+Highly variable proteins are identified based on the relationship 
+between the mean of log expression and the variance of log expression.
+This is commonly performed in scRNA-Seq and a general trend is fit to
+estimate the technical variability. Genes that are significantly 
+higher than this trend might contain interesting biological 
+variability and are therefore selected. In this case a smoothing 
+spline is fit and proteins above the trend are kept. 
+
+We compute the mean and variance of the protein log expressions and 
+store them in a table. Using the functions `rowMeans` (from `base`) and
+`rowVars` (from `matrixStats`), we can directly compute those metrics
+from the quantification matrix.
+
+```{r}
+rvar <- rowVars(assay(sce))
+rmean <- rowMeans(assay(sce))
+df <- data.frame(name = rownames(sce),
+                 Mean = rmean,
+                 Variance = rvar)
+```
+
+We next model the mean-variance relationship using b-spline regression.
+Proteins are considered to contain interesting variability if the 
+variance is higher than the fitted trend.
+
+```{r}
+df$Fit <- lm(Variance ~ bs(Mean, df = 4), 
+             data = df)$fitted.values
+df$VarianceLevel <- ifelse(df$Variance > df$Fit, "High", "Low")
+```
+
+The plot below attempts to reproduce figure 4A. While the fitted trend
+is similar than in the original figure, the ranges for both mean and 
+variance are different between the two graph. This implies that the 
+methods section did not provide sufficient information to accurately 
+reproduce the workflow. 
+
+```{r, fig.width = 4, fig.height = 3}
+ggplot(df) +
+    aes(x = Mean) +
+    geom_point(aes(col = VarianceLevel, 
+                   y = Variance),
+               fill = "transparent", shape = 1) +
+    geom_line(aes(y = Fit)) +
+    theme_classic()
+```
+
+The variance level is stored in the `rowData` so that it can be 
+accessed during the data embedding. 
+
+```{r}
+rowData(sce)$VarianceLevel <- df$VarianceLevel
+```
+
+
+### Spectral embedding
+
+The spectral embedding compresses the protein quantification data in a
+few components so to reveal trajectory information between cells. The
+embedding is computed directly from the `SingleCellExperiment` 
+object. The optimal number of latent components are automatically 
+identified from the scree plot. The embedding is computed only using 
+genes with high variance. 
+
+```{r, fig.width = 4, fig.height = 4}
+embedding <- embedSamples(sce[rowData(sce)$VarianceLevel == "High", ])
+d <- findSpectrum(embedding$eigenvalues, frac = 16)
+```
+
+In this vignette, we find that 3 components are sufficient to 
+represent the latent trajectory, but the authors used 4 latent 
+dimensions. To stick to the replication, we will use 4 components as 
+well. The embedding is stored in the object as latent space 
+information.
+
+```{r}
+latentSpace(sce) <- embedding$components[, 1:4]
+```
+
+We plot the computed embedding and colour the single-cell depending on
+the FM1-43 signal. 
+
+```{r, fig.width = 5, fig.height = 4}
+plotManifold(sce, 
+             color_by = "phenoName", 
+             name = "FM1.43.signal") + 
+    scale_fill_manual(values = c("green3",  "grey40")) +
+    theme_minimal()
+```
+
+This plot is similar to figure 4B as we can see that the embedding
+almost perfectly separates the two cell types. Two FM1-43 low cells
+are found in the high group and three FM1-43 high cells are found in 
+the low group. This is also found in the article. 
+
+Another interesting dimension reduction technique is PCA. PCA performs
+dimension reduction but keeping information about the amount of 
+variance that is extracted by each component. We compute the PCA using
+the `runPCA` from the `scater` package. 
+
+```{r, fig.width = 5, fig.height = 4}
+sce <- runPCA(sce)
+plotPCA(sce, 
+        shape_by = "Experiment",
+        colour_by = "FM1.43.signal") + 
+    scale_colour_manual(values = c("green3",  "grey40"))
+```
+
+The PCA plot also shows good separation between the two cell types. 
+Moreover, the batch correction allowed a good mixing of the two 
+experimental batches. Almost half of the variance is explained by the 
+two components, indicating a string biological effect. 
+
+### Clustering
+
+The clustering allows to identify trajectory states from the 
+embedding. The `findState` requires a few parameters. Since no 
+description of the parameters is provided in the article, we set all 
+parameters to default, except for the `max_pval`. We increased the 
+threshold from $10^{-4}$ to $0.05$ so that at least 2 states are 
+found.
+
+```{r}
+cl <- findStates(sce, 
+                 min_size = 0.01, 
+                 min_feat = 5, 
+                 max_pval = 0.05, 
+                 min_fc = 2)
+states(sce) <- cl
+```
+
+The states correlate well with the FM1-43 staining. 
+
+```{r, fig.width = 4, fig.height = 3}
+colData(sce) %>%
+    data.frame %>%
+    ggplot(aes(x = CellTrails.state,
+               fill = FM1.43.signal)) +
+    geom_bar(stat = "count", 
+             position = "dodge") +
+    scale_fill_manual(values = c("green3",  "grey40"))
+```
+
+### Trajectory fit
+
+Next, we fit the trajectory. The states are connected. Since two 
+states were found, the connection is trivial. The state connections 
+are projected onto the latent space. Samples are projected using this
+backbone trajectory. 
+
+```{r}
+sce <- connectStates(sce)
+sce <- fitTrajectory(sce)
+```
+
+The trajectory layout must then be computed. This is done using the 
+[*yED*](https://www.yworks.com/products/yed) software that will build
+a tree graph layout from the data. This is performed manually (see 
+the `CellTrails` 
+[vignette](https://dcellwanger.github.io/CellTrails-handbook/celltrails-maps.html#graph-layout)
+for more information). The graph layout is stored in the 
+`SingleCellExperiment` object. 
+
+```{r, eval = FALSE}
+write.ygraphml(sce = sce,
+               file = 'zhu2019EL_CellTrails.graphml',
+               color_by = 'phenoName',
+               name = 'state',
+               node_label = 'state')
+```
+
+The `graphml` file was further processed manually using the yED 
+sofwtare as suggested in the user guide. This allows to arrange the 
+fitted trajectory. This is saved back to file, reloaded and stored in
+the data as `trajLayout`. 
+
+```{r}
+tl <- read.ygraphml("zhu2019EL_CellTrails.graphml")
+trajLayout(sce, adjust = TRUE) <- tl
+```
+
+We plot the output trajectory. 
+
+```{r, fig.height = 3, fig.width = 4}
+plotMap(sce, 
+        color_by = "phenoName", 
+        name = "FM1.43.signal") +
+    scale_fill_manual(values = c("green3",  "grey40"))
+```
+
+This trajectory is trivial because only a simple line can be drawn
+between two states. 
+
+### Pseudotime
+
+The trajectory inference also yields pseudotime inference. We define 
+a trail, since only two states were found (labeled `H1` and `H2`) only 
+one trail is possible. We add the new trail and stored the pseudotime 
+in the `colData`. 
+
+```{r}
+sce <- addTrail(sce, from = "H1", to = "H2", name = "trail")
+sce$Pseudotime <- trails(sce)[, 1] / max(trails(sce)[, 1]) * 100
+```
+
+We plot the pseudotime across the different samples to replicate 
+figure 4D.
+
+```{r, fig.height = 3, fig.width = 6}
+colData(sce) %>%
+    data.frame %>%
+    mutate(sample = rownames(.),
+           sample = factor(sample, levels = sample[order(Pseudotime)])) %>%
+    ggplot(aes(x = sample, 
+               y = Pseudotime, 
+               color = FM1.43.signal)) +
+    geom_point() +
+    ## Customize the plot aspect to match the figure design
+    scale_colour_manual(values = c("green3",  "grey40")) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+```
+
+The pseudotime distribution across cells is rather similar to figure
+4D, although the order of the cells is much different. Note that the 
+pseudo-time scale is inverted compared to the original figure, but 
+setting the root to the other state would have solved this difference
+without changing the interpretation.
+
+We try to replicate figure 4F by plotting the expression against the 
+pseudotime. In the article the rolling means are used and add a layer
+smoke on the data. We therefore will ignore the rolling mean step and
+plot the log2-niBAQ directly. We however were not able to reproduce 
+the plots. 
+
+```{r, eval = FALSE}
+longFormat(sce) %>%
+    mutate(Pseudotime = colData(sce)[colname, "Pseudotime"],
+           FM1.43.signal = colData(sce)[colname, "FM1.43.signal"],
+           Symbol = conversionDF$uniprot_gn_symbol[match(rowname, conversionDF$ensembl_peptide_id)]) %>%
+    ## Use protein symbols instead of Enseml ids
+    mutate(Symbol = conversionDF$uniprot_gn_symbol[match(rowname, conversionDF$ensembl_peptide_id)]) %>%
+    ## Keep only proteins shown in figure 4F
+    filter(Symbol %in% c("AGR3", "TMSB4X", "OCM",  "GAPDH", "CALB2")) %>%
+    ggplot() +
+    aes(x = Pseudotime, 
+        y = value) +
+    stat_smooth(method = "lm", 
+                formula = y ~ bs(x, df = 4),
+                se = FALSE) +
+    geom_point(aes(color = FM1.43.signal)) +
+    ## Customize the plot aspect to match the figure design
+    facet_wrap(~ Symbol, scales = "free") +
+    scale_colour_manual(values = c("green3",  "grey40")) +
+    theme_minimal()
+```
+
+# Conclusion 
+
+The nanoPOTs technology holds promising perspectives in the field of
+single-cell proteomics. The @Zhu2019-ja study demonstrated that the 
+nanoPOTS technology can be applied to answer biologically relevant 
+questions. 
+
+The replication of the data analysis presented in this vignette 
+confirmed that the technology is able to distinguish between utricle
+hair cells (FM1-43 high) and supporting cells (FM1-43 low) at 
+single-cell resolution. We were however surprised that we could not 
+confirm the technical performance of the technology for single-cells.
+Unfortunately, we noticed that about 30 \% of single-cell sample 
+acquisitions failed and showed identification rates comparable to 
+blank samples. 
+
+Replication of the trajectory analysis was hindered by the lack of
+comprehensive description of the workflow or the availability of 
+analysis scripts. This led to discrepancies between the datasets used
+in this vignette and the original work. Feature selection only yielded
+about 60 % overlap (47 proteins were found in both datasets out 74
+proteins found in this vignette). We argue that performing a 
+trajectory analysis on this limited amount of single-cells and limited
+amount of proteins is rather optimistic. Further improvement of the 
+nanoPOTS technology are required to improve throughput and sensitivity
+of the method allowing for a principled analysis. This is also pointed
+out in the article where scRNA-Seq could provide a more detailed map 
+of the differentiation of supporting cells to hair cells. 
+
+# Requirements
+
+### Hardware and software
+
+The system details of the machine that built the vignette are:
+
+```{r, echo = FALSE, message = FALSE}
+sd <- benchmarkme::get_sys_details()
+cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
+    "R version: R.", sd$r_version$major, ".", sd$r_version$minor,
+    " (svn: ", sd$r_version$`svn rev`, ")\n",
+    "RAM: ", round(sd$ram / 1E9, 1), " GB\n",
+    "CPU: ", sd$cpu$no_of_cores, " core(s) - ", sd$cpu$model_name, "\n",
+    sep = "")
+```
+
+### Timing
+
+The total time required to compile this vignette is:
+
+```{r, echo = FALSE}
+timing <- Sys.time() - timeStart
+cat(timing[[1]], attr(timing, "units"))
+```
+
+### Memory
+
+The final `scp` memory size is:
+
+```{r, echo = FALSE}
+format(object.size(scp), units = "auto")
+```
+
+### Session info
+
+```{r}
+sessionInfo()
+```
+
+# Reference
