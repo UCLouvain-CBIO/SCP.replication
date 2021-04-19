@@ -107,12 +107,16 @@ that it is compatible with our software. The underlying data storage
 is based on the `ExperimentHub` package that provides a cloud-based 
 storage infrastructure.
 
-The SCoPE2 dataset (@Specht2021-jm) is provided at different levels of
-processing:
+The dataset was retrieved from the PRIDE repository (accession ID: 
+PXD014256). The annotation file that is provided in this repository 
+contains mismatched information. We therefore received a corrected 
+version from the authors. The dataset contains three type of 
+quantitative data: quantified peptide to spectrum match (PSM) data,
+peptide data and protein data. They were generated after running 
+MaxQuant on the raw MS files. 
 
-The data can be retrieved from the `scpdata` package using the 
-`zhu2019EL()`. The dataset that is analysed in this vignette is called
-`scp`. 
+The formatted data can be retrieved from the `scpdata` package using 
+the `zhu2019EL()`. 
 
 ```{r load_data}
 # adapt when the data are updated on EH
