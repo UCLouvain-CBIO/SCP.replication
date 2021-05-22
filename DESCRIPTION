@@ -10,7 +10,7 @@ Authors@R:
               email = "laurent.gatto@uclouvain.be",
               comment = c(ORCID = "0000-0002-1520-2268"),
               role = "aut"))
-Description: Repository of vignettes about the replication of 
+Description: Repository of vignettes about the replication of
     single-cell analyses.
 Depends:
    SingleCellExperiment,
@@ -24,7 +24,8 @@ Suggests:
    patchwork,
    BiocStyle,
    knitr,
-   benchmarkme
+   benchmarkme,
+   rmarkdown
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8
