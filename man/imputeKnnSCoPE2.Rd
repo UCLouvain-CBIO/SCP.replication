@@ -2,12 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{imputeKnnSCoPE2}
 \alias{imputeKnnSCoPE2}
-\title{KNN imputation (for replication)
-
-The function imputes missing data using the k-nearest neighbours
-(KNN) approach using Euclidean distance as a similarity measure
-between the cells. This function was provided as part of the
-SCoPE2 publication (Specht et al. 2021).}
+\title{KNN imputation (for replication)}
 \source{
 The implementation of the imputation was retrieved from
 https://github.com/SlavovLab/SCoPE2
@@ -31,8 +26,6 @@ An object of class \code{QFeatures} containing an extra assay
 with imputed values.
 }
 \description{
-KNN imputation (for replication)
-
 The function imputes missing data using the k-nearest neighbours
 (KNN) approach using Euclidean distance as a similarity measure
 between the cells. This function was provided as part of the
