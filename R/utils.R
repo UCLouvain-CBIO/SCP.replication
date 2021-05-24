@@ -1,22 +1,24 @@
 ##' @title ComBat v3.34 batch correction
 ##'
+##' @description
+##'
 ##' Older version of ComBat (sva version 3.34.0). This is for
 ##' compatibility with the replication of SCoPE2.
-##' 
+##'
 ##' ComBat allows users to adjust for batch effects in datasets where
-##' the batch covariate is known, using methodology described in 
-##' Johnson et al. 2007. It uses either parametric or non-parametric 
+##' the batch covariate is known, using methodology described in
+##' Johnson et al. 2007. It uses either parametric or non-parametric
 ##' empirical Bayes frameworks for adjusting data for batch effects.
 ##' Users are returned an expression matrix that has been corrected
 ##' for batch effects. The input data are assumed to be cleaned and
 ##' normalized before batch effect removal.
-##' 
-##' @param dat Genomic measure matrix (dimensions probe x sample) - 
+##'
+##' @param dat Genomic measure matrix (dimensions probe x sample) -
 ##'     for example, expression matrix
 ##'
 ##' @param batch Batch covariate (only one batch allowed)
 ##'
-##' @param mod Model matrix for outcome of interest and other 
+##' @param mod Model matrix for outcome of interest and other
 ##'     covariates besides batch
 ##'
 ##' @param par.prior (Optional) TRUE indicates parametric adjustments
@@ -24,7 +26,7 @@
 ##'     be used
 ##'
 ##' @param prior.plots (Optional) TRUE give prior plots with black as
-##'      a kernel estimate of the empirical batch effect density and 
+##'      a kernel estimate of the empirical batch effect density and
 ##'      red as the parametric
 ##'
 ##' @param mean.only (Optional) FALSE If TRUE ComBat only corrects the
@@ -40,26 +42,26 @@
 ##' @import sva
 ##'
 ##' @return data A probe x sample genomic measure matrix, adjusted for batch effects.
-##' 
-##' @examples 
+##'
+##' @examples
 ##' library(bladderbatch)
 ##' data(bladderdata)
 ##' dat <- bladderEset[1:50,]
-##' 
+##'
 ##' pheno = pData(dat)
 ##' edata = exprs(dat)
 ##' batch = pheno$batch
 ##' mod = model.matrix(~as.factor(cancer), data=pheno)
-##' 
+##'
 ##' # parametric adjustment
 ##' combat_edata1 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
-##' 
+##'
 ##' # non-parametric adjustment, mean-only version
 ##' combat_edata2 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
-##' 
+##'
 ##' # reference-batch version, with covariates
 ##' combat_edata3 = ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
-##' 
+##'
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam")) {
     stopifnot(require(sva)) ## works for svq_3.37.0
@@ -274,83 +276,85 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
 
 ##' @title KNN imputation (for replication)
 ##'
-##' The function imputes missing data using the k-nearest neighbours 
-##' (KNN) approach using Euclidean distance as a similarity measure 
-##' between the cells. This function was provided as part of the 
-##' SCoPE2 publication (Specht et al. 2021). 
-##' 
-##' 
+##'
+##' @description
+##'
+##' The function imputes missing data using the k-nearest neighbours
+##' (KNN) approach using Euclidean distance as a similarity measure
+##' between the cells. This function was provided as part of the
+##' SCoPE2 publication (Specht et al. 2021).
+##'
 ##' @param object A `QFeatures` object
 ##'
-##' @param i  A `numeric()` or `character()` vector indicating from 
+##' @param i  A `numeric()` or `character()` vector indicating from
 ##'     which assays the `rowData` should be taken.
 ##'
 ##' @param name A `character(1)` naming the new assay name. Default is
-##' `KNNimputedAssay`. 
+##' `KNNimputedAssay`.
 ##'
 ##' @param k An `integer(1)` giving the number of neighbours to use.
 ##'
 ##' @export
 ##'
 ##' @return An object of class `QFeatures` containing an extra assay
-##'     with imputed values. 
-##' 
+##'     with imputed values.
+##'
 ##' @references Specht, Harrison, Edward Emmott, Aleksandra A. Petelski,
-##'     R. Gray Huffman, David H. Perlman, Marco Serra, Peter Kharchenko, 
+##'     R. Gray Huffman, David H. Perlman, Marco Serra, Peter Kharchenko,
 ##'     Antonius Koller, and Nikolai Slavov. 2021. “Single-Cell Proteomic
-##'     and Transcriptomic Analysis of Macrophage Heterogeneity Using 
+##'     and Transcriptomic Analysis of Macrophage Heterogeneity Using
 ##'     SCoPE2.” Genome Biology 22 (1): 50.
-##' 
+##'
 ##' @source The implementation of the imputation was retrieved from
 ##'     https://github.com/SlavovLab/SCoPE2
-##' 
+##'
 imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
-    
+
     oldi <- i
     exp <- object[[i]]
     dat <- assay(exp)
-    
+
     # Create a copy of the data, NA values to be filled in later
     dat.imp<-dat
-    
+
     # Calculate similarity metrics for all column pairs (default is Euclidean distance)
     dist.mat<-as.matrix( dist(t(dat)) )
     #dist.mat<-as.matrix(as.dist( dist.cosine(t(dat)) ))
-    
+
     # Column names of the similarity matrix, same as data matrix
     cnames<-colnames(dist.mat)
-    
+
     # For each column in the data...
     for(X in cnames){
-        
+
         # Find the distances of all other columns to that column
         distances<-dist.mat[, X]
-        
+
         # Reorder the distances, smallest to largest (this will reorder the column names as well)
         distances.ordered<-distances[order(distances, decreasing = F)]
-        
+
         # Reorder the data matrix columns, smallest distance to largest from the column of interest
         # Obviously, first column will be the column of interest, column X
         dat.reordered<-dat[ , names(distances.ordered ) ]
-        
+
         # Take the values in the column of interest
         vec<-dat[, X]
-        
+
         # Which entries are missing and need to be imputed...
         na.index<-which( is.na(vec) )
-        
+
         # For each of the missing entries (rows) in column X...
         for(i in na.index){
-            
+
             # Find the most similar columns that have a non-NA value in this row
             closest.columns<-names( which( !is.na(dat.reordered[i, ])  ) )
-            
+
             # If there are more than k such columns, take the first k most similar
             if( length(closest.columns)>k ){
                 # Replace NA in column X with the mean the same row in k of the most similar columns
                 vec[i]<-mean( dat[ i, closest.columns[1:k] ] )
             }
-            
+
             # If there are less that or equal to k columns, take all the columns
             if( length(closest.columns)<=k ){
                 # Replace NA in column X with the mean the same row in all of the most similar columns
@@ -360,36 +364,38 @@ imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
         # Populate a the matrix with the new, imputed values
         dat.imp[,X]<-vec
     }
-    
+
     assay(exp) <- dat.imp
     object <- addAssay(object, exp, name = name)
     addAssayLinkOneToOne(object, from = oldi, to = name)
 }
 
 
-##' Replace columns in the rowData
-##' 
-##' The function replaces columns in the rowData of assays from a 
+##' @title Replace columns in the rowData
+##'
+##' @description
+##'
+##' The function replaces columns in the rowData of assays from a
 ##' `QFeatures` object. This function can also be used to remove column
 ##' in the rowData (see examples).
 ##'
 ##' @param object An object of class `QFeatures`
-##' 
-##' @param i  A `numeric()` or `character()` vector indicating from 
+##'
+##' @param i  A `numeric()` or `character()` vector indicating from
 ##'     which assays the `rowData` should be taken.
-##'     
-##' @param col A `numeric()` or `character()` vector indicating the 
+##'
+##' @param col A `numeric()` or `character()` vector indicating the
 ##'     column(s) to replace.
-##'     
-##' @param value A `list()` of same length as `i`. If `i` is provided 
+##'
+##' @param value A `list()` of same length as `i`. If `i` is provided
 ##'     as a character vector, the elements of `value` must be named
 ##'     after `i`. Each element should contain the replacement values to insert in the rowData. If
-##'     `length(col) > 1`, each element should be a matrix with the 
-##'     same rows as its corresponding assay and the same number of 
+##'     `length(col) > 1`, each element should be a matrix with the
+##'     same rows as its corresponding assay and the same number of
 ##'     columns as the length of col.
 ##'
 ##' @return An object of class `QFeatures`
-##' 
+##'
 ##' @export
 ##'
 ##' @examples
@@ -420,23 +426,26 @@ replaceRowDataCols <- function(object, i, col, value) {
                                 check = FALSE)
 }
 
-#' longRowData
+#' @title longRowData
 #'
-#' @param object 
-#' @param i 
-#' @param rowDataCols 
+#' @param object
+#'
+#' @param i
+#'
+#' @param rowDataCols
 #'
 #' @return
+#'
 #' @export
 #'
 #' @examples
-#' 
+#'
 #' print("TODO")
 longRowData <- function(object, i, rowDataCols) {
     ## Extract the rowData and column names from the desired assay(s)
-    rdlist <- rowData(object)[i] 
+    rdlist <- rowData(object)[i]
     rdNames <- rowDataNames(object)[i]
-    ## Check the rowDataCols argument 
+    ## Check the rowDataCols argument
     if (missing(rowDataCols)) {
         rowDataCols <- unique(unlist(rdNames))
     }
@@ -452,41 +461,43 @@ longRowData <- function(object, i, rowDataCols) {
 
 
 
-##' PCA plot suggested by SCoPE2
+##' @title PCA plot suggested by SCoPE2
+##'
+##' @description
 ##'
 ##' The function performs a weighted principal component analysis (PCA)
-##' as suggested by Specht et al. The PCA is performed on the 
+##' as suggested by Specht et al. The PCA is performed on the
 ##' correlation matrix where the rows (features) are weighted according
 ##' to the sum of the correlation with the other rows.
-##' 
+##'
 ##' @param object A `SingleCellExperiment` object
 ##'
 ##' @param center A `logical(1)` indicating whether the columns of the
 ##'     weighted input matrix should be mean centered.
-##'     
+##'
 ##' @param scale A `logical(1)` indicating whether the columns of the
 ##'     weighted input matrix should be scaled to unit variance.
-##'     
-##' @return An object of class `eigen` containing the computed 
-##'     eigenvector and eigenvalues.
-##' 
-##' @export 
 ##'
-##' @references 
-##' 
-##' Specht, Harrison, Edward Emmott, Aleksandra A. Petelski, R. Gray 
+##' @return An object of class `eigen` containing the computed
+##'     eigenvector and eigenvalues.
+##'
+##' @export
+##'
+##' @references
+##'
+##' Specht, Harrison, Edward Emmott, Aleksandra A. Petelski, R. Gray
 ##' Huffman, David H. Perlman, Marco Serra, Peter Kharchenko, Antonius
 ##' Koller, and Nikolai Slavov. 2021. "Single-Cell Proteomic and
 ##' Transcriptomic Analysis of Macrophage Heterogeneity Using SCoPE2.”
 ##' Genome Biology 22 (1): 50.
 ##' [link to article](http://dx.doi.org/10.1186/s13059-021-02267-5),
 ##' [link to preprint](https://www.biorxiv.org/content/10.1101/665307v5)
-##' 
+##'
 ##' @examples
 ##' data("feat2")
 ##' sce <- as(feat2[[3]], "SingleCellExperiment")
 ##' pcaSCoPE2(sce)
-##' 
+##'
 pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
     ## Extract the protein expression matrix
     X <- assay(object)
@@ -502,4 +513,3 @@ pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
     Xcor <- cor(Xw)
     eigen(Xcor)
 }
-

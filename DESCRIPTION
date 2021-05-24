@@ -1,6 +1,6 @@
 Package: SCP.replication
 Title: SCP Replication Vignettes
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
     c(person("Christophe", "Vanderaa",
               email = "christophe.vanderaa@uclouvain.be",
@@ -26,7 +26,8 @@ Suggests:
    BiocStyle,
    knitr,
    benchmarkme,
-   rmarkdown
+   rmarkdown,
+   bladderbatch
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8
