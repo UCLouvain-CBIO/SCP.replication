@@ -20,6 +20,7 @@ Depends:
 Imports:
    sva
 Suggests:
+   CellTrails,
    tidyverse,
    patchwork,
    BiocStyle,
