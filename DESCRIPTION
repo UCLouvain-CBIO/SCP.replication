@@ -1,6 +1,6 @@
 Package: SCP.replication
 Title: SCP Replication Vignettes
-Version: 0.2.0
+Version: 0.2.1
 Authors@R:
     c(person("Christophe", "Vanderaa",
               email = "christophe.vanderaa@uclouvain.be",
@@ -18,7 +18,11 @@ Depends:
    scp (>= 1.1.5),
    scpdata
 Imports:
-   sva
+   sva,
+   BiocParallel,
+   matrixStats,
+   SummarizedExperiment,
+   MultiAssayExperiment
 Suggests:
    CellTrails,
    tidyverse,

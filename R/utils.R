@@ -41,30 +41,124 @@
 ##'
 ##' @import sva
 ##'
+##' @import BiocParallel
+##'
+##' @import graphics
+##'
+##' @importFrom stats density dnorm qqnorm qqline qgamma ppoints qqplot model.matrix dist cor var
+##'
+##' @importFrom matrixStats rowVars colSds
+##'
 ##' @return data A probe x sample genomic measure matrix, adjusted for batch effects.
 ##'
 ##' @examples
+##' library(sva)
 ##' library(bladderbatch)
 ##' data(bladderdata)
 ##' dat <- bladderEset[1:50,]
 ##'
-##' pheno = pData(dat)
-##' edata = exprs(dat)
-##' batch = pheno$batch
-##' mod = model.matrix(~as.factor(cancer), data=pheno)
+##' pheno <- pData(dat)
+##' edata <- exprs(dat)
+##' batch <- pheno$batch
+##' mod <- model.matrix(~as.factor(cancer), data=pheno)
 ##'
 ##' # parametric adjustment
-##' combat_edata1 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
+##' combat_edata1 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
 ##'
 ##' # non-parametric adjustment, mean-only version
-##' combat_edata2 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
+##' combat_edata2 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
 ##'
 ##' # reference-batch version, with covariates
-##' combat_edata3 = ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
+##' combat_edata3 <- ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
 ##'
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
-                         mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam")) {
-    stopifnot(require(sva)) ## works for svq_3.37.0
+                         mean.only = FALSE, ref.batch = NULL,
+                         BPPARAM = BiocParallel::bpparam("SerialParam")) {
+
+    ## code taken from sva - used exclusively to reproduce obtained
+    ## with version 3.34
+    stopifnot(requireNamespace("sva")) ## works for sva_3.37.0
+
+    ## these internal function are not exported from the more recent
+    ## versions of sva.
+    sva_Beta.NA <- function (y, X) {
+        des <- X[!is.na(y), ]
+        y1 <- y[!is.na(y)]
+        B <- solve(crossprod(des), crossprod(des, y1))
+        B
+    }
+
+    sva_aprior  <- function (gamma.hat) {
+        m <- mean(gamma.hat)
+        s2 <- var(gamma.hat)
+        (2 * s2 + m^2)/s2
+    }
+
+    sva_bprior <- function (gamma.hat) {
+        m <- mean(gamma.hat)
+        s2 <- var(gamma.hat)
+        (m * s2 + m^3)/s2
+    }
+
+    sva_dinvgamma  <- function (x, shape, rate = 1/scale, scale = 1) {
+        stopifnot(shape > 0)
+        stopifnot(rate > 0)
+        ifelse(x <= 0, 0, ((rate^shape)/gamma(shape)) * x^(-shape -
+                                                           1) * exp(-rate/x))
+    }
+
+    sva_postmean <- function (g.hat, g.bar, n, d.star, t2) {
+        (t2 * n * g.hat + d.star * g.bar)/(t2 * n + d.star)
+    }
+
+    sva_postvar <- function (sum2, n, a, b) {
+        (0.5 * sum2 + b)/(n/2 + a - 1)
+    }
+
+    sva_it.sol  <- function (sdat, g.hat, d.hat, g.bar, t2, a, b, conv = 1e-04) {
+        n <- rowSums(!is.na(sdat))
+        g.old <- g.hat
+        d.old <- d.hat
+        change <- 1
+        count <- 0
+        while (change > conv) {
+            g.new <- sva_postmean(g.hat, g.bar, n, d.old, t2)
+            sum2 <- rowSums((sdat - g.new %*% t(rep(1, ncol(sdat))))^2,
+                            na.rm = TRUE)
+            d.new <- sva_postvar(sum2, n, a, b)
+            change <- max(abs(g.new - g.old)/g.old, abs(d.new - d.old)/d.old)
+            g.old <- g.new
+            d.old <- d.new
+            count <- count + 1
+        }
+        adjust <- rbind(g.new, d.new)
+        rownames(adjust) <- c("g.star", "d.star")
+        adjust
+    }
+
+
+    sva_int.eprior <- function (sdat, g.hat, d.hat) {
+        g.star <- d.star <- NULL
+        r <- nrow(sdat)
+        for (i in 1:r) {
+            g <- g.hat[-i]
+            d <- d.hat[-i]
+            x <- sdat[i, !is.na(sdat[i, ])]
+            n <- length(x)
+            j <- numeric(n) + 1
+            dat <- matrix(as.numeric(x), length(g), n, byrow = TRUE)
+            resid2 <- (dat - g)^2
+            sum2 <- resid2 %*% j
+            LH <- 1/(2 * pi * d)^(n/2) * exp(-sum2/(2 * d))
+            LH[LH == "NaN"] = 0
+            g.star <- c(g.star, sum(g * LH)/sum(LH))
+            d.star <- c(d.star, sum(d * LH)/sum(LH))
+        }
+        adjust <- rbind(g.star, d.star)
+        rownames(adjust) <- c("g.star", "d.star")
+        adjust
+    }
+
     if (mean.only) {
         message("Using the 'mean only' version of ComBat")
     }
@@ -129,7 +223,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
                                                      as.matrix(dat)))
     }
     else {
-        B.hat <- apply(dat, 1, Beta.NA, design)
+        B.hat <- apply(dat, 1, sva_Beta.NA, design)
     }
     if (!is.null(ref.batch)) {
         grand.mean <- t(B.hat[ref, ])
@@ -175,7 +269,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
                                                                as.matrix(s.data)))
     }
     else {
-        gamma.hat <- apply(s.data, 1, Beta.NA, batch.design)
+        gamma.hat <- apply(s.data, 1, sva_Beta.NA, batch.design)
     }
     delta.hat <- NULL
     for (i in batches) {
@@ -189,8 +283,8 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     }
     gamma.bar <- rowMeans(gamma.hat)
     t2 <- rowVars(gamma.hat)
-    a.prior <- apply(delta.hat, 1, sva:::aprior)
-    b.prior <- apply(delta.hat, 1, sva:::bprior)
+    a.prior <- apply(delta.hat, 1, sva_aprior)
+    b.prior <- apply(delta.hat, 1, sva_bprior)
     if (prior.plots && par.prior) {
         par(mfrow = c(2, 2))
         tmp <- density(gamma.hat[1, ])
@@ -203,7 +297,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         qqline(gamma.hat[1, ], col = 2)
         tmp <- density(delta.hat[1, ])
         xx <- seq(min(tmp$x), max(tmp$x), length = 100)
-        tmp1 <- list(x = xx, y = dinvgamma(xx, a.prior[1], b.prior[1]))
+        tmp1 <- list(x = xx, y = sva_dinvgamma(xx, a.prior[1], b.prior[1]))
         plot(tmp, typ = "l", ylim = c(0, max(tmp$y, tmp1$y)),
              main = expression(paste("Density Plot of First Batch ",
                                      hat(delta))))
@@ -217,14 +311,14 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     gamma.star <- delta.star <- matrix(NA, nrow = n.batch, ncol = nrow(s.data))
     if (par.prior) {
         message("Finding parametric adjustments")
-        results <- bplapply(1:n.batch, function(i) {
+        results <- BiocParallel::bplapply(1:n.batch, function(i) {
             if (mean.only) {
-                gamma.star <- postmean(gamma.hat[i, ], gamma.bar[i],
-                                       1, 1, t2[i])
+                gamma.star <- sva_postmean(gamma.hat[i, ], gamma.bar[i],
+                                           1, 1, t2[i])
                 delta.star <- rep(1, nrow(s.data))
             }
             else {
-                temp <- sva:::it.sol(s.data[, batches[[i]]], gamma.hat[i,
+                temp <- sva_it.sol(s.data[, batches[[i]]], gamma.hat[i,
                 ], delta.hat[i, ], gamma.bar[i], t2[i], a.prior[i],
                 b.prior[i])
                 gamma.star <- temp[1, ]
@@ -239,14 +333,13 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
     }
     else {
         message("Finding nonparametric adjustments")
-        results <- bplapply(1:n.batch, function(i) {
+        results <- BiocParallel::bplapply(1:n.batch, function(i) {
             if (mean.only) {
                 delta.hat[i, ] = 1
             }
-            temp <- int.eprior(as.matrix(s.data[, batches[[i]]]),
-                               gamma.hat[i, ], delta.hat[i, ])
-            list(gamma.star = temp[1, ], delta.star = temp[2,
-            ])
+            temp <- sva_int.eprior(as.matrix(s.data[, batches[[i]]]),
+                                   gamma.hat[i, ], delta.hat[i, ])
+            list(gamma.star = temp[1, ], delta.star = temp[2, ])
         }, BPPARAM = BPPARAM)
         for (i in 1:n.batch) {
             gamma.star[i, ] <- results[[i]]$gamma.star
@@ -295,6 +388,10 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
 ##' @param k An `integer(1)` giving the number of neighbours to use.
 ##'
 ##' @export
+##'
+##' @import QFeatures
+##'
+##' @importFrom SummarizedExperiment assay assay<- rowData rowData<-
 ##'
 ##' @return An object of class `QFeatures` containing an extra assay
 ##'     with imputed values.
@@ -398,6 +495,10 @@ imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
 ##'
 ##' @export
 ##'
+##' @import QFeatures
+##'
+##' @importFrom MultiAssayExperiment experiments
+##'
 ##' @examples
 ##' data("feat2")
 ##' rowData(feat2)[[1]]
@@ -428,13 +529,13 @@ replaceRowDataCols <- function(object, i, col, value) {
 
 #' @title longRowData
 #'
-#' @param object
+#' @param object An object of class QFeatures.
 #'
-#' @param i
+#' @param i Index of the assay of interest.
 #'
-#' @param rowDataCols
+#' @param rowDataCols The row data column names.
 #'
-#' @return
+#' @return A RowData DataFrame in long format.
 #'
 #' @export
 #'
@@ -482,6 +583,12 @@ longRowData <- function(object, i, rowDataCols) {
 ##'     eigenvector and eigenvalues.
 ##'
 ##' @export
+##'
+##' @import SingleCellExperiment
+##'
+##' @import scp
+##'
+##' @import scpdata
 ##'
 ##' @references
 ##'

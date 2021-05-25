@@ -7,14 +7,14 @@
 longRowData(object, i, rowDataCols)
 }
 \arguments{
-\item{object}{}
+\item{object}{An object of class QFeatures.}
 
-\item{i}{}
+\item{i}{Index of the assay of interest.}
 
-\item{rowDataCols}{}
+\item{rowDataCols}{The row data column names.}
 }
 \value{
-
+A RowData DataFrame in long format.
 }
 \description{
 longRowData

@@ -12,7 +12,7 @@ ComBatv3.34(
   prior.plots = FALSE,
   mean.only = FALSE,
   ref.batch = NULL,
-  BPPARAM = bpparam("SerialParam")
+  BPPARAM = BiocParallel::bpparam("SerialParam")
 )
 }
 \arguments{
@@ -56,22 +56,23 @@ for batch effects. The input data are assumed to be cleaned and
 normalized before batch effect removal.
 }
 \examples{
+library(sva)
 library(bladderbatch)
 data(bladderdata)
 dat <- bladderEset[1:50,]
 
-pheno = pData(dat)
-edata = exprs(dat)
-batch = pheno$batch
-mod = model.matrix(~as.factor(cancer), data=pheno)
+pheno <- pData(dat)
+edata <- exprs(dat)
+batch <- pheno$batch
+mod <- model.matrix(~as.factor(cancer), data=pheno)
 
 # parametric adjustment
-combat_edata1 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
+combat_edata1 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
 
 # non-parametric adjustment, mean-only version
-combat_edata2 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
+combat_edata2 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
 
 # reference-batch version, with covariates
-combat_edata3 = ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
+combat_edata3 <- ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
 
 }
