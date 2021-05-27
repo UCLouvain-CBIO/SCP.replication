@@ -3,7 +3,6 @@ title: "Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLi
 author:
   - Christophe Vanderaa^[christophe.vanderaa@uclouvain.be], Computational Biology, UCLouvain
   - Laurent Gatto, Computational Biology, UCLouvain
-date: \today
 abstract: "This vignette presents a robust and standardized workflow to reproduce the data analysis published in Zhu et al. (2019, eLife), the first article to have published a trajectory analysis on mass spectrometry (MS)-based single-cell proteomics (SCP) data. The replication of the analysis is performed using the scp package. This package is based on well-defined Bioconductor classes that provide powerful tools for single-cell RNA sequencing and for MS-based proteomics. We demonstrate that the scp package can be applied to label-free SCP data and can be used to highlight some issues in the data."
 output:
   bookdown::html_document2:
