@@ -11,6 +11,12 @@ output:
     toc: true
     toc_float: true
 bibliography: ref.bib
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('SCP.replication')`"
+vignette: >
+  %\VignetteIndexEntry{Zhu2019 replication}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}
