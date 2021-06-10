@@ -74,17 +74,18 @@ Therefore, our first contribution was to formalize the SCoPE2 script
 into a conceptual flow chart.
 
 ```{r SCoPE2_workflow, results='markup', fig.cap="Overview of the SCoPE2 workflow.", echo=FALSE, out.width='100%', fig.align='center'}
-knitr::include_graphics("figs/workflow.png", error = FALSE)
+knitr::include_graphics("figs/SCoPE2-workflow.png", error = FALSE)
 ```
 
 Blue boxes highlight steps that are already routinely performed in 
 bulk proteomics. The orange boxes depict the steps that are specific to 
-single-cell applications and require new implementations. We 
-develop a new data framework dedicated to SCP data analysis that 
+single-cell applications and require new implementations. We have
+developed a new data framework dedicated to SCP data analysis that 
 combines two existing Bioconductor classes. The `SingleCellExperiment`
-class provides an interface to many cutting edge methods for single-cell analysis and the `QFeatures` class facilitates manipulation and 
-processing of MS-based quantitative data (blue boxes in the 
-flowchart). The 
+class provides an interface to many cutting edge methods for 
+single-cell analysis and the `QFeatures` class facilitates 
+manipulation and processing of MS-based quantitative data (blue boxes 
+in the flowchart). The 
 [`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html) 
 provides detailed information about the data structure. The `scp` 
 package extends the functionality of `QFeatures` for single-cell 
@@ -543,7 +544,7 @@ consensus <- lapply(peptideAssays, function(i) {
     ppMap$protein[match(rowData(scp[[i]])$peptide, ppMap$peptide)]
 })
 names(consensus) <- peptideAssays
-scp <- replaceRowDataCols(scp, peptideAssays, "protein", consensus)
+scp <- updateRowData(scp, "protein", consensus)
 ```
 
 This code chunk is hard to read, but this issue should represent a
@@ -551,7 +552,8 @@ special case and we therefore don't consider this step worth
 standardizing. Some peptides are mapped to different proteins because 
 the TMT-11 and TMT-16 data sets were analysed separately in MaxQuant. 
 Razor peptides, *i.e.* peptides that are found in several protein 
-groups, are assigned to the protein group with most peptides (@Tyanova2016-yj,) and this can vary from one analysis to another. 
+groups, are assigned to the protein group with most peptides
+(@Tyanova2016-yj,) and this can vary from one analysis to another. 
 Therefore, inconsistent peptide mapping should not occur when all runs
 are preprocessed at once. We will see later that this issue does not
 impair the replication of the SCoPE2 analysis, but it recalls that 
@@ -722,7 +724,7 @@ scp <- filterNA(scp,
 
 The last processing step of the peptide data before aggregating to 
 proteins is to log-transform the data. SCoPE2 uses a base 2 
-log-transformation and this is implemented in `logTransform` in the
+log-transformation and this is implemented in `logTransform` in
 `QFeatures`.
 
 ```{r}

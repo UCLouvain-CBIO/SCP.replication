@@ -97,7 +97,7 @@ library(sva)
 library(splines)
 ```
 
-### `scpdata` and the SCoPE2 dataset
+### `scpdata` and the hair-cell development dataset
 
 We also implemented a data package called `scpdata`. It distributes
 published MS-SCP datasets, such as the dataset that will be analysed 
