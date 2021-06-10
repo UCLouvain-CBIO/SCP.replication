@@ -6,18 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>ComBat v3.34 batch correction
-
-Older version of ComBat (sva version 3.34.0). This is for
-compatibility with the replication of SCoPE2.
-
-ComBat allows users to adjust for batch effects in datasets where
-the batch covariate is known, using methodology described in
-Johnson et al. 2007. It uses either parametric or non-parametric
-empirical Bayes frameworks for adjusting data for batch effects.
-Users are returned an expression matrix that has been corrected
-for batch effects. The input data are assumed to be cleaned and
-normalized before batch effect removal. — ComBatv3.34 • SCP.replication</title>
+<title>ComBat v3.34 batch correction — ComBatv3.34 • SCP.replication</title>
 
 
 <!-- jquery -->
@@ -50,20 +39,8 @@ normalized before batch effect removal. — ComBatv3.34 • SCP.replication</tit
 
 
 
-<meta property="og:title" content="ComBat v3.34 batch correction
-
-Older version of ComBat (sva version 3.34.0). This is for
-compatibility with the replication of SCoPE2.
-
-ComBat allows users to adjust for batch effects in datasets where
-the batch covariate is known, using methodology described in
-Johnson et al. 2007. It uses either parametric or non-parametric
-empirical Bayes frameworks for adjusting data for batch effects.
-Users are returned an expression matrix that has been corrected
-for batch effects. The input data are assumed to be cleaned and
-normalized before batch effect removal. — ComBatv3.34" />
-<meta property="og:description" content="ComBat v3.34 batch correction
-Older version of ComBat (sva version 3.34.0). This is for
+<meta property="og:title" content="ComBat v3.34 batch correction — ComBatv3.34" />
+<meta property="og:description" content="Older version of ComBat (sva version 3.34.0). This is for
 compatibility with the replication of SCoPE2.
 ComBat allows users to adjust for batch effects in datasets where
 the batch covariate is known, using methodology described in
@@ -103,7 +80,7 @@ normalized before batch effect removal." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">SCP.replication</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
       </span>
     </div>
 
@@ -128,6 +105,9 @@ normalized before batch effect removal." />
     <li>
       <a href="../articles/SCoPE2.html">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a>
     </li>
+    <li>
+      <a href="../articles/zhu2019EL.html">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -146,25 +126,13 @@ normalized before batch effect removal." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>ComBat v3.34 batch correction
-
-Older version of ComBat (sva version 3.34.0). This is for
-compatibility with the replication of SCoPE2.
-
-ComBat allows users to adjust for batch effects in datasets where
-the batch covariate is known, using methodology described in
-Johnson et al. 2007. It uses either parametric or non-parametric
-empirical Bayes frameworks for adjusting data for batch effects.
-Users are returned an expression matrix that has been corrected
-for batch effects. The input data are assumed to be cleaned and
-normalized before batch effect removal.</h1>
+    <h1>ComBat v3.34 batch correction</h1>
     
     <div class="hidden name"><code>ComBatv3.34.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>ComBat v3.34 batch correction</p>
-<p>Older version of ComBat (sva version 3.34.0). This is for
+    <p>Older version of ComBat (sva version 3.34.0). This is for
 compatibility with the replication of SCoPE2.</p>
 <p>ComBat allows users to adjust for batch effects in datasets where
 the batch covariate is known, using methodology described in
@@ -237,14 +205,14 @@ batch as a reference for batch adjustment.</p></td>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>bladderbatch</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in library(bladderbatch): there is no package called ‘bladderbatch’</span></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>bladderdata</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='warning'>Warning: data set ‘bladderdata’ not found</span></div><div class='input'><span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='va'>bladderEset</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>50</span>,<span class='op'>]</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in eval(expr, envir, enclos): object 'bladderEset' not found</span></div><div class='input'>
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>bladderdata</span><span class='op'>)</span>
+<span class='va'>dat</span> <span class='op'>&lt;-</span> <span class='va'>bladderEset</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>50</span>,<span class='op'>]</span>
+
 <span class='va'>pheno</span> <span class='op'>=</span> <span class='fu'>pData</span><span class='op'>(</span><span class='va'>dat</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'pData': object 'dat' not found</span></div><div class='input'><span class='va'>edata</span> <span class='op'>=</span> <span class='fu'>exprs</span><span class='op'>(</span><span class='va'>dat</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in h(simpleError(msg, call)): error in evaluating the argument 'object' in selecting a method for function 'exprs': object 'dat' not found</span></div><div class='input'><span class='va'>batch</span> <span class='op'>=</span> <span class='va'>pheno</span><span class='op'>$</span><span class='va'>batch</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in eval(expr, envir, enclos): object 'pheno' not found</span></div><div class='input'><span class='va'>mod</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/model.matrix.html'>model.matrix</a></span><span class='op'>(</span><span class='op'>~</span><span class='fu'><a href='https://rdrr.io/r/base/factor.html'>as.factor</a></span><span class='op'>(</span><span class='va'>cancer</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>pheno</span><span class='op'>)</span>
-</div><div class='output co'>#&gt; <span class='error'>Error in terms.formula(object, data = data): object 'pheno' not found</span></div><div class='input'>
+<span class='va'>edata</span> <span class='op'>=</span> <span class='fu'>exprs</span><span class='op'>(</span><span class='va'>dat</span><span class='op'>)</span>
+<span class='va'>batch</span> <span class='op'>=</span> <span class='va'>pheno</span><span class='op'>$</span><span class='va'>batch</span>
+<span class='va'>mod</span> <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/stats/model.matrix.html'>model.matrix</a></span><span class='op'>(</span><span class='op'>~</span><span class='fu'><a href='https://rdrr.io/r/base/factor.html'>as.factor</a></span><span class='op'>(</span><span class='va'>cancer</span><span class='op'>)</span>, data<span class='op'>=</span><span class='va'>pheno</span><span class='op'>)</span>
+
 <span class='co'># parametric adjustment</span>
 <span class='va'>combat_edata1</span> <span class='op'>=</span> <span class='fu'>ComBat</span><span class='op'>(</span>dat<span class='op'>=</span><span class='va'>edata</span>, batch<span class='op'>=</span><span class='va'>batch</span>, mod<span class='op'>=</span><span class='cn'>NULL</span>, par.prior<span class='op'>=</span><span class='cn'>TRUE</span>, prior.plots<span class='op'>=</span><span class='cn'>FALSE</span><span class='op'>)</span>
 </div><div class='output co'>#&gt; <span class='error'>Error in ComBat(dat = edata, batch = batch, mod = NULL, par.prior = TRUE,     prior.plots = FALSE): could not find function "ComBat"</span></div><div class='input'>

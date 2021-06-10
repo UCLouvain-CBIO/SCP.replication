@@ -1,6 +1,6 @@
 Package: SCP.replication
 Title: SCP Replication Vignettes
-Version: 0.1.0
+Version: 0.2.1
 Authors@R:
     c(person("Christophe", "Vanderaa",
               email = "christophe.vanderaa@uclouvain.be",
@@ -10,7 +10,7 @@ Authors@R:
               email = "laurent.gatto@uclouvain.be",
               comment = c(ORCID = "0000-0002-1520-2268"),
               role = "aut"))
-Description: Repository of vignettes about the replication of 
+Description: Repository of vignettes about the replication of
     single-cell analyses.
 Depends:
    SingleCellExperiment,
@@ -18,13 +18,20 @@ Depends:
    scp (>= 1.1.5),
    scpdata
 Imports:
-   sva
+   sva,
+   BiocParallel,
+   matrixStats,
+   SummarizedExperiment,
+   MultiAssayExperiment
 Suggests:
+   CellTrails,
    tidyverse,
    patchwork,
    BiocStyle,
    knitr,
-   benchmarkme
+   benchmarkme,
+   rmarkdown,
+   bladderbatch
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8

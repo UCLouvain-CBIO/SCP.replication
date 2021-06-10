@@ -2,18 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{ComBatv3.34}
 \alias{ComBatv3.34}
-\title{ComBat v3.34 batch correction
-
-Older version of ComBat (sva version 3.34.0). This is for
-compatibility with the replication of SCoPE2.
-
-ComBat allows users to adjust for batch effects in datasets where
-the batch covariate is known, using methodology described in
-Johnson et al. 2007. It uses either parametric or non-parametric
-empirical Bayes frameworks for adjusting data for batch effects.
-Users are returned an expression matrix that has been corrected
-for batch effects. The input data are assumed to be cleaned and
-normalized before batch effect removal.}
+\title{ComBat v3.34 batch correction}
 \usage{
 ComBatv3.34(
   dat,
@@ -23,7 +12,7 @@ ComBatv3.34(
   prior.plots = FALSE,
   mean.only = FALSE,
   ref.batch = NULL,
-  BPPARAM = bpparam("SerialParam")
+  BPPARAM = BiocParallel::bpparam("SerialParam")
 )
 }
 \arguments{
@@ -55,8 +44,6 @@ batch as a reference for batch adjustment.}
 data A probe x sample genomic measure matrix, adjusted for batch effects.
 }
 \description{
-ComBat v3.34 batch correction
-
 Older version of ComBat (sva version 3.34.0). This is for
 compatibility with the replication of SCoPE2.
 
@@ -69,22 +56,23 @@ for batch effects. The input data are assumed to be cleaned and
 normalized before batch effect removal.
 }
 \examples{
+library(sva)
 library(bladderbatch)
 data(bladderdata)
 dat <- bladderEset[1:50,]
 
-pheno = pData(dat)
-edata = exprs(dat)
-batch = pheno$batch
-mod = model.matrix(~as.factor(cancer), data=pheno)
+pheno <- pData(dat)
+edata <- exprs(dat)
+batch <- pheno$batch
+mod <- model.matrix(~as.factor(cancer), data=pheno)
 
 # parametric adjustment
-combat_edata1 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
+combat_edata1 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
 
 # non-parametric adjustment, mean-only version
-combat_edata2 = ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
+combat_edata2 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
 
 # reference-batch version, with covariates
-combat_edata3 = ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
+combat_edata3 <- ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
 
 }
