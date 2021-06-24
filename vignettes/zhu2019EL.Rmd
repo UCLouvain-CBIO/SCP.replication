@@ -115,13 +115,13 @@ storage infrastructure.
 The dataset was retrieved from the PRIDE repository (accession ID:
 PXD014256). The annotation file that is provided in this repository
 contains mismatched information. We therefore received a corrected
-version from the authors. The dataset contains three type of
+version from the authors. The dataset contains three types of
 quantitative data: quantified peptide to spectrum match (PSM) data,
 peptide data and protein data. They were generated after running
 MaxQuant on the raw MS files.
 
 The formatted data can be retrieved from the `scpdata` package using
-the `zhu2019EL()`.
+the `zhu2019EL()` function.
 
 ```{r load_data}
 scp <- zhu2019EL()

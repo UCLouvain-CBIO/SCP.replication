@@ -75,13 +75,13 @@ library(UpSetR)
 The authors provided 4 data sets related to the article:
 
 1. HeLa samples containing 0, 1, 10, 150 and 500 cells. Peptides and
-   proteins were identified and quantified using MaxQuant.
+proteins were identified and quantified using MaxQuant.
 2. HeLa samples containing 0, 1, 10, 150 and 500 cells. Peptides and
-   proteins were identified using FragPipe.
+proteins were identified using FragPipe.
 3. HeLa samples containing 0, 10, 100 and 500 cells. Peptides and
-   proteins were identified using FragPipe.
+proteins were identified using FragPipe.
 4. Lymphocyte samples containing 10 cells. Peptides and
-   proteins were identified using FragPipe.
+proteins were identified using FragPipe.
 
 Since no quantification data is available for the FragPipe data sets, 
 we here only use the MaxQuant output. We retrieved the data from the
@@ -91,9 +91,7 @@ following the `scp` data format (more information can be found in the
 This formatted data is available directly from the `scpdata` package: 
 
 ```{r load_data}
-# autoPOTS <- liang2020_hela_MQ()
-load("~/PhD/.localdata/scpdata/liang2020_hela.Rda")
-autoPOTS <- liang2020_hela
+autoPOTS <- liang2020_hela()
 ```
 
 The data contain 17 different `SingleCellExperiment` objects that we
@@ -198,9 +196,7 @@ blanks, HeLa lysates, HeLa cells, MCF7 cells and THP1 cells. We will
 only keep the HeLa cells and the blanks.
 
 ```{r}
-load("~/PhD/.localdata/scpdata/zhu2018NC_hela.Rda")
-nanoPOTS <- zhu2018NC_hela
-# nanoPOTS <- zhu2018NC_hela()
+nanoPOTS <- zhu2018NC_hela()
 nanoPOTS <- nanoPOTS[, nanoPOTS$SampleType %in% c("Hela", "Blank"), ]
 nanoPOTS
 ```
@@ -243,7 +239,6 @@ table(colData(nanoPOTS)$group)
 Unfortunately, no true single-cell is available from this dataset, but
 sample still contain very low amounts of cells. 
 
-
 # Feature counts
 
 The feature counts are the only results that are shown for the HeLa 
@@ -283,36 +278,33 @@ nanoPOTS <- countUniqueFeatures(nanoPOTS,
                                 colDataName = "Protein_counts")
 ```
 
-
-####------------------
-
 # Compare autoPOTs and nanoPOTS
 
-
-We combine the two data sets to plot the counts in a single plot. 
+We combine the sample data (`colData`) from the two data sets. We then
+use `ggplot2` to plot the peptides and protein counts for each data 
+set. 
 
 ```{r}
-rbind(colData(autoPOTS) %>% 
-          data.frame %>% 
-          dplyr::select(nbCells, Protein_counts, Peptide_counts) %>% 
-          mutate(dataset = "autoPOTS"),
-      colData(nanoPOTS) %>% 
-          data.frame %>% 
-          dplyr::select(nbCells, Protein_counts, Peptide_counts) %>% 
-          mutate(dataset = "nanoPOTS")) %>% 
-    pivot_longer(cols = ends_with("counts")) %>% 
-    mutate(nbCells = paste(nbCells, "cells"),
-           nbCells = factor(nbCells, levels = c("0 cells", "1 cells", 
-                                                "10 cells", "~10 cells",
-                                                "~40 cells", "~140 cells",
-                                                "150 cells", "500 cells"))) %>% 
-    ggplot() +
+df <- rbind(colData(autoPOTS) %>% 
+                data.frame %>% 
+                dplyr::select(Protein_counts, Peptide_counts, 
+                              nbCells, group) %>% 
+                mutate(dataset = "autoPOTS"),
+            colData(nanoPOTS) %>% 
+                data.frame %>% 
+                dplyr::select(Protein_counts, Peptide_counts, 
+                              nbCells, group) %>% 
+                mutate(dataset = "nanoPOTS")) %>% 
+    pivot_longer(cols = ends_with("counts"))
+## Plot
+ggplot(df) +
     aes(y = value, 
-        x = nbCells) +
+        x = group) +
     geom_point() +
-    geom_text(data = . %>% 
-                  group_by(nbCells, dataset, name) %>% 
+    geom_text(data = . %>%
+                  group_by(group, dataset, name) %>%
                   summarise(mean = mean(value),
+                            group = unique(group),
                             y = max(value) + 1000),
               aes(y = y,
                   label = round(mean))) +
@@ -325,20 +317,23 @@ cells is treated as a factor and all categories are separated using an
 equal width. Let's redo the bottom right plot, but using the cell as 
 a numeric variable, hence using a numeric scale. 
 
-```{r, fig.height = 3, fig.width = 4, out.width='50%'}
-colData(autoPOTS) %>% 
+```{r, fig.height = 3, fig.width = 8, out.width='50%'}
+df %>% 
     data.frame %>% 
     ggplot() +
     aes(x = nbCells,
-        y = Protein_counts) +
+        y = value,
+        colour = dataset) +
     geom_point() +
-    geom_smooth(method = "lm", formula = y ~ poly(x, 2))
+    geom_smooth(method = "lm", formula = y ~ poly(x, 2)) +
+    facet_wrap(~ name, scales = "free_y")
 ```
 
 The relationship between number of cells and detected features is 
-highly non-linear!
+highly non-linear and the decreased performance of `autoPOTS` compared
+to `nanoPOTS` is easier to assess. 
 
-# Overlap between identified proteins
+# Protein detection
 
 ## In the autoPOTS data set
 
@@ -348,12 +343,23 @@ concentrations. While very intuitive, we dig a little bit deeper by
 providing an upset plot. Although upset plots are harder to read, they
 contain more information and make comparison between sets much easier.
 
+First, we format the `QFeatures` object to a long `DataFrame` using 
+the `longFormat` function. This will take the quantifications matrix
+and turn it in a single vector, and add the desired feature and
+sample metadata. We also add a dataset identifier for later use. 
+
 ```{r}
 lfauto <- longFormat(autoPOTS[, ,grepl("HeLa", names(autoPOTS))],
-                     colDataCols = "nbCells",
-                     rowDataCols = "Leading.razor.protein")
+                     colvars = c("nbCells", "group"),
+                     rowvars = "Leading.razor.protein")
+lfauto$dataset <- "autoPOTS"
+```
+
+We then build the upset plot using the functionality from `upsetR`. 
+
+```{r}
 lt <- fromList(split(lfauto$Leading.razor.protein, 
-                     paste(lfauto$nbCells, "cells - autoPOTS")))
+                     paste(lfauto$group, "cells - autoPOTS")))
 upset(lt, 
       nsets = 5, 
       order.by = "freq", 
@@ -364,91 +370,99 @@ upset(lt,
       mb.ratio = c(0.4,0.6))
 ```
 
-- The largest common set is found between 10, 150 and 500 cells
-- There are 269 proteins found in all sample excluding blanks
-- There are 177 proteins found in all sample including blanks
+Several observations can be drawn from this graph:
+
+- The largest common set is found between 10, 150 and 500 cells, but 
+  it does not include single-cells
+- A great majority of the proteins are found in the 500 cell samples
+  this indicates that working with smaller sample sizes cover a
+  fraction of the bulk proteome. 
+- There are 269 proteins found in all sample excluding blanks, and 
+  there are 177 proteins found in all sample including blanks. This 
+  indicates that about 40 \% of the proteins found in single-cells are 
+  potentially caused by background signal (contamination by culture 
+  media or during sample processing). 
 
 ## autoPOTS against nanoPOTS
 
+We will now compare to what extend the results obtained using the 
+autoPOTS technology are consistent with the previous data acquired 
+using the nanoPOTS technology. Similarly to the `autoPOTS` data set, 
+we format the `nanoPOTS` in a long table. 
+
 ```{r}
 lfnano <- longFormat(nanoPOTS[, ,"peptides"],
-                     colDataCols = "nbCells",
-                     rowDataCols = "Leading.razor.protein")
-lf <- rbind(cbind(lfnano, type = "nanoPOTS"), 
-            cbind(lfauto, type = "autoPOTS"))
-lf %>% 
+                     colvars = c("nbCells", "group"),
+                     rowvars = "Leading.razor.protein")
+lfnano$dataset <- "nanoPOTS"
+```
+
+We combine the long tables for the two data sets in a single table. 
+
+```{r}
+rbind(lfnano, lfauto) %>% 
     data.frame %>% 
-    filter(!is.na(value), 
-           grepl("1.0|10", nbCells)) %>% 
+    filter(!is.na(value)) %>% 
     DataFrame ->
     lf
-lt <- fromList(c(split(lf$Leading.razor.protein, 
-                       paste(lf$nbCells, "cells -", lf$type))))
+```
+
+
+In order to compare the coverage between the two datasets, we keep only
+samples between 10 and 150 cells (common in both experimental designs).
+We then create the upset plot. 
+
+```{r}
+lfsub <- lf[lf$nbCells >= 1 & lf$nbCells <= 150, ]
+lt <- fromList(c(split(lfsub$Leading.razor.protein, lfsub$dataset)))
 upset(lt, 
       sets = names(lt),
       order.by = "freq", 
-      nintersects = 10,
-      keep.order = TRUE,
       mainbar.y.label = "Proteins in intersection", 
       sets.x.label = "Proteins in sample",
       mb.ratio = c(0.4,0.6))
 ```
 
-# Compare feature intensities
+The majority of the proteins (2300 out of 3721) are consistently found
+by `autoPOTS` and `nanoPOTS`. A significant number of proteins are
+found only by the nanoPOTS protocol. This is probably due to its 
+increase sensitivity compared to autoPOTS. Finally, a few proteins are
+only found using the nanoPOTS technology. 
 
-```{r, fig.width = 8}
-rbind(longFormat(autoPOTS[, , grepl("HeLa", names(autoPOTS))],
-                 colDataCols = "nbCells",
-                 rowDataCols = "Leading.razor.protein") %>% 
-          data.frame %>% 
-          mutate(type = "autoPOTS"),
-      longFormat(nanoPOTS[, , "peptides"],
-                 colDataCols = "nbCells",
-                 rowDataCols = "Leading.razor.protein") %>% 
-          data.frame %>% 
-          mutate(type = "nanoPOTS")) %>%
-    filter(!is.na(value)) ->
-    df
-```
+## Robustness of the detection 
 
-## Expression distribution 
+In the previous sections, we have seen that more proteins are 
+identified in samples with more cells. In this section, we explore 
+how robust the identification are across samples with the same number
+of cells. We focus on the autoPOTs data set only. 
 
-```{r, fig.width = 8}
-df %>% 
-    ggplot() +
-    aes(x = log10(value)) +
-    geom_histogram() +
-    facet_wrap(type ~ nbCells, scales = "free_y")
-```
+### In 500-cell samples
 
-## Median expression
+We take again the autoPOTS data formatted as a long table, and subset 
+only data points that were acquired in 500-cell samples. We make the
+upset plot to assess the consistency of the protein identification 
+across those samples. 
 
 ```{r}
-df %>% 
-    filter(type == "autoPOTS") %>% 
-    group_by(type, colname, nbCells) %>% 
-    summarise(median = median(log10(value))) %>% 
-    ggplot() +
-    aes(x = as.numeric(nbCells),
-        y = median) +
-    geom_point() +
-    scale_x_log10() +
-    xlab("# cells in sample") +
-    ylab("median log10 protein expression") +
-    ggtitle("autoPOTS median expression")
+lt <- lfauto[lfauto$nbCells %in% 450:550, ]
+lt <- fromList(split(lt$Leading.razor.protein, lt$colname))
+upset(lt, 
+      nsets = 17, 
+      order.by = "freq", 
+      nintersects = 30,
+      keep.order = TRUE,
+      mainbar.y.label = "Proteins in intersection", 
+      sets.x.label = "Proteins",
+      mb.ratio = c(0.4,0.6))
 ```
 
+Almost 90% of the proteins are found among all 3 samples. This is 
+shows that the protein detection and identification is highly 
+consistent across samples. 
 
-# Assess the robustness of the detection 
+### In single-cells
 
-While the above plots shows that more proteins are identified in samples 
-with more cells, it does not indicate whether the robustness of the 
-detection among samples with the same cell concentration. In this 
-section, we focus on the autoPOTs data set. 
-
-## Protein identification among single-cell samples
-
-We plot the overlap of the quantified proteins among single cells.
+We apply the same procedure for single-cell samples. 
 
 ```{r}
 lt <- lfauto[lfauto$nbCells == 1, ]
@@ -463,41 +477,34 @@ upset(lt,
       mb.ratio = c(0.4,0.6))
 ```
 
-About 50 \% of the proteins are common to all three single-cells, but 
-about a third of the proteins are only found in one of the cells. 
+The results for single-cell samples are very different from the 
+results shown above for 500-cell samples. For each single-cell sample,
+about 50 \% of the identified proteins were also found in the two 
+other samples. However, about a third of the proteins are only found 
+in one of the single-cell samples, indicating a high variability in
+detection rates between single-cell samples. There are two possible
+explanations:
 
-## Protein identification among 500-cell samples
+- Technical missingness: protein concentrations are too low in 
+single-cell samples so that only a part of the most expressed proteins are detectable. This is 
+subjected to stochastic effects (MS selection, heterogeneity of 
+expression,...) that lead to different sets of identified proteins. 
+- Biological missingness: the inherent heterogeneity in single cells leads to the expression
+of different, but biologically meaningful, sets of proteins. The more
+cells are contained in a sample, the more diluted this heterogeneity 
+is. 
 
-The above conclusion is not true for the 500-cell samples. 
+The most probable scenario is that there is a combination of the two
+types of missingness. However, it is not trivial to decouple technical
+and biological missingness. Synthetic samples are required to better 
+assess which component of the missingness are more prominent. 
 
-```{r}
-lt <- lfauto[lfauto$group == 500, ]
-lt <- fromList(split(lt$Leading.razor.protein, lt$colname))
-upset(lt, 
-      nsets = 17, 
-      order.by = "freq", 
-      nintersects = 30,
-      keep.order = TRUE,
-      mainbar.y.label = "Proteins in intersection", 
-      sets.x.label = "Proteins",
-      mb.ratio = c(0.4,0.6))
-```
+### In blanks
 
-Almost 90% of the proteins are found among all 3 samples. The sets of 
-identified proteins is much more robust for samples containing more 
-cells. Two possible reasons can be raised (not mutually exclusive). 
-
-- Protein concentrations are too low in single-cell samples so that 
-  only a part of the most expressed proteins are detectable. This is 
-  subjected to stochastic effects (MS selection, heterogeneity of 
-  expression,...) that lead to different sets of identified proteins. 
-- Single-cell heterogeneity causes different cells to express 
-  different sets of proteins. The more cells are contained in a sample,
-  the more diluted this heterogeneity is. MS-based SCP is the 
-  **first technique** that has the potential to study single-cell
-  heterogeneity at protein level!
-
-## Protein identification among blank samples
+Applying the same exploration to blank samples allows to assess the 
+background detection. Be it either due to technical contamination, 
+computational artefacts (during peptide identification) or 
+contamination from the culture environment. 
 
 ```{r}
 lt <- lfauto[lfauto$nbCells == 0, ]
@@ -512,90 +519,154 @@ upset(lt,
       mb.ratio = c(0.4,0.6))
 ```
 
+As expected, the most frequent protein sets are specific to one of the
+blank samples indicating inconsistent signal in the data. However, 
+49 proteins (out of 302) are consistently found across all blanks 
+indicating background contamination that probably also occurs in the
+single-cell samples. 
+
+# Quantification levels
+
+
+## Intensity distribution
+
+```{r, fig.height = 3, fig.width = 8}
+data.frame(lfauto) %>% 
+    ggplot() +
+    aes(x = log10(value)) +
+    geom_histogram() +
+    facet_wrap(~ group, scales = "free_y", nrow = 1) +
+    ggtitle("autoPOTS") 
+```
 
 ## Intensity dependent identification
 
-In the two cases mentioned above, we expect that proteins that are 
-expressed in all single-cells should be more expressed than proteins
-found in only in one or two cells or not found in single-cells. To 
-assess this, we **assume** that the 500-cell samples approximate the
-population protein expression. We look at the median protein 
-expression in those concentrated samples but separate the proteins 
-based on the number of single-cells it was found. 
+We expect that proteins that are expressed in all single-cells should 
+be more expressed than proteins found in only in one or two cells or
+not found in single-cells. To assess this, we **assume** that the 
+500-cell samples approximate the population protein expression. We 
+look at the median protein expression in those concentrated samples
+but separate the proteins based on the number of single-cells it was 
+found in. 
+
+To plot this, we first need a table containing proteins found in 
+single-cell samples and the number of single-cell samples in which
+each protein was found. 
 
 ```{r}
-lfauto %>% 
-    data.frame %>% 
+data.frame(lfauto) %>%
     filter(!is.na(value),
-           nbCells %in% c(1, 500)) %>% 
-    group_by(colname, Leading.razor.protein, nbCells) %>% 
-    summarise(value = median(log10(value))) %>%
-    group_by(Leading.razor.protein, nbCells) %>% 
-    summarise(n = n(),
-              value = median(value)) ->
-    df
-scCommon <- filter(df, nbCells == 1, n == 3)$Leading.razor.protein
-scTwoCom <- filter(df, nbCells == 1, n == 2)$Leading.razor.protein
-scUnique <- filter(df, nbCells == 1, n == 1)$Leading.razor.protein
+           nbCells == 1) %>% 
+    group_by(Leading.razor.protein) %>% 
+    summarise(n = length(unique(colname))) ->
+    scProts
 ```
 
+Another interesting information to plot is whether a protein is also 
+found in a blank sample. We therefore create a table containing only 
+information about blank samples.
+
 ```{r}
-lfauto %>% 
-    data.frame %>% 
+data.frame(lfauto) %>% 
     filter(!is.na(value),
-           nbCells == 0) %>% 
-    pull(Leading.razor.protein) %>% 
-    unique ->
+           nbCells == 0) ->
     blankProts
 ```
 
+Finally we create a table containing only information about the 
+500-cell samples, that we consider as bulk samples. We compute the 
+median expression for each proteins across all 500-cell samples. We 
+then join the single-cell table to include the number single-cell 
+samples in which each protein was found. Finally, we also include the 
+information about whether each protein was found in a blank samples or
+not. 
 
 ```{r}
-df %>% 
-    filter(nbCells == 500) %>% 
-    mutate(foundInSC = 0,
-           foundInSC = ifelse(Leading.razor.protein %in% scCommon, 3, foundInSC),
-           foundInSC = ifelse(Leading.razor.protein %in% scTwoCom, 2, foundInSC),
-           foundInSC = ifelse(Leading.razor.protein %in% scUnique, 1, foundInSC),
-           foundInSC = 0,
-           foundInSC = ifelse(Leading.razor.protein %in% scCommon, 3, foundInSC),
-           foundInSC = ifelse(Leading.razor.protein %in% scTwoCom, 2, foundInSC),
-           foundInSC = ifelse(Leading.razor.protein %in% scUnique, 1, foundInSC),
-           foundInBlank = Leading.razor.protein %in%blankProts) %>% 
-    ggplot() +
-    aes(y = value,
-        x = foundInSC) +
-    geom_violin(aes(group = foundInSC)) +
-    geom_jitter(aes(colour = foundInBlank),
-                alpha = 0.5, width = 0.25) +
-    geom_smooth(formula = "y ~ x", method = "lm") +
-    ggtitle("Protein expression in 500 cell samples") +
-    ylab("log10 median protein expression") +
-    xlab("found in # single cells")
+data.frame(lfauto) %>% 
+    filter(!is.na(value),
+           nbCells %in% 450:550) %>% 
+    group_by(colname, Leading.razor.protein) %>% 
+    summarise(value = median(log10(value))) %>%
+    left_join(scProts, by = "Leading.razor.protein") %>% 
+    mutate(n = ifelse(is.na(n), 0, n),
+           foundInBlank = Leading.razor.protein %in% blankProts$Leading.razor.protein) ->
+    df
 ```
 
-The proteins that are found in all 3 single-cells are the proteins 
-located at higher expression levels. We can see that intensity 
-influences the chance to detect a protein. 
+After this advanced data wrangling, we can plot the relationship 
+between the median protein intensity in bulk samples and the number of
+single-cell samples that a protein is found in.
 
-# Number of peptides per proteins
+```{r}
+ggplot(df) +
+    aes(y = value,
+        x = n) +
+    geom_jitter(aes(colour = foundInBlank),
+                alpha = 0.5, width = 0.25) +
+    geom_violin(aes(group = n), fill = "transparent") +
+    geom_smooth(formula = "y ~ x", method = "lm") +
+    scale_colour_manual(values = c("grey", "red")) +
+    ggtitle("Protein expression in 500-cell samples") +
+    ylab("log10 median protein expression") +
+    xlab("found in # single-cell samples")
+```
 
-```{r, fig.height = 4, fig.width = 8, out.width='80%'}
-rbind(cbind(lfnano, type = "nanoPOTS"), 
-      cbind(lfauto, type = "autoPOTS"))%>% 
-    data.frame %>% 
+As expected from technical missingness, proteins that are found in 
+more single-cell samples are proteins that have a higher expression
+distribution in bulk samples. However, the top 100 most expressed 
+proteins in bulk samples are found between no and 3 single-cell 
+samples, meaning that the protein detection probability not solely 
+depends on protein expression. A disappointing observation is that 
+a protein that is found in more single-cell samples has a higher 
+chance to be also found in blanks samples. A great majority of the
+proteins found in all 3 single-cell samples were also found in blank
+samples, indicating that the background signal consist of highly 
+expressed proteins that might have been released in the medium during
+the cell culture (blanks consist of culture media without cells) or 
+by carry over of sample material between successive MS runs. 
+
+# Quantification variability
+
+Because bottom-up proteomics reconstruct protein data from several 
+peptide fragments, it is possible to assess the quantification 
+accuracy for each protein by assessing the variability among its 
+constituting peptides.
+
+## Number of peptides per proteins
+
+First, we have a look at the distribution of the number of peptides 
+that are associated to a protein and assess the impact of the amount
+of sample material.
+
+```{r, fig.height = 3, fig.width = 8}
+data.frame(lfauto) %>% 
     filter(!is.na(value)) %>% 
-    group_by(Leading.razor.protein, nbCells, type) %>% 
+    group_by(colname, Leading.razor.protein, group) %>% 
     summarise(n = n()) %>% 
     ggplot() +
     aes(x = n) +
     geom_histogram(binwidth = 1) +
-    facet_wrap(type ~ nbCells, ncol = 5) +
-    xlim(c(0, 100)) +
+    facet_grid(~ group) +
+    xlim(c(0, 75)) +
     xlab("# peptides per protein")
 ```
 
-# Comparing median CVs
+Irrespective of the amount of sample material, the mode of the 
+distribution is one, meaning that many proteins are identified based
+on a single peptide or a low number of peptides. As more sample 
+material is analysed, the distribution tails towards more peptides per
+proteins. 
+
+## Median CVs
+
+The coefficient of variation (CV) is a measure of the variability of 
+the peptide quantification for a protein. Using the `medianCVperCell`
+function, we can compute this for all proteins in all samples. The 
+median CV in each sample is computed and added to the `colData`, here
+we name the new varaible `medianCV`. We only assess CVs for proteins
+with at least 5 peptides. Note that this means that the CV is computed
+for only for a few proteins for blank and single-cell proteins (see
+plot above).
 
 ```{r}
 autoPOTS <- medianCVperCell(autoPOTS, 
@@ -603,86 +674,73 @@ autoPOTS <- medianCVperCell(autoPOTS,
                             groupBy = "Leading.razor.protein",
                             nobs = 5, 
                             colDataName = "MedianCV")
-nanoPOTS <- medianCVperCell(nanoPOTS, 
-                            i = "peptides",
-                            groupBy = "Leading.razor.protein",
-                            nobs = 5, 
-                            colDataName = "MedianCV")
 ```
 
+We plot the computed median CVs per sample against the number of cells
+per sample. The required data are immediately available in the 
+`colData`. 
 
 ```{r}
-rbind(colData(autoPOTS)[, c("MedianCV", "nbCells")] %>% 
-          data.frame %>% 
-          mutate(type = "autoPOTS"),
-      colData(nanoPOTS)[, c("MedianCV", "nbCells")] %>% 
-          data.frame %>% 
-          mutate(type = "nanoPOTS")) %>% 
-    mutate(nbCells = factor(nbCells, levels = c(0, 1, 10, "~10", "~40",
-                                                "~140", 150, 500))) %>%
+colData(autoPOTS) %>% 
+    data.frame %>%  
     ggplot() +
-    aes(x = nbCells, 
+    aes(x = group, 
         y = MedianCV) +
-    geom_point() +
-    facet_grid(~ type, scales = "free_x")
+    geom_point()
 ```
 
-Note that blanks in the autoPOTS data set have only few proteins with
-5 or more observations, this might highly bias the median CV 
-estiamtion. 
+Interestingly, the sample amount does not seem to influence the 
+quantification variability. 
 
 # Assess the nature of the proteins
 
+**Sections below are work in progress**
+
 Up to now, we saw that single-cells and 
 
-
 ```{r}
-rowData(autoPOTS[, , grepl("HeLa", names(autoPOTS))]) %>% 
-    lapply(function(x) x$Leading.razor.protein) %>% 
-    unlist %>% 
-    unique ->
-    universe
+universe <- rbindRowData(autoPOTS, i = grep("HeLa", names(autoPOTS)))
+universe <- unique(universe$Leading.razor.protein)
 ```
 
 ## In many cells samples
 
+### Biological process
+
 ```{r, fig.width=10}
-rowData(autoPOTS[, , grepl("500", names(autoPOTS))]) %>% 
-    lapply(function(x) x$Leading.razor.protein) %>% 
-    unlist %>% 
-    unique ->
-    common500
+common500 <- rbindRowData(autoPOTS, i = grep("500", names(autoPOTS)))
+common500 <- unique(common500$Leading.razor.protein)
 go_500 <- enrichGO(gene = common500,
-                      OrgDb = org.Hs.eg.db,
-                      keyType = "UNIPROT",
-                      ont = "BP",
-                      pvalueCutoff = 0.05,
-                      pAdjustMethod = "BH",
-                      universe = keys(org.Hs.eg.db, "UNIPROT"),
-                      qvalueCutoff = 0.05,
-                      minGSSize = 50,
-                      maxGSSize = 200,
-                      readable = FALSE,
-                      pool = FALSE)
+                   OrgDb = org.Hs.eg.db,
+                   keyType = "UNIPROT",
+                   ont = "BP",
+                   pvalueCutoff = 0.05,
+                   pAdjustMethod = "BH",
+                   universe = keys(org.Hs.eg.db, "UNIPROT"),
+                   qvalueCutoff = 0.05,
+                   minGSSize = 50,
+                   maxGSSize = 200,
+                   readable = FALSE,
+                   pool = FALSE)
 dotplot(go_500, showCategory = Inf)
 ```
 
 ### Cellular compartment
 
 ```{r, fig.height=10, fig.width = 8, message=FALSE}
-go_blank_CC <- enrichGO(gene = common0,
-                      OrgDb = org.Hs.eg.db,
-                      keyType = "UNIPROT",
-                      ont = "CC",
-                      pvalueCutoff = 0.05,
-                      pAdjustMethod = "BH",
-                      universe = keys(org.Hs.eg.db, "UNIPROT"),
-                      # universe = universe,
-                      qvalueCutoff = 0.05,
-                      minGSSize = 200,
-                      maxGSSize = 1000,
-                      readable = FALSE,
-                      pool = FALSE)
+go_blank_CC <- enrichGO(gene = common500,
+                        OrgDb = org.Hs.eg.db,
+                        keyType = "UNIPROT",
+                        ont = "CC",
+                        pvalueCutoff = 0.05,
+                        pAdjustMethod = "BH",
+                        # universe = keys(org.Hs.eg.db, "UNIPROT"),
+                        universe = universe,
+                        qvalueCutoff = 0.05,
+                        minGSSize = 200,
+                        maxGSSize = 1000,
+                        readable = FALSE,
+                        pool = FALSE)
 dotplot(go_blank_CC, showCategory = Inf)
 ```
 
@@ -693,42 +751,39 @@ This indicates contamination by skin cells? Let
 ### Biological process
 
 ```{r, fig.height = 25, fig.width = 10}
-rowData(autoPOTS[, , grepl("_0cell", names(autoPOTS))]) %>% 
-    lapply(function(x) x$Leading.razor.protein) %>% 
-    unlist %>% 
-    unique ->
-    common0
+common0 <- rbindRowData(autoPOTS, i = grep("_0cell", names(autoPOTS)))
+common0 <- unique(common0$Leading.razor.protein)
 go_blank <- enrichGO(gene = common0,
-                      OrgDb = org.Hs.eg.db,
-                      keyType = "UNIPROT",
-                      ont = "BP",
-                      pvalueCutoff = 0.05,
-                      pAdjustMethod = "BH",
-                      universe = keys(org.Hs.eg.db, "UNIPROT"),
-                      qvalueCutoff = 0.05,
-                      minGSSize = 50,
-                      maxGSSize = 200,
-                      readable = FALSE,
-                      pool = FALSE)
+                     OrgDb = org.Hs.eg.db,
+                     keyType = "UNIPROT",
+                     ont = "BP",
+                     pvalueCutoff = 0.05,
+                     pAdjustMethod = "BH",
+                     universe = keys(org.Hs.eg.db, "UNIPROT"),
+                     qvalueCutoff = 0.05,
+                     minGSSize = 50,
+                     maxGSSize = 200,
+                     readable = FALSE,
+                     pool = FALSE)
 dotplot(go_blank, showCategory = Inf)
 ```
 
-    ### Cellular component
+### Cellular component
 
 ```{r, fig.height=10, fig.width = 8, message=FALSE}
 go_blank_CC <- enrichGO(gene = common0,
-                      OrgDb = org.Hs.eg.db,
-                      keyType = "UNIPROT",
-                      ont = "CC",
-                      pvalueCutoff = 0.05,
-                      pAdjustMethod = "BH",
-                      # universe = keys(org.Hs.eg.db, "UNIPROT"),
-                      universe = universe,
-                      qvalueCutoff = 0.05,
-                      minGSSize = 200,
-                      maxGSSize = 1000,
-                      readable = FALSE,
-                      pool = FALSE)
+                        OrgDb = org.Hs.eg.db,
+                        keyType = "UNIPROT",
+                        ont = "CC",
+                        pvalueCutoff = 0.05,
+                        pAdjustMethod = "BH",
+                        # universe = keys(org.Hs.eg.db, "UNIPROT"),
+                        universe = universe,
+                        qvalueCutoff = 0.05,
+                        minGSSize = 200,
+                        maxGSSize = 1000,
+                        readable = FALSE,
+                        pool = FALSE)
 dotplot(go_blank_CC, showCategory = Inf)
 ```
 
@@ -736,25 +791,49 @@ dotplot(go_blank_CC, showCategory = Inf)
 ## In single-cells
 
 ```{r,  fig.width=10}
-rowData(autoPOTS[, , grepl("1cell", names(autoPOTS))]) %>% 
-    lapply(function(x) x$Leading.razor.protein) %>% 
-    unlist %>% 
-    unique ->
-    commonSC
+commonSC <- rbindRowData(autoPOTS, i = grep("_1cell", names(autoPOTS)))
+commonSC <- unique(commonSC$Leading.razor.protein)
 go_sc <- enrichGO(gene = commonSC,
-                      OrgDb = org.Hs.eg.db,
-                      keyType = "UNIPROT",
-                      ont = "BP",
-                      pvalueCutoff = 0.05,
-                      pAdjustMethod = "BH",
-                      universe = universe,
-                      qvalueCutoff = 0.05,
-                      minGSSize = 50,
-                      maxGSSize = 200,
-                      readable = FALSE,
-                      pool = FALSE)
+                  OrgDb = org.Hs.eg.db,
+                  keyType = "UNIPROT",
+                  ont = "BP",
+                  pvalueCutoff = 0.05,
+                  pAdjustMethod = "BH",
+                  universe = universe,
+                  qvalueCutoff = 0.05,
+                  minGSSize = 50,
+                  maxGSSize = 200,
+                  readable = FALSE,
+                  pool = FALSE)
 dotplot(go_sc, showCategory = 20)
 ```
+
+# Conclusion
+
+This vignette reproduces the observations provided for Figure S5 in 
+@Liang2020-cr. However, we have pushed the data exploration further 
+and showed that looking at the number of detected features is not 
+sufficient to demonstrate that the quality of the data. We here argue
+that looking at the overlap of identified protein within and between 
+experimental groups (number of cells per sample) provide a better 
+understanding of the data structure, namely an increase of the 
+protein detection variability when the number of cells decreases. 
+
+This increase in detection variability is the consequence of technical
+and biological processes. The development of synthetic ground truth 
+data sets are required to decouple the two processes and assess the 
+importance of one process with respect to the other. This will allow
+to highlight the room for improvement for new MS-SCP technologies. 
+
+bad single-cell signal -> list arguments => is autoPOTS really working? 
+
+Finally, this vignette also provides a demonstration that using the 
+`scp` data framework is ideal for the manipulation and visualization
+of MS-SCP data. The `longFormat` output that is used throughout this
+vignette can be plugged in to powerful visualization tools such as 
+`ggplot2` or `upsetR`. This allowed an in-depth exploration of the 
+data and hence we could highlight some aspect of the data that were
+overlook in the original paper. 
 
 # Requirements
 
