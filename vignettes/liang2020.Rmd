@@ -696,7 +696,7 @@ quantification variability.
 
 **Sections below are work in progress**
 
-```{r knitr_params, echo = FALSE}
+```{r, echo = FALSE}
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
