@@ -374,8 +374,7 @@ code. First, we collect the PSM meta-information contained in the
 method (`Type`) is stored.
 
 ```{r collect_rowData, message=FALSE}
-rd <- longRowData(scp, i = 1:60,
-                  rowDataCols = c("Sequence", "Type", "Sample.name"))
+rd <- rbindRowData(scp, i = 1:60)
 ```
 
 Next, we combine the rowData with the sample annotation contained in
