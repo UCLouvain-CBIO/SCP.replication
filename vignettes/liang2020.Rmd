@@ -696,6 +696,10 @@ quantification variability.
 
 **Sections below are work in progress**
 
+```{r knitr_params, echo = FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
 Up to now, we saw that single-cells and 
 
 ```{r}
@@ -813,13 +817,13 @@ dotplot(go_sc, showCategory = 20)
 This vignette reproduces the observations provided for Figure S5 in 
 @Liang2020-cr. However, we have pushed the data exploration further 
 and showed that looking at the number of detected features is not 
-sufficient to demonstrate that the quality of the data. We here argue
+sufficient to demonstrate the quality of the data. We here argue
 that looking at the overlap of identified protein within and between 
 experimental groups (number of cells per sample) provide a better 
 understanding of the data structure, namely an increase of the 
 protein detection variability when the number of cells decreases. 
 
-This increase in detection variability is the consequence of technical
+The increase in detection variability is the consequence of technical
 and biological processes. The development of synthetic ground truth 
 data sets are required to decouple the two processes and assess the 
 importance of one process with respect to the other. This will allow
@@ -829,7 +833,7 @@ TODO add paragraph: single-cell signal ~ blank signal -> list
 arguments => is autoPOTS really working for sc samples?
 
 Finally, this vignette also provides a demonstration that using the 
-`scp` data framework is ideal for the manipulation and visualization
+`scp` data framework is ideal f     or the manipulation and visualization
 of MS-SCP data. The `longFormat` output that is used throughout this
 vignette can be plugged in to powerful visualization tools such as 
 `ggplot2` or `upsetR`. This allowed an in-depth exploration of the 
