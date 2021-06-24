@@ -303,14 +303,12 @@ scp <- pep2qvalue(scp,
 ```
 
 We can extract the q-values from the `rowData` of several assays using
-the `rowDataToDF` function. It takes the `rowData` of interest and
+the `rbindRowData` function. It takes the `rowData` of interest and
 returns a single `DataFrame` table with variables of interest. We plot
 the q-values along with the DART-ID PEPs using `ggplot2` facets.
 
 ```{r qvalue_plot, message=FALSE}
-rowDataToDF(scp,
-            i = names(scp),
-            vars = c("dart_PEP", "qvalue_psm", "qvalue_protein")) %>%
+rbindRowData(scp, i = names(scp)) %>%
     data.frame %>%
     pivot_longer(cols = c("dart_PEP", "qvalue_psm", "qvalue_protein"),
                  names_to = "measure") %>%
@@ -396,7 +394,7 @@ assay.
 ```{r computeSCR}
 scp <- computeSCR(scp,
                   i = names(scp),
-                  colDataCol = "SampleType",
+                  colvar = "SampleType",
                   carrierPattern = "Carrier",
                   samplePattern = 4:16)
 ```
@@ -412,9 +410,7 @@ avoided when using a character pattern.
 Before applying the filter, we plot the distribution of the mean SCR.
 
 ```{r meanSCR_plot, warning=FALSE, message=FALSE}
-rowDataToDF(scp,
-            i = names(scp),
-            vars = "MeanSCR") %>%
+rbindRowData(scp, i = names(scp)) %>%
     data.frame %>%
     ggplot(aes(x = MeanSCR)) +
     geom_histogram() +
@@ -455,7 +451,7 @@ contain only ones.
 ```{r}
 scp <- divideByReference(scp,
                          i = names(scp),
-                         colDataCol = "SampleType",
+                         colvar = "SampleType",
                          samplePattern = ".",
                          refPattern = "Reference")
 ```
@@ -529,9 +525,7 @@ we replace the problematic peptides to protein mappings through a
 majority vote.
 
 ```{r set_consensus, message=FALSE}
-scp %>%
-    rowDataToDF(i = names(scp)[1:173],
-                vars = c("peptide", "protein")) %>%
+rbindRowData(scp, i = names(scp)[1:173]) %>%
     data.frame %>%
     group_by(peptide) %>%
     ## The majority vote happens here
@@ -541,10 +535,11 @@ scp %>%
     filter(!duplicated(peptide, protein)) ->
     ppMap
 consensus <- lapply(peptideAssays, function(i) {
-    ppMap$protein[match(rowData(scp[[i]])$peptide, ppMap$peptide)]
+    ind <- match(rowData(scp[[i]])$peptide, ppMap$peptide)
+    DataFrame(protein = ppMap$protein[ind])
 })
 names(consensus) <- peptideAssays
-scp <- updateRowData(scp, "protein", consensus)
+rowData(scp) <- consensus
 ```
 
 This code chunk is hard to read, but this issue should represent a

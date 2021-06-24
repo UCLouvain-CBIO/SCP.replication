@@ -31,7 +31,10 @@ Suggests:
    knitr,
    benchmarkme,
    rmarkdown,
-   bladderbatch
+   bladderbatch,
+   clusterProfiler,
+   org.Hs.eg.db,
+   UpSetR
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8

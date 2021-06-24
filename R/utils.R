@@ -74,11 +74,11 @@
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL,
                          BPPARAM = BiocParallel::bpparam("SerialParam")) {
-
+    
     ## code taken from sva - used exclusively to reproduce obtained
     ## with version 3.34
     stopifnot(requireNamespace("sva")) ## works for sva_3.37.0
-
+    
     ## these internal function are not exported from the more recent
     ## versions of sva.
     sva_Beta.NA <- function (y, X) {
@@ -87,34 +87,34 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         B <- solve(crossprod(des), crossprod(des, y1))
         B
     }
-
+    
     sva_aprior  <- function (gamma.hat) {
         m <- mean(gamma.hat)
         s2 <- var(gamma.hat)
         (2 * s2 + m^2)/s2
     }
-
+    
     sva_bprior <- function (gamma.hat) {
         m <- mean(gamma.hat)
         s2 <- var(gamma.hat)
         (m * s2 + m^3)/s2
     }
-
+    
     sva_dinvgamma  <- function (x, shape, rate = 1/scale, scale = 1) {
         stopifnot(shape > 0)
         stopifnot(rate > 0)
         ifelse(x <= 0, 0, ((rate^shape)/gamma(shape)) * x^(-shape -
-                                                           1) * exp(-rate/x))
+                                                               1) * exp(-rate/x))
     }
-
+    
     sva_postmean <- function (g.hat, g.bar, n, d.star, t2) {
         (t2 * n * g.hat + d.star * g.bar)/(t2 * n + d.star)
     }
-
+    
     sva_postvar <- function (sum2, n, a, b) {
         (0.5 * sum2 + b)/(n/2 + a - 1)
     }
-
+    
     sva_it.sol  <- function (sdat, g.hat, d.hat, g.bar, t2, a, b, conv = 1e-04) {
         n <- rowSums(!is.na(sdat))
         g.old <- g.hat
@@ -135,8 +135,8 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         rownames(adjust) <- c("g.star", "d.star")
         adjust
     }
-
-
+    
+    
     sva_int.eprior <- function (sdat, g.hat, d.hat) {
         g.star <- d.star <- NULL
         r <- nrow(sdat)
@@ -158,7 +158,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         rownames(adjust) <- c("g.star", "d.star")
         adjust
     }
-
+    
     if (mean.only) {
         message("Using the 'mean only' version of ComBat")
     }
@@ -406,52 +406,52 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
 ##'     https://github.com/SlavovLab/SCoPE2
 ##'
 imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
-
+    
     oldi <- i
     exp <- object[[i]]
     dat <- assay(exp)
-
+    
     # Create a copy of the data, NA values to be filled in later
     dat.imp<-dat
-
+    
     # Calculate similarity metrics for all column pairs (default is Euclidean distance)
     dist.mat<-as.matrix( dist(t(dat)) )
     #dist.mat<-as.matrix(as.dist( dist.cosine(t(dat)) ))
-
+    
     # Column names of the similarity matrix, same as data matrix
     cnames<-colnames(dist.mat)
-
+    
     # For each column in the data...
     for(X in cnames){
-
+        
         # Find the distances of all other columns to that column
         distances<-dist.mat[, X]
-
+        
         # Reorder the distances, smallest to largest (this will reorder the column names as well)
         distances.ordered<-distances[order(distances, decreasing = F)]
-
+        
         # Reorder the data matrix columns, smallest distance to largest from the column of interest
         # Obviously, first column will be the column of interest, column X
         dat.reordered<-dat[ , names(distances.ordered ) ]
-
+        
         # Take the values in the column of interest
         vec<-dat[, X]
-
+        
         # Which entries are missing and need to be imputed...
         na.index<-which( is.na(vec) )
-
+        
         # For each of the missing entries (rows) in column X...
         for(i in na.index){
-
+            
             # Find the most similar columns that have a non-NA value in this row
             closest.columns<-names( which( !is.na(dat.reordered[i, ])  ) )
-
+            
             # If there are more than k such columns, take the first k most similar
             if( length(closest.columns)>k ){
                 # Replace NA in column X with the mean the same row in k of the most similar columns
                 vec[i]<-mean( dat[ i, closest.columns[1:k] ] )
             }
-
+            
             # If there are less that or equal to k columns, take all the columns
             if( length(closest.columns)<=k ){
                 # Replace NA in column X with the mean the same row in all of the most similar columns
@@ -461,7 +461,7 @@ imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
         # Populate a the matrix with the new, imputed values
         dat.imp[,X]<-vec
     }
-
+    
     assay(exp) <- dat.imp
     object <- addAssay(object, exp, name = name)
     addAssayLinkOneToOne(object, from = oldi, to = name)
@@ -619,4 +619,74 @@ pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
         Xw <- sweep(Xw, 2, colSds(Xw), "/")
     Xcor <- cor(Xw)
     eigen(Xcor)
+}
+
+
+normalizeSCeptre <- function(object, i, 
+                             batchCol, 
+                             channelCol,
+                             iterThres = 1.1,
+                             name = "normAssay") {
+    stopifnot(inherits(object, "QFeatures"))
+    
+    ## Get a df from the QFeatures object
+    x <- longFormat(object[, , i], 
+                    colvars = c(batchCol, channelCol))
+    x <- x[!is.na(x$value) & x$value != 0, ]
+    
+    ## Apply the normalization loop
+    for (iter in 1:100) {
+        message(paste0("Iteration: ", iter))
+        value0 <- x$value
+        data.frame(x) %>% 
+            ## Normalize by batch
+            ## 1. Calculate median for each protein in each batch
+            group_by_at(.vars = c(batchCol, "rowname")) %>%
+            mutate(meds = median(value, na.rm = TRUE)) %>%
+            # 2. Calculate the factors needed for a median shift
+            group_by_at("rowname") %>%
+            mutate(meansTot = median(meds, na.rm = TRUE)) %>%
+            group_by_at(c(batchCol, "rowname")) %>%
+            mutate(factors = meds / meansTot) %>%
+            # 3. Apply factors
+            ungroup() %>%
+            mutate(value = value / factors) %>%
+            ## Normalize by channel
+            ## 1. Calculate median for each protein in each sample
+            group_by_at(.vars = c(channelCol, "rowname")) %>%
+            mutate(meds = median(value, na.rm = TRUE)) %>%
+            # 2. Calculate the factors needed for a median shift
+            group_by_at(.vars = "rowname") %>%
+            mutate(meansTot = median(meds, na.rm = TRUE)) %>%
+            group_by_at(.vars = c(channelCol, "rowname")) %>%
+            mutate(factors = meds / meansTot) %>%
+            # 3. Apply factors
+            ungroup() %>%
+            mutate(value = value / factors) ->
+            x
+        
+        current <- abs(max(x$value - value0))
+        message(paste0("Current convergence: ", current))
+        if (current <= iterThres)
+            break()
+    }
+    ## Format the data as a matrix
+    x[, c("rowname", "primary", "value")] %>%
+        pivot_wider(id_cols = "rowname", 
+                    names_from = "primary", 
+                    values_from = "value") %>%
+        column_to_rownames("rowname") %>%
+        as.matrix ->
+        x
+    ## Insert the normalized data in the QFeatures object
+    sce <- scp[[i]][rownames(x), ]
+    assay(sce) <- x
+    object <- addAssay(object, 
+                       y = sce,
+                       name = name)
+    addAssayLink(object, 
+                 from = i,
+                 to = name,
+                 varFrom = "Accession",
+                 varTo = "Accession")
 }
