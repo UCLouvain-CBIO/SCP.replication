@@ -825,7 +825,8 @@ data sets are required to decouple the two processes and assess the
 importance of one process with respect to the other. This will allow
 to highlight the room for improvement for new MS-SCP technologies. 
 
-bad single-cell signal -> list arguments => is autoPOTS really working? 
+TODO add paragraph: single-cell signal ~ blank signal -> list 
+arguments => is autoPOTS really working for sc samples?
 
 Finally, this vignette also provides a demonstration that using the 
 `scp` data framework is ideal for the manipulation and visualization
