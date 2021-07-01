@@ -374,7 +374,7 @@ code. First, we collect the PSM meta-information contained in the
 method (`Type`) is stored.
 
 ```{r collect_rowData, message=FALSE}
-rd <- rbindRowData(scp, i = 1:60)
+rd <- rbindRowData(scp, i = 1:60)[, c("Sample.name", "Type")]
 ```
 
 Next, we combine the rowData with the sample annotation contained in
@@ -435,7 +435,7 @@ ggplot(df) +
                 labeller = labeller(.cols = label_both)) +
     ## Customize the plot aspect to match the figure design
     theme_classic() +
-    scale_fill_manual(values = c("green3",  "black"), guide = FALSE) +
+    scale_fill_manual(values = c("green3",  "black"), guide = "none") +
     scale_shape_manual(values = c(22, 21)) +
     ylab("Unique peptides") +
     xlab("# cells")
@@ -462,7 +462,7 @@ is particularly useful to work with `ggplot2`.
 
 ```{r}
 longdat <- longFormat(scp[, , "proteins_iBAQ"],
-                      colDataCols = c("Sample.name", "Experiment",
+                      colvars = c("Sample.name", "Experiment",
                                       "Cells.per.well", "FM1.43.signal"))
 ```
 
@@ -503,7 +503,7 @@ ggplot(df) +
     geom_point(size = 2) +
     ## Customize the plot aspect
     theme_classic() +
-    scale_color_manual(values = c("green3",  "black"), guide = FALSE) +
+    scale_color_manual(values = c("green3",  "black"), guide = "none") +
     ylab("total iBAQ") +
     xlab("# cells")
 ```
@@ -623,8 +623,8 @@ We collect the data using the same functionality as presented before.
 
 ```{r}
 longFormat(scp[, , 1:60],
-           colDataCols = c("Cells.per.well", "FM1.43.signal"),
-           rowDataCols = "Type") %>%
+           colvars = c("Cells.per.well", "FM1.43.signal"),
+           rowvars = "Type") %>%
     data.frame %>%
     ## Keep only single cells and blanks
     filter(Cells.per.well <= 1) %>%
@@ -737,7 +737,7 @@ proteins that are identified in at least 5 cells.
 ```{r}
 sel <- rowSums(!is.na(assay(scp[["proteins_iBAQ"]]))) >= 5
 sel <- names(sel)[sel]
-scp[["proteins_iBAQ"]] <- scp[["proteins_iBAQ"]][sel, ]
+scp <- scp[sel, ]
 scp[["proteins_iBAQ"]]
 ```
 
