@@ -737,7 +737,7 @@ proteins that are identified in at least 5 cells.
 ```{r}
 sel <- rowSums(!is.na(assay(scp[["proteins_iBAQ"]]))) >= 5
 sel <- names(sel)[sel]
-scp <- scp[sel, ]
+scp <- scp[sel, , ]
 scp[["proteins_iBAQ"]]
 ```
 
