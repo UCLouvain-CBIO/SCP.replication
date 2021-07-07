@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">SCP.replication</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.2.1</span>
       </span>
     </div>
 
@@ -57,6 +57,9 @@
       <a href="../articles/SCoPE2.html">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a>
     </li>
     <li>
+      <a href="../articles/liang2020.html">Exploring the autoPOTS data (Liang et al. 2020)</a>
+    </li>
+    <li>
       <a href="../articles/zhu2019EL.html">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a>
     </li>
   </ul>
@@ -72,14 +75,14 @@
 
       
 
-      </header><script src="SCoPE2_files/header-attrs-2.8/header-attrs.js"></script><div class="row">
+      </header><script src="SCoPE2_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Reproduction of the SCoPE2 analysis (Specht et al. 2021)</h1>
                         <h4 class="author">Christophe Vanderaa<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, Computational Biology, UCLouvain</h4>
                         <h4 class="author">Laurent Gatto, Computational Biology, UCLouvain</h4>
             
-            <h4 class="date">24 May 2021</h4>
+            <h4 class="date">7 July 2021</h4>
       
       
       <div class="hidden name"><code>SCoPE2.Rmd</code></div>
@@ -105,11 +108,11 @@
 <a href="#scp-and-the-scope2-workflow" class="anchor"></a><code>scp</code> and the SCoPE2 workflow</h3>
 <p>The SCoPE2 code provided along with the article can be retrieved from <a href="https://github.com/SlavovLab/SCoPE2/blob/master/code/SCoPE2_analysis.R">this GitHub repository</a>. Note that we here used the part of the script that performs the stringent feature selection (see the original paper for more details). The objective of this vignette is to replicate the SCoPE2 script while providing standardized, easy-to-read, and well documented code. Therefore, our first contribution was to formalize the SCoPE2 script into a conceptual flow chart.</p>
 <div class="figure" style="text-align: center">
-<img src="figs/workflow.png" alt="Overview of the SCoPE2 workflow." width="100%"><p class="caption">
+<img src="figs/SCoPE2-workflow.png" alt="Overview of the SCoPE2 workflow." width="100%"><p class="caption">
 Overview of the SCoPE2 workflow.
 </p>
 </div>
-<p>Blue boxes highlight steps that are already routinely performed in bulk proteomics. The orange boxes depict the steps that are specific to single-cell applications and require new implementations. We develop a new data framework dedicated to SCP data analysis that combines two existing Bioconductor classes. The <code>SingleCellExperiment</code> class provides an interface to many cutting edge methods for single-cell analysis and the <code>QFeatures</code> class facilitates manipulation and processing of MS-based quantitative data (blue boxes in the flowchart). The <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html"><code>scp</code> vignette</a> provides detailed information about the data structure. The <code>scp</code> package extends the functionality of <code>QFeatures</code> for single-cell application. <code>scp</code> offers a standardized implementation of the single-cell steps in the flowchart above (orange boxes).</p>
+<p>Blue boxes highlight steps that are already routinely performed in bulk proteomics. The orange boxes depict the steps that are specific to single-cell applications and require new implementations. We have developed a new data framework dedicated to SCP data analysis that combines two existing Bioconductor classes. The <code>SingleCellExperiment</code> class provides an interface to many cutting edge methods for single-cell analysis and the <code>QFeatures</code> class facilitates manipulation and processing of MS-based quantitative data (blue boxes in the flowchart). The <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html"><code>scp</code> vignette</a> provides detailed information about the data structure. The <code>scp</code> package extends the functionality of <code>QFeatures</code> for single-cell application. <code>scp</code> offers a standardized implementation of the single-cell steps in the flowchart above (orange boxes).</p>
 <p>The required packages for running this workflow are listed below.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Core packages of this workflow</span>
@@ -225,11 +228,9 @@ Overview of the SCoPE2 workflow.
                   groupBy <span class="op">=</span> <span class="st">"protein"</span>,
                   PEP <span class="op">=</span> <span class="st">"dart_PEP"</span>,
                   rowDataName <span class="op">=</span> <span class="st">"qvalue_protein"</span><span class="op">)</span></code></pre></div>
-<p>We can extract the q-values from the <code>rowData</code> of several assays using the <code>rowDataToDF</code> function. It takes the <code>rowData</code> of interest and returns a single <code>DataFrame</code> table with variables of interest. We plot the q-values along with the DART-ID PEPs using <code>ggplot2</code> facets.</p>
+<p>We can extract the q-values from the <code>rowData</code> of several assays using the <code>rbindRowData</code> function. It takes the <code>rowData</code> of interest and returns a single <code>DataFrame</code> table with variables of interest. We plot the q-values along with the DART-ID PEPs using <code>ggplot2</code> facets.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/rowDataToDF.html">rowDataToDF</a></span><span class="op">(</span><span class="va">scp</span>,
-            i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
-            vars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dart_PEP"</span>, <span class="st">"qvalue_psm"</span>, <span class="st">"qvalue_protein"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">pivot_longer</span><span class="op">(</span>cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dart_PEP"</span>, <span class="st">"qvalue_psm"</span>, <span class="st">"qvalue_protein"</span><span class="op">)</span>,
                  names_to <span class="op">=</span> <span class="st">"measure"</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -283,18 +284,16 @@ Overview of the SCoPE2 workflow.
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/computeSCR.html">computeSCR</a></span><span class="op">(</span><span class="va">scp</span>,
                   i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
-                  colDataCol <span class="op">=</span> <span class="st">"SampleType"</span>,
+                  colvar <span class="op">=</span> <span class="st">"SampleType"</span>,
                   carrierPattern <span class="op">=</span> <span class="st">"Carrier"</span>,
                   samplePattern <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">16</span><span class="op">)</span></code></pre></div>
-<pre><code>## Warning in computeSCR(scp, i = names(scp), colDataCol = "SampleType",
-## carrierPattern = "Carrier", : The pattern is numeric. This is only allowed for
-## replicating the SCoPE2 analysis and will later get defunct.</code></pre>
+<pre><code>## Warning in computeSCR(scp, i = names(scp), colvar = "SampleType", carrierPattern
+## = "Carrier", : The pattern is numeric. This is only allowed for replicating the
+## SCoPE2 analysis and will later get defunct.</code></pre>
 <p>In this step, we supplied numeric entries as <code>samplePattern</code> instead of a regular expression pattern. This is to replicate the SCoPE2 analysis. We refrain from using a numeric pattern (as indicated by the warning above) because this can lead to unnoticed artefacts. In fact, the empty channels of the TMT-16 runs but not TMT-11 channels are here also used to compute the average SCR which could have been avoided when using a character pattern.</p>
 <p>Before applying the filter, we plot the distribution of the mean SCR.</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/rowDataToDF.html">rowDataToDF</a></span><span class="op">(</span><span class="va">scp</span>,
-            i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
-            vars <span class="op">=</span> <span class="st">"MeanSCR"</span><span class="op">)</span> <span class="op">%&gt;%</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">MeanSCR</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_histogram</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
@@ -317,7 +316,7 @@ Overview of the SCoPE2 workflow.
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/divideByReference.html">divideByReference</a></span><span class="op">(</span><span class="va">scp</span>,
                          i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
-                         colDataCol <span class="op">=</span> <span class="st">"SampleType"</span>,
+                         colvar <span class="op">=</span> <span class="st">"SampleType"</span>,
                          samplePattern <span class="op">=</span> <span class="st">"."</span>,
                          refPattern <span class="op">=</span> <span class="st">"Reference"</span><span class="op">)</span></code></pre></div>
 </div>
@@ -359,9 +358,7 @@ Overview of the SCoPE2 workflow.
 <a href="#consensus-mapping-of-peptides-to-proteins" class="anchor"></a>Consensus mapping of peptides to proteins</h2>
 <p>We need to account for an issue in the data. <code>joinAssays</code> will only keep the metadata variables that have the same value between matching rows. However, some peptide sequences map to one protein in one run and to another protein in another run. Hence, the protein sequence is not constant for all peptides and is removed during joining. It is important we keep the protein sequence in the <code>rowData</code> since we will later need it to aggregate peptides to proteins. To avoid this issue, we replace the problematic peptides to protein mappings through a majority vote.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">scp</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/rowDataToDF.html">rowDataToDF</a></span><span class="op">(</span>i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">173</span><span class="op">]</span>,
-                vars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"peptide"</span>, <span class="st">"protein"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">173</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">group_by</span><span class="op">(</span><span class="va">peptide</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="co">## The majority vote happens here</span>
@@ -371,10 +368,11 @@ Overview of the SCoPE2 workflow.
     <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html">duplicated</a></span><span class="op">(</span><span class="va">peptide</span>, <span class="va">protein</span><span class="op">)</span><span class="op">)</span> <span class="op">-&gt;</span>
     <span class="va">ppMap</span>
 <span class="va">consensus</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="va">peptideAssays</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">ppMap</span><span class="op">$</span><span class="va">protein</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html">match</a></span><span class="op">(</span><span class="fu">rowData</span><span class="op">(</span><span class="va">scp</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">peptide</span>, <span class="va">ppMap</span><span class="op">$</span><span class="va">peptide</span><span class="op">)</span><span class="op">]</span>
+    <span class="va">ind</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/match.html">match</a></span><span class="op">(</span><span class="fu">rowData</span><span class="op">(</span><span class="va">scp</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">peptide</span>, <span class="va">ppMap</span><span class="op">$</span><span class="va">peptide</span><span class="op">)</span>
+    <span class="fu">DataFrame</span><span class="op">(</span>protein <span class="op">=</span> <span class="va">ppMap</span><span class="op">$</span><span class="va">protein</span><span class="op">[</span><span class="va">ind</span><span class="op">]</span><span class="op">)</span>
 <span class="op">}</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">consensus</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">peptideAssays</span>
-<span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/replaceRowDataCols.html">replaceRowDataCols</a></span><span class="op">(</span><span class="va">scp</span>, <span class="va">peptideAssays</span>, <span class="st">"protein"</span>, <span class="va">consensus</span><span class="op">)</span></code></pre></div>
+<span class="fu">rowData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">consensus</span></code></pre></div>
 <p>This code chunk is hard to read, but this issue should represent a special case and we therefore don’t consider this step worth standardizing. Some peptides are mapped to different proteins because the TMT-11 and TMT-16 data sets were analysed separately in MaxQuant. Razor peptides, <em>i.e.</em> peptides that are found in several protein groups, are assigned to the protein group with most peptides (<span class="citation">Tyanova, Temu, and Cox (2016)</span>,) and this can vary from one analysis to another. Therefore, inconsistent peptide mapping should not occur when all runs are preprocessed at once. We will see later that this issue does not impair the replication of the SCoPE2 analysis, but it recalls that mapping of shared peptides to proteins is not a trivial task.</p>
 </div>
 <div id="cleaning-missing-data" class="section level2">
@@ -494,7 +492,7 @@ Overview of the SCoPE2 workflow.
 <div id="log-transformation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#log-transformation" class="anchor"></a>Log-transformation</h2>
-<p>The last processing step of the peptide data before aggregating to proteins is to log-transform the data. SCoPE2 uses a base 2 log-transformation and this is implemented in <code>logTransform</code> in the <code>QFeatures</code>.</p>
+<p>The last processing step of the peptide data before aggregating to proteins is to log-transform the data. SCoPE2 uses a base 2 log-transformation and this is implemented in <code>logTransform</code> in <code>QFeatures</code>.</p>
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">logTransform</a></span><span class="op">(</span><span class="va">scp</span>,
                     base <span class="op">=</span> <span class="fl">2</span>,
@@ -731,7 +729,7 @@ Overview of the SCoPE2 workflow.
 <h3 class="hasAnchor">
 <a href="#hardware-and-software" class="anchor"></a>Hardware and software</h3>
 <p>The system details of the machine that built the vignette are:</p>
-<pre><code>## Machine: Linux (5.4.116-1-MANJARO)
+<pre><code>## Machine: Linux (5.4.124-1-MANJARO)
 ## R version: R.4.1.0 (svn: 80317)
 ## RAM: 33.6 GB
 ## CPU: 8 core(s) - Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz</code></pre>
@@ -740,7 +738,7 @@ Overview of the SCoPE2 workflow.
 <h3 class="hasAnchor">
 <a href="#timing" class="anchor"></a>Timing</h3>
 <p>The total time required to compile this vignette is:</p>
-<pre><code>## 2.607735 hours</code></pre>
+<pre><code>## 1.571403 hours</code></pre>
 </div>
 <div id="memory" class="section level3">
 <h3 class="hasAnchor">
@@ -770,95 +768,96 @@ Overview of the SCoPE2 workflow.
 ## [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
 ## 
 ## attached base packages:
-## [1] parallel  stats4    stats     graphics  grDevices utils     datasets 
-## [8] methods   base     
+## [1] stats4    stats     graphics  grDevices utils     datasets  methods  
+## [8] base     
 ## 
 ## other attached packages:
-##  [1] benchmarkme_1.0.7           scater_1.20.0              
-##  [3] scuttle_1.2.0               sva_3.40.0                 
-##  [5] BiocParallel_1.26.0         genefilter_1.74.0          
-##  [7] mgcv_1.8-35                 nlme_3.1-152               
-##  [9] patchwork_1.1.1             forcats_0.5.1              
-## [11] stringr_1.4.0               dplyr_1.0.6                
-## [13] purrr_0.3.4                 readr_1.4.0                
-## [15] tidyr_1.1.3                 tibble_3.1.2               
-## [17] ggplot2_3.3.3               tidyverse_1.3.1            
-## [19] SCP.replication_0.2.0       scpdata_1.0.0              
-## [21] ExperimentHub_2.0.0         AnnotationHub_3.0.0        
-## [23] BiocFileCache_2.0.0         dbplyr_2.1.1               
-## [25] scp_1.2.0                   QFeatures_1.2.0            
-## [27] MultiAssayExperiment_1.18.0 SingleCellExperiment_1.14.1
-## [29] SummarizedExperiment_1.22.0 Biobase_2.52.0             
-## [31] GenomicRanges_1.44.0        GenomeInfoDb_1.28.0        
-## [33] IRanges_2.26.0              S4Vectors_0.30.0           
-## [35] BiocGenerics_0.38.0         MatrixGenerics_1.4.0       
-## [37] matrixStats_0.58.0          BiocStyle_2.20.0           
+##  [1] benchmarkme_1.0.7           scater_1.21.2              
+##  [3] scuttle_1.3.0               patchwork_1.1.1            
+##  [5] forcats_0.5.1               stringr_1.4.0              
+##  [7] dplyr_1.0.7                 purrr_0.3.4                
+##  [9] readr_1.4.0                 tidyr_1.1.3                
+## [11] tibble_3.1.2                ggplot2_3.3.5              
+## [13] tidyverse_1.3.1             SCP.replication_0.2.1      
+## [15] scpdata_1.1.0               ExperimentHub_2.1.1        
+## [17] AnnotationHub_3.1.3         BiocFileCache_2.1.1        
+## [19] dbplyr_2.1.1                scp_1.3.1                  
+## [21] QFeatures_1.3.5             MultiAssayExperiment_1.19.1
+## [23] SingleCellExperiment_1.15.1 SummarizedExperiment_1.23.1
+## [25] Biobase_2.53.0              GenomicRanges_1.45.0       
+## [27] GenomeInfoDb_1.29.3         IRanges_2.27.0             
+## [29] S4Vectors_0.31.0            BiocGenerics_0.39.1        
+## [31] MatrixGenerics_1.5.1        matrixStats_0.59.0         
+## [33] BiocStyle_2.21.3           
 ## 
 ## loaded via a namespace (and not attached):
 ##   [1] readxl_1.3.1                  backports_1.2.1              
 ##   [3] systemfonts_1.0.2             lazyeval_0.2.2               
-##   [5] splines_4.1.0                 digest_0.6.27                
-##   [7] foreach_1.5.1                 htmltools_0.5.1.1            
-##   [9] viridis_0.6.1                 fansi_0.4.2                  
-##  [11] magrittr_2.0.1                memoise_2.0.0                
-##  [13] ScaledMatrix_1.0.0            doParallel_1.0.16            
-##  [15] cluster_2.1.2                 limma_3.48.0                 
-##  [17] Biostrings_2.60.0             annotate_1.70.0              
-##  [19] modelr_0.1.8                  pkgdown_1.6.1                
-##  [21] colorspace_2.0-1              blob_1.2.1                   
-##  [23] rvest_1.0.0                   rappdirs_0.3.3               
-##  [25] textshaping_0.3.4             haven_2.4.1                  
-##  [27] xfun_0.23                     crayon_1.4.1                 
-##  [29] RCurl_1.98-1.3                jsonlite_1.7.2               
-##  [31] iterators_1.0.13              survival_3.2-11              
-##  [33] glue_1.4.2                    gtable_0.3.0                 
-##  [35] zlibbioc_1.38.0               XVector_0.32.0               
-##  [37] DelayedArray_0.18.0           BiocSingular_1.8.0           
-##  [39] scales_1.1.1                  DBI_1.1.1                    
-##  [41] edgeR_3.34.0                  Rcpp_1.0.6                   
-##  [43] viridisLite_0.4.0             xtable_1.8-4                 
-##  [45] clue_0.3-59                   rsvd_1.0.5                   
-##  [47] bit_4.0.4                     MsCoreUtils_1.4.0            
-##  [49] httr_1.4.2                    ellipsis_0.3.2               
-##  [51] farver_2.1.0                  pkgconfig_2.0.3              
-##  [53] XML_3.99-0.6                  sass_0.4.0                   
-##  [55] locfit_1.5-9.4                utf8_1.2.1                   
-##  [57] labeling_0.4.2                tidyselect_1.1.1             
-##  [59] rlang_0.4.11                  later_1.2.0                  
-##  [61] AnnotationDbi_1.54.0          munsell_0.5.0                
-##  [63] BiocVersion_3.13.1            cellranger_1.1.0             
-##  [65] tools_4.1.0                   cachem_1.0.5                 
-##  [67] cli_2.5.0                     generics_0.1.0               
-##  [69] RSQLite_2.2.7                 broom_0.7.6                  
-##  [71] evaluate_0.14                 fastmap_1.1.0                
-##  [73] yaml_2.2.1                    ragg_1.1.2                   
-##  [75] knitr_1.33                    bit64_4.0.5                  
-##  [77] fs_1.5.0                      KEGGREST_1.32.0              
-##  [79] AnnotationFilter_1.16.0       sparseMatrixStats_1.4.0      
-##  [81] mime_0.10                     xml2_1.3.2                   
-##  [83] compiler_4.1.0                rstudioapi_0.13              
-##  [85] beeswarm_0.3.1                filelock_1.0.2               
-##  [87] curl_4.3.1                    png_0.1-7                    
-##  [89] interactiveDisplayBase_1.30.0 reprex_2.0.0                 
-##  [91] bslib_0.2.5.1                 stringi_1.6.2                
-##  [93] ps_1.6.0                      highr_0.9                    
-##  [95] desc_1.3.0                    lattice_0.20-44              
-##  [97] ProtGenerics_1.24.0           Matrix_1.3-3                 
-##  [99] vctrs_0.3.8                   pillar_1.6.1                 
-## [101] lifecycle_1.0.0               BiocManager_1.30.15          
-## [103] jquerylib_0.1.4               BiocNeighbors_1.10.0         
-## [105] irlba_2.3.3                   bitops_1.0-7                 
-## [107] httpuv_1.6.1                  R6_2.5.0                     
-## [109] bookdown_0.22                 promises_1.2.0.1             
-## [111] gridExtra_2.3                 vipor_0.4.5                  
-## [113] codetools_0.2-18              benchmarkmeData_1.0.4        
-## [115] MASS_7.3-54                   assertthat_0.2.1             
-## [117] rprojroot_2.0.2               withr_2.4.2                  
-## [119] GenomeInfoDbData_1.2.6        hms_1.1.0                    
-## [121] beachmat_2.8.0                grid_4.1.0                   
-## [123] DelayedMatrixStats_1.14.0     rmarkdown_2.8                
-## [125] shiny_1.6.0                   lubridate_1.7.10             
-## [127] ggbeeswarm_0.6.0</code></pre>
+##   [5] splines_4.1.0                 BiocParallel_1.27.1          
+##   [7] sva_3.41.0                    digest_0.6.27                
+##   [9] foreach_1.5.1                 htmltools_0.5.1.1            
+##  [11] viridis_0.6.1                 fansi_0.5.0                  
+##  [13] magrittr_2.0.1                memoise_2.0.0                
+##  [15] ScaledMatrix_1.1.0            doParallel_1.0.16            
+##  [17] cluster_2.1.2                 limma_3.49.1                 
+##  [19] Biostrings_2.61.1             annotate_1.71.0              
+##  [21] modelr_0.1.8                  pkgdown_1.6.1                
+##  [23] colorspace_2.0-2              blob_1.2.1                   
+##  [25] rvest_1.0.0                   rappdirs_0.3.3               
+##  [27] textshaping_0.3.5             haven_2.4.1                  
+##  [29] xfun_0.24                     crayon_1.4.1                 
+##  [31] RCurl_1.98-1.3                jsonlite_1.7.2               
+##  [33] genefilter_1.75.0             iterators_1.0.13             
+##  [35] survival_3.2-11               glue_1.4.2                   
+##  [37] gtable_0.3.0                  zlibbioc_1.39.0              
+##  [39] XVector_0.33.0                DelayedArray_0.19.1          
+##  [41] BiocSingular_1.9.1            scales_1.1.1                 
+##  [43] DBI_1.1.1                     edgeR_3.35.0                 
+##  [45] Rcpp_1.0.6                    viridisLite_0.4.0            
+##  [47] xtable_1.8-4                  clue_0.3-59                  
+##  [49] rsvd_1.0.5                    bit_4.0.4                    
+##  [51] MsCoreUtils_1.5.0             httr_1.4.2                   
+##  [53] ellipsis_0.3.2                farver_2.1.0                 
+##  [55] pkgconfig_2.0.3               XML_3.99-0.6                 
+##  [57] sass_0.4.0                    locfit_1.5-9.4               
+##  [59] utf8_1.2.1                    labeling_0.4.2               
+##  [61] tidyselect_1.1.1              rlang_0.4.11                 
+##  [63] later_1.2.0                   AnnotationDbi_1.55.1         
+##  [65] munsell_0.5.0                 BiocVersion_3.14.0           
+##  [67] cellranger_1.1.0              tools_4.1.0                  
+##  [69] cachem_1.0.5                  cli_3.0.0                    
+##  [71] generics_0.1.0                RSQLite_2.2.7                
+##  [73] broom_0.7.8                   evaluate_0.14                
+##  [75] fastmap_1.1.0                 yaml_2.2.1                   
+##  [77] ragg_1.1.3                    knitr_1.33                   
+##  [79] bit64_4.0.5                   fs_1.5.0                     
+##  [81] KEGGREST_1.33.0               AnnotationFilter_1.17.0      
+##  [83] sparseMatrixStats_1.5.0       nlme_3.1-152                 
+##  [85] mime_0.11                     xml2_1.3.2                   
+##  [87] compiler_4.1.0                rstudioapi_0.13              
+##  [89] beeswarm_0.4.0                filelock_1.0.2               
+##  [91] curl_4.3.2                    png_0.1-7                    
+##  [93] interactiveDisplayBase_1.31.0 reprex_2.0.0                 
+##  [95] bslib_0.2.5.1                 stringi_1.6.2                
+##  [97] highr_0.9                     desc_1.3.0                   
+##  [99] lattice_0.20-44               ProtGenerics_1.25.2          
+## [101] Matrix_1.3-4                  vctrs_0.3.8                  
+## [103] pillar_1.6.1                  lifecycle_1.0.0              
+## [105] BiocManager_1.30.16           jquerylib_0.1.4              
+## [107] BiocNeighbors_1.11.0          cowplot_1.1.1                
+## [109] irlba_2.3.3                   bitops_1.0-7                 
+## [111] httpuv_1.6.1                  R6_2.5.0                     
+## [113] bookdown_0.22                 promises_1.2.0.1             
+## [115] gridExtra_2.3                 vipor_0.4.5                  
+## [117] codetools_0.2-18              benchmarkmeData_1.0.4        
+## [119] MASS_7.3-54                   assertthat_0.2.1             
+## [121] rprojroot_2.0.2               withr_2.4.2                  
+## [123] GenomeInfoDbData_1.2.6        mgcv_1.8-36                  
+## [125] parallel_4.1.0                hms_1.1.0                    
+## [127] beachmat_2.9.0                grid_4.1.0                   
+## [129] DelayedMatrixStats_1.15.0     rmarkdown_2.9                
+## [131] shiny_1.6.0                   lubridate_1.7.10             
+## [133] ggbeeswarm_0.6.0</code></pre>
 </div>
 </div>
 <div id="reference" class="section level1 unnumbered">
