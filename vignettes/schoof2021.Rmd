@@ -1,0 +1,543 @@
+---
+title: "Reproduction of the AML model analysis (Schoof et al. 2021)"
+author: 
+  - Christophe Vanderaa, Computational Biology, UCLouvain
+  - Laurent Gatto, Computational Biology, UCLouvain
+date: \today
+output:
+  bookdown::html_document2: 
+    code_folding: show
+    toc: true
+    toc_float: true
+bibliography: ref.bib
+---
+
+# Introduction 
+
+The acute myeloid leukemia (AML) dataset acquired by @Schoof2021-pv
+is an excellent dataset to validate the application of mass spectrometry 
+(MS)-based single-cell proteomics (SCP). This model is well 
+characterized with expected cell types that exhibit known biological 
+heterogeneity for some markers (namely CD34 and CD38). This dataset 
+is also an ideal playground for method development and benchmarking. 
+
+The research question here is whether SCP is able to retrieve the 
+different population that occur in the AML model. In this culture, we
+expect to find a small population of leukemic stem cells (LSC) that 
+are CD34+ and CD38-. This population has the ability of self renewal 
+or to differentiate into progenitor cells (PROG) that loose the self
+renewal ability and start to express CD38+. The PROG progressively 
+differentiate into blast cells (BLAST) that loose the expression of 
+CD38. The CD34/CD38 expression profiles in this model is already well
+characterized thanks to flow cytometry. A great advantage of the data
+set provided in @Schoof2021-pv is that the flow cytometry data is also
+available. This allows for a characterization of the cell types before
+starting the data analysis on the SCP data. 
+
+The authors performed the analysis using `python` and made the effort 
+to provide the code needed to reproduce the results of the article. 
+Furthermore, they developed a library called `SCeptre` that extends 
+the `scanpy` library, a python library to process scRNA-Seq data. This
+vignette replicates this analysis in `R` using our recently developed
+`scp` package. 
+
+Before starting, we load the replication package to make use of some
+helper functions. Those functions are only meant for this reproduction 
+vignette and are not designed for general use. 
+
+```{r, message = FALSE}
+library("SCP.replication")
+```
+
+### `scp` workflow and data structure
+
+The data processing workflow we carry out in this vignette is 
+converted or takes the `R` equivalent of the `python` scripts and 
+libraries provided in this [GitHub repository](https://github.com/bfurtwa/SCeptre).
+
+To perform SCP data analysis in `R`, we make use of our data framework 
+that combines two existing Bioconductor classes. The `SingleCellExperiment`
+class provides an interface to many cutting edge methods for 
+single-cell analysis and the `QFeatures` class facilitates 
+manipulation and processing of MS-based quantitative data. The 
+[`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html) 
+provides detailed information about the data structure. The `scp` 
+package extends the functionality of `QFeatures` for single-cell 
+application.
+
+The required packages for running this workflow are listed below.
+
+```{r libraries}
+## Core packages of this workflow
+library(SingleCellExperiment)
+library(QFeatures)
+library(scpdata)
+library(scp)
+## Utility packages for data manipulation and visualization
+library(tidyverse)
+library(patchwork)
+```
+
+### `scpdata` and the AML differentiation dataset
+
+We also implemented a data package called `scpdata`. It distributes
+published MS-SCP datasets, such as the dataset that will be analysed 
+in this vignette. The data were downloaded from the data source 
+provided in the publication and formatted to a `QFeatures` object so 
+that it is compatible with our software. The underlying data storage 
+is based on the `ExperimentHub` package that provides a cloud-based 
+storage infrastructure.
+
+The dataset we uploaded to `scpdata` is the so called "bulk" dataset
+that contains 3072 single-cells. The authors refer to it as the bulk
+dataset because the cell were not sorted by flow cytometry but rather 
+processed using an unbiased cell isolation. The dataset was retrieved
+from the PRIDE repository (accession ID: PXD020586). It contains a zip
+file with all the quantitative data and the sample metadata. The 
+dataset contains two types of quantitative data: quantified peptide to
+spectrum match (PSM) data and protein data. They were generated after 
+running ProteomeDiscoverer on the raw MS files. The quantification 
+data are given as signal to noise ratios (S/N). See `?schoof2021` for
+more info about data acquisition and data formatting. 
+
+The formatted data can be retrieved from the `scpdata` package using 
+the `schoof2021()` function. 
+
+```{r load_data}
+load("~/PhD/.localdata/scpdata/schoof2021.Rda")
+scp <- schoof2021
+# scp <- schoof2021()
+```
+
+The data contain 193 different `SingleCellExperiment` objects that we
+refer to as **assays**. Each assay contains expression data along with
+feature metadata. Each row in an assay represents a **feature** that 
+can either be a PSM or a protein depending on the assay. 
+Each column in an assay represents a **sample**. Below, we show the 
+overview of the `scp` dataset.
+
+```{r overview}
+scp
+```
+
+The 192 first assays contain the PSM quantifications for each run.
+PSMs were quantified and identified by ProteomeDiscoverer. The samples 
+were acquired using a TMT-16 labelling protocol meaning that every 
+run contains 16 samples and therefore every assay contains 16 columns.
+The last assay contains the protein quantifications also generated by
+ProteomeDiscoverer.
+
+The sample annotation can be found in the `colData` of the dataset. 
+The most informative annotation fields are: 
+
+- `File.ID`: the data were acquired in different batches, each batch 
+being associated to a unique file ID. 
+- `Channel`: the TMT used to label the sample
+- `Population`: the cell type defined by the flow cytometry data
+- `SampleType`: samples are either boosters (200-cell equivalents), 
+empty wells, normalization channels (10-cell equivalents), or single
+- `FSC.A`, `FSC.H`, ..., `APC.Cy7.A`, `PE.A`: the flow cytometry data
+acquired during the single-cell isolation. 
+
+```{r}
+head(colData(scp))
+```
+
+Throughout the vignette, we will use `ggplot2` from the `tidyverse` 
+project (@Wickham2019-fz) to visualize the data. We show how the 
+different cell types are distributed accross batches.
+
+```{r}
+colData(scp) %>%
+    data.frame %>%
+    filter(!is.na(Population)) %>% 
+    ggplot() +
+    aes(y = Population, 
+        x = File.ID,
+        colour = Population) +
+    geom_jitter(width = 0) +
+    theme(axis.text.x = element_blank(),
+          legend.position = "none")
+```
+
+As denoted in the article, this data set shows inbalance between the 
+different cell types. This reflects biological reality as some cell 
+types, such as blast cells, are more prevalent than others, such as 
+progenitor cells. An important point to highlight is that all MS batches
+do not contain PROG or LSC, which complicates the data integration 
+across batches. 
+
+# Explore the data
+
+## PSMs per batch
+
+```{r}
+data.frame(npsms = dims(scp)[1, -193]) %>% 
+    ggplot() +
+    aes(x = npsms) +
+    geom_histogram()
+```
+
+## Intensity distributions
+
+Boxplot of the average S/N of each PSM for each file. 
+
+```{r, fig.width=6, fig.height=20}
+rbindRowData(scp, grep("^F", names(scp))) %>% 
+    data.frame() %>% 
+    ## reorder the File IDs
+    mutate(assay = factor(assay, levels = paste0("F", 1:192))) %>% 
+    ## Plot
+    ggplot() +
+    aes(x = Average.Reporter.SN,
+        y = assay) +
+    geom_boxplot()
+```
+
+## Median intensity per channel
+
+Barplot of the median log10(S/N) of each quantification channel in 
+each file
+
+```{r, fig.width = 6, fig.height = 50}
+lf <- longFormat(scp[, , grep("^F", names(scp))],
+                 colvars = c("File.ID", "Channel"))
+channelOrder <- c("126", paste0(rep(127:133, each = 2), c("N", "C")), "134N")
+data.frame(lf) %>% 
+    ## Comput the log10 median expression per sample
+    group_by(Channel, File.ID) %>% 
+    summarize(log10median = log10(median(value, na.rm = TRUE))) %>% 
+    ## reorder the File IDs and Channels
+    mutate(File.ID = factor(File.ID, levels = paste0("F", 1:192)),
+           Channel = factor(Channel, levels = channelOrder)) %>% 
+    ## Plot
+    ggplot() +
+    aes(x = Channel, 
+        y = log10median) +
+    geom_bar(stat = "identity") +
+    facet_wrap(~ File.ID, ncol = 3) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Isolation interference
+
+```{r, fig.width=6, fig.height=20}
+rbindRowData(scp, i = grep("^F", names(scp))) %>%
+    data.frame %>%
+    ## reorder the File IDs
+    mutate(assay = factor(assay, levels = paste0("F", 1:192))) %>%
+    ## Plot
+    ggplot() +
+    aes(x = Isolation.Interference.in.Percent,
+        y = assay) +
+    geom_boxplot()
+```
+
+## Preliminary QC
+
+`perCellQCMetrics` not working with missing data. 
+
+```{r}
+library(scuttle)
+sce <- impute(scp[["proteins"]], method = "zero")
+qc <- perCellQCMetrics(sce, assay.type = 1)
+```
+
+
+```{r}
+data.frame(qc, 
+           colData(scp)[rownames(qc), ]) %>% 
+    mutate(failed = File.ID %in% c("F5", "F44", "F58", "F117")) %>% 
+    ggplot() +
+    aes(x = log2(sum),
+        y = detected,
+        col = SampleType,
+        alpha = failed) +
+    geom_point(size = 0.9) +
+    geom_hline(yintercept = 700) +
+    scale_alpha_manual(values = c(0.5, 0.2))
+```
+Failed runs (transparent) are detected by QC. 
+
+Booster are distinct
+
+
+
+# Filter data
+
+## Remove contaminants
+
+```{r}
+scp <- filterFeatures(scp, ~ !isContaminant)
+```
+
+## Remove failed runs 
+
+```{r}
+scp <- scp[, , dims(scp)[1, ] > 2000]
+scp
+```
+
+## Keep only single cells
+
+```{r}
+scp <- scp[, !scp$Channel %in% c("126", "127C", "127N") &
+               scp$SortedPopulation != "empty", ]
+```
+
+
+# Normalization 
+
+```{r}
+system.time(scp <- normalizeSCeptre(scp, i = "proteins", 
+                                    batchCol = "File.ID", 
+                                    channelCol = "Channel", 
+                                    name = "proteins_norm",
+                                    iterThres = 1.1))
+```
+
+# NA thres
+
+```{r}
+thresholdNA <- function(object, i, threshold) {
+    for (ii in i) {
+        x <- assay(object[[ii]])
+        x[x < threshold] <- NA
+        assay(object@ExperimentList@listData[[ii]]) <- x
+    }
+    object
+}
+scp <- thresholdNA(scp, i = "proteins_norm", 1.1)
+```
+
+# Filter NA
+
+Remove all NA proteins (end of SCeptre normalize)
+
+```{r}
+scp <- filterNA(scp, i = "proteins_norm", pNA = 1-1E-6)
+```
+
+# Cell QC
+
+## Compute QC
+
+`perCellQCMetrics` not working with missing data. 
+
+```{r}
+library(scuttle)
+sce <- impute(scp[["proteins_norm"]], method = "zero")
+qc <- perCellQCMetrics(sce, assay.type = 1)
+```
+
+Outlier detection based on MAD
+
+```{r}
+qc$outlier <- isOutlier(qc$sum, nmads = 2, log = TRUE, type = "both")
+mads <- attr(qc$outlier,"thresholds")
+```
+
+```{r}
+colData(scp) <- cbind(colData(scp), qc[rownames(colData(scp)), ])
+```
+
+## Plot QC
+
+Failed runs (transparent) are detected by QC. 
+
+```{r}
+data.frame(colData(scp)) %>% 
+    mutate(failed = File.ID %in% c("F5", "F44", "F58", "F117")) %>% 
+    ggplot() +
+    aes(x = log2(sum),
+        y = detected,
+        col = SampleType,
+        alpha = failed) +
+    geom_point(size = 0.9) +
+    geom_vline(xintercept = log2(mads)) +
+    geom_hline(yintercept = 700) +
+    scale_alpha_manual(values = c(0.5, 0.2))
+```
+
+```{r, fig.height = 10, fig.width = 10}
+data.frame(colData(scp)) %>% 
+    filter(!is.na(Col) & !is.na(Row)) %>%
+    mutate(Col = factor(Col, levels = 1:24)) %>% 
+    ggplot() +
+    aes(x = Col,
+        y = Row, 
+        fill = log2(sum)) +
+    geom_rect(xmin=-Inf, xmax=Inf, 
+              ymin=-Inf, ymax=Inf, 
+              fill="white") +
+    geom_tile(col = "black") +
+    facet_wrap(~ Plate, ncol = 2) +
+    scale_x_discrete(drop = FALSE)
+```
+
+```{r}
+data.frame(colData(scp)) %>% 
+    ggplot() +
+    aes(x = CD34_APC.Cy7.A,
+        y = CD38_PE.A,
+        colour = detected) +
+    geom_point() +
+    scale_colour_continuous(type = "viridis")
+```
+
+## Filter cells
+
+```{r}
+selDf <- data.frame(colData(scp))
+selDf <- filter(selDf,
+                !outlier & detected > 700)
+sel <- rownames(selDf)
+scp <- scp[, sel, ]
+```
+
+```{r}
+sce <- getWithColData(scp, "proteins_norm")
+library(scater)
+sce <- runPCA(impute(sce, method = "zero"), 
+              ncomponents = 50,
+              ntop = Inf,
+              scale = TRUE,
+              exprs_values = 1,
+              name = "PCA") 
+plotPCA(sce, colour_by = "Plate")
+```
+
+# Normalize data
+
+```{r}
+sf <- colSums(assay(scp, "proteins_norm"), na.rm = TRUE)
+scp <- sweep(scp, MARGIN = 2, STATS = sf / median(sf), FUN = "/",
+             i = "proteins_norm", name = "proteins_medshift")
+```
+
+# Log-transform
+
+log1p transform
+
+```{r}
+scp <- logTransform(scp, base = exp(1), pc = 1,
+                    i = "proteins_medshift", name = "proteins_log") 
+```
+
+# Filter NA
+
+min 3 cells (duplicated operation performed in apply_cell_filter and
+right before imputation)
+
+```{r}
+pNA <- 1 - 3 / ncol(scp[["proteins_log"]])
+scp <- filterNA(scp, i = "proteins_log", pNA = pNA)
+```
+
+# Impute 
+
+Using KNN with k = 5
+
+```{r}
+#scp <- zeroIsNA(scp, i = "proteins_log")
+scp <- impute(scp, i = "proteins_log", method = "knn", k = 5)
+```
+
+
+# Scale
+
+Scale proteins to unit variance and zero mean
+
+```{r}
+means <- rowMeans(assay(scp, "proteins_log"))
+scp <- sweep(scp, MARGIN = 1, STATS = means, FUN = "-",
+             i = "proteins_log", name = "proteins_centered")
+vars <- rowVars(assay(scp, "proteins_centered"))
+scp <- sweep(scp, MARGIN = 1, STATS = vars, FUN = "/",
+             i = "proteins_centered", name = "proteins_scaled")
+```
+
+
+# Dimension reduction 
+
+```{r}
+sce <- getWithColData(scp, "proteins_scaled")
+```
+
+## PCA
+
+```{r}
+sce <- getWithColData(scp, "")
+library(scater)
+sce <- runPCA(sce, 
+              ncomponents = 50,
+              ntop = Inf,
+              scale = TRUE,
+              exprs_values = 1,
+              name = "PCA") 
+plotPCA(sce, colour_by = "Plate")
+```
+
+
+## UMAP 
+
+```{r}
+set.seed(1234)
+sce <- runUMAP(sce, 
+               ncomponents = 2,
+               ntop = Inf,
+               scale = TRUE,
+               exprs_values = 1,
+               dimred = "PCA",
+               name = "UMAP") 
+## Plotting is performed in a single line of code
+plotUMAP(sce, colour_by = "Population")
+```
+
+
+## Diffusion map 
+
+## Leiden clustering
+
+# Pseudotime analysis
+
+# Requirements
+
+### Hardware and software
+
+The system details of the machine that built the vignette are:
+
+```{r, echo = FALSE, message = FALSE}
+sd <- benchmarkme::get_sys_details()
+cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
+    "R version: R.", sd$r_version$major, ".", sd$r_version$minor,
+    " (svn: ", sd$r_version$`svn rev`, ")\n",
+    "RAM: ", round(sd$ram / 1E9, 1), " GB\n",
+    "CPU: ", sd$cpu$no_of_cores, " core(s) - ", sd$cpu$model_name, "\n",
+    sep = "")
+```
+
+### Timing
+
+The total time required to compile this vignette is:
+
+```{r, echo = FALSE}
+timing <- Sys.time() - timeStart
+cat(timing[[1]], attr(timing, "units"))
+```
+
+### Memory
+
+The final `scp` memory size is:
+
+```{r, echo = FALSE}
+format(object.size(scp), units = "GB")
+```
+
+### Session info
+
+```{r}
+sessionInfo()
+```
+
+# Reference
