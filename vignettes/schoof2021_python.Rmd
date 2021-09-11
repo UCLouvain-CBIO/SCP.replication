@@ -1,0 +1,641 @@
+---
+title: "Reproduction of the AML model analysis with python (Schoof et al. 2021)"
+author: 
+  - Christophe Vanderaa, Computational Biology, UCLouvain
+  - Laurent Gatto, Computational Biology, UCLouvain
+date: \today
+output:
+  bookdown::html_document2: 
+    code_folding: show
+    toc: true
+    toc_float: true
+bibliography: ref.bib
+---
+
+Setup python environment and the python to R interface using reticulate
+
+```{r}
+library(reticulate)
+library(tidyverse)
+# conda_install("sceptre", "sceptre", pip = TRUE)
+use_condaenv("sceptre")
+spt <- import("sceptre")
+plt <- import("matplotlib.pyplot")
+pd <- import("pandas")
+sc <- import("scanpy")
+```
+
+```{r}
+inDir <- "~/PhD/tmp/SCeptre/Schoof_et_al/data/bulk/"
+outDir <- "~/PhD/tmp/SCeptre/Schoof_et_al/results/bulk/"
+```
+
+## Preparation
+
+Create meta data table and load files into python as "dataset". 
+Alternatively, a meta data table could be created manually and be 
+provided to the function: `sceptre.load_dataset()`. Mapping is 
+performed with the `File ID` and `Channel` columns.
+
+```{r}
+dataset <- spt$load_dataset(proteins = paste0(inDir, "bulk_Proteins.txt"),
+                            psms = paste0(inDir, "bulk_PSMs.txt"),
+                            msms = paste0(inDir, "bulk_MSMSSpectrumInfo.txt"),
+                            files = paste0(inDir, "bulk_InputFiles.txt"),
+                            meta = paste0(outDir, "meta.txt"))
+```
+
+Mark and remove potential contaminants
+
+```{r}
+prots <- py_to_r(dataset[["proteins"]])
+contaminants <- read.table(paste0(inDir, "../contaminants.txt"),
+                           header = TRUE)$Accession
+prots$contaminant <- prots$Accession %in% contaminants
+prots <- prots[!prots$contaminant, ]
+dataset[["proteins"]] <- r_to_py(prots)
+```
+
+# LC-MS QC
+
+Plot various visualizations that inform about the quality of each 
+LC-MS run
+
+```{r, fig.height = 18, fig.width = 7.2}
+spt$plot_psms_msms(dataset, figsize = c(7.2, 18))
+plt$show()
+```
+
+```{r, fig.height = 18, fig.width = 7.2}
+spt$plot_avg_sn(dataset, figsize = c(7.2, 18))
+plt$show()
+```
+
+```{r, fig.height = 18, fig.width = 7.2}
+spt$plot_set_overview(dataset, figsize = c(7.2, 80))
+plt$show()
+```
+
+```{r}
+s_c_channels = c("128N", "128C", "129N", "129C", "130N", "130C", 
+                 "131N", "131C", "132N", "132C", "133N", "133C", 
+                 "134N")
+spt$print_ms_stats(dataset, s_c_channels = s_c_channels)
+```
+
+# Load data into Scanpy
+
+```{r}
+temp_dir <- normalizePath(paste0(outDir, "tmp/"))
+dir.create(temp_dir)
+adata <- spt$dataset_to_scanpy(dataset, 
+                               temp_dir = temp_dir)
+```
+
+Transform meta columns to factors
+
+```{r}
+adata$obs$Column <- as.factor(adata$obs$Column)
+adata$obs$Plate <- as.factor(adata$obs$Plate)
+```
+
+list columns to factors
+
+```{r}
+for (i in 1:ncol(adata$obs)) {
+    if (is.list(adata$obs[[i]])) {
+        adata$obs[[i]] <- as.factor(unlist(adata$obs[[i]]))
+    }
+}
+```
+
+order some columns
+
+```{r}
+sFileIDs <- as.character(unique(adata$obs$`File ID`))
+sFileIDs <- sFileIDs[order(nchar(sFileIDs), sFileIDs)]
+adata$obs$`File ID` <- factor(adata$obs$`File ID`, levels = sFileIDs)
+channels <- c("126", paste0(rep(127:133, each = 2), c("N", "C")), "134N")
+adata$obs$Channel <- factor(adata$obs$Channel, levels = channels)
+```
+
+normalize facs parameter between 0 and 1
+
+```{r}
+facs_params = c("FSC-A", "FSC-H", "FSC-W", "SSC-A", "SSC-H", "SSC-W", 
+                "APC-Cy7-A", "PE-A")
+adata$obs[, facs_params] <- 
+    apply(adata$obs[, facs_params], 2, 
+          function(x){
+              minx <- min(x, na.rm = TRUE)
+              (x - minx) / max(x - minx, na.rm = TRUE)
+          })
+```
+
+rename the facs parameter
+
+```{r}
+adata$obs <- dplyr::rename(adata$obs, 
+                           "CD34 APC-Cy7-A" = `APC-Cy7-A`,
+                           "CD38 PE-A" = `PE-A`)
+```
+
+set colors for gated and sorted populations
+
+```{r}
+cols = plt$rcParams["axes.prop_cycle"]$by_key()["color"]
+# adata.uns['Sorted Population_colors'] = [cols[0], cols[1], cols[2]]
+# adata.uns['Gated Population_colors'] = [cols[3], cols[0], cols[1], cols[2]]
+```
+
+# Filter samples, channels and groups of cells
+
+Remove failed ms runs
+
+```{python}
+r.adata = r.adata[~r.adata.obs['File ID'].isin(['F5', 'F44', 'F58', 'F117'])].copy()
+```
+
+Remove non-single-cell channel
+
+```{python}
+r.adata = r.adata[~r.adata.obs['Channel'].isin(['126', '127C', '127N'])].copy()
+r.adata = r.adata[~r.adata.obs['Sorted Population'].isin(['empty'])].copy()
+```
+
+# Normalization
+
+```{r}
+spt$normalize(adata)
+```
+
+# Cell QC 
+
+```{r, fig.with = 7.1}
+figs <- spt$calculate_cell_filter(adata, thresh_sum = 1.8, 
+                                  min_proteins = 700)
+figs[[1]]$show()
+figs[[2]]$show()
+```
+
+```{r}
+spt$apply_cell_filter(adata, min_cells = 3)
+```
+
+```{r, fig.width = 7.2, fig.height = 15}
+spt$plot_batch_qc(adata)
+plt$show()
+```
+
+```{r, fig.width = 10, fig.height = 24}
+spt$plot_plate_qc(adata)
+plt$show()
+```
+
+```{r}
+spt$plot_data_completeness(adata)
+plt$show()
+```
+
+```{r}
+table(adata$obs['Gated Population'])
+```
+
+
+```{r}
+figs <- spt$plot_facs_qc(adata, 'CD34 APC-Cy7-A', 'CD38 PE-A')
+figs[[1]]$show()
+```
+
+```{r}
+sc$pp$pca(adata, random_state = 1L)
+```
+
+
+```{r, fig.width = 10, fig.height = 10}
+plt$subplots_adjust(wspace = 0.9, hspace = 0.5)
+```
+
+
+```{r, fig.width = 4, fig.height = 6}
+cellsize <- 10
+sc$pl$pca(adata, color = "Channel", size = cellsize, show = FALSE, 
+          annotate_var_explained = TRUE)
+plt$show()
+```
+
+
+# Prepare embedding
+
+median shift of total intensity across cells
+
+```{r}
+sc$pp$normalize_total(adata, exclude_highly_expressed = TRUE)
+```
+
+log2(x+1) transformation
+
+```{r}
+sc$pp$log1p(adata, base = 2)
+```
+
+save the normalized and log2 transformed data as raw data for 
+differential expression testing
+
+```{r}
+adata$raw = adata
+```
+
+find the best parameters for the embedding based on celltype separation
+Note that from here on, the code might not be 100% reproducible when 
+changing between computer systems / hardware
+See: https://github.com/theislab/single-cell-tutorial/issues/36#issuecomment-622965632
+
+```{r}
+embDir <- normalizePath(paste0(outDir, "find_embedding/"))
+if (!dir.exists(embDir))
+    dir.create(embDir)
+scores <- spt$find_embedding_params(adata, use_rep = 'umap', 
+                                    labels = 'Gated Population',
+                                    embedding_knn = as.array(30L), 
+                                    save_path = embDir, 
+                                    size = 10L)
+```
+
+
+```{r}
+plt$show()
+```
+
+
+```{r}
+scores
+```
+
+apply the "fraction of valid values" filter on the proteins
+
+```{python}
+r.adata = r.adata[:, (r.adata.X != 0).sum(axis=0) >= r.adata._n_obs*0.0].copy()
+```
+
+impute for the embedding
+
+```{r}
+spt$impute(adata)
+```
+
+scale to unit variance and zero mean
+
+```{r}
+sc$pp$scale(adata)
+```
+
+```{r}
+plot_parameters <- c("Sorted Population", "Gated Population", "Channel",
+                     "Plate", "Row", "Column", "Num Proteins", 
+                     "Log2 Sum S/N", "Time", "FSC-A", "FSC-H", "FSC-W",
+                     "SSC-A", "SSC-H", "SSC-W", "CD34 APC-Cy7-A", 
+                     "CD38 PE-A")
+# set cmaps for plot parameters
+plot_cmaps <- c(`Num Proteins` = "copper", `Log2 Sum S/N` = "copper",
+                Time = "copper", `FSC-A` =  "cividis", 
+                `FSC-H` = "cividis", `FSC-W` = "cividis", 
+                `SSC-A` = "cividis", `SSC-H` = "cividis", 
+                `SSC-W` = "cividis", `CD34 APC-Cy7-A` = "cividis",
+                `CD38 PE-A` = "cividis", dpt_pseudotime = "copper")
+# plotting options for panels
+wspace <- 0.9
+hspace <- 0.5
+cellsize <- 10 # size to plot cells
+```
+
+# PCA
+
+```{r}
+sc$pp$pca(adata, random_state = 1L)
+```
+
+```{r, fig.width = 10, fig.height = 16}
+fig <- plt$figure()
+for (i in seq_along(plot_parameters)) {
+    p <- plot_parameters[i]
+    ax <- fig$add_subplot(6, 3, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$pca(adata, color = p, size = cellsize, cmap = cmap, 
+              show = FALSE, ax = ax, annotate_var_explained = TRUE)
+}
+plt$subplots_adjust(wspace = 0.9, hspace = 0.5)
+ax <- fig$add_subplot(6, 3, i + 1L)
+sc$pl$pca(adata, color = "Gated Population", 
+          groups = c("LSC", "PROG"), size = cellsize,  
+          show =FALSE, ax = ax, annotate_var_explained = TRUE)
+plt$show()
+```
+
+# Embedding of the neighborhood graph
+
+```{r}
+sc$pp$neighbors(adata, n_neighbors = 30L, random_state = 5L)
+sc$tl$umap(adata, random_state = 1L)
+sc$tl$draw_graph(adata, random_state = 1L)
+sc$tl$diffmap(adata)
+sc$tl$leiden(adata, resolution = 0.3)
+```
+
+Define root cell from diffmap
+
+The orientation of the diffmap can change randomly. Execute the 
+previous and this cell repeatedly to reproduce orientation.
+
+```{r}
+rootIndex <- order(data.frame(adata$obsm["X_diffmap"])[, 2],
+                   data.frame(adata$obsm["X_diffmap"])[, 3])[1]
+root <- rownames(adata$obs)[rootIndex]
+adata$obs$`Root Cell` <- 0
+adata$obs[root, "Root Cell"] <- 1
+```
+
+
+```{python}
+r.adata.uns['iroot'] = r.rootIndex
+```
+
+Compute pseudotime starting from root cell
+
+```{r}
+sc$tl$dpt(adata)
+if (! "leiden" %in% plot_parameters)
+    plot_parameters <- c(plot_parameters, "leiden")
+if (! "dpt_pseudotime" %in% plot_parameters)
+    plot_parameters <- c(plot_parameters, "dpt_pseudotime")
+```
+
+```{r, fig.width=10, fig.height=16}
+fig <- plt$figure()
+for (i in seq_along(plot_parameters)) {
+    p <- plot_parameters[i]
+    ax <- fig$add_subplot(7, 3, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$diffmap(adata, color = p, size = cellsize, cmap = cmap, 
+                  show = FALSE, ax = ax, frameon = FALSE)
+}
+ax <- fig$add_subplot(7, 3, i+1L)
+sc$pl$diffmap(adata, color = "Gated Population", groups = c("LSC", "PROG"),
+              size = cellsize, show = FALSE, ax = ax, frameon = FALSE)
+plt$subplots_adjust(wspace = wspace, hspace = hspace)
+plt$show()
+```
+
+```{r, fig.width = 5, fig.height = 7}
+pltout <- plt$subplots(4L, 2L,
+                       gridspec_kw = list(wspace =  1, hspace = 0.1))
+fig <- pltout[[1]]
+axs <- c(pltout[[2]])
+for (i in seq_along(unique(adata$obs[, "Plate"]))) {
+    p <- unique(adata$obs[, "Plate"])[i]
+    sc$pl$diffmap(adata, color = "Plate", size = cellsize, groups = p, 
+                  show = FALSE, ax = axs[[i]], frameon = FALSE,
+                  title = "")
+}
+plt$show()
+```
+
+```{r, fig.width = 10, fig.height = 16}
+fig <- plt$figure()
+for (i in seq_along(plot_parameters)) {
+    p <- plot_parameters[[i]]
+    ax <- fig$add_subplot(7L, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$umap(adata, color = p, size = cellsize, cmap = cmap, 
+               show = FALSE, ax = ax)
+}
+ax <- fig$add_subplot(7L, 3L, i+1L)
+sc$pl$umap(adata, color = "Gated Population", groups = c("LSC", "PROG"),
+           size = cellsize, show = FALSE, ax = ax)
+plt$subplots_adjust(wspace = wspace, hspace = hspace)
+plt$show()
+```
+
+
+```{r, fig.width = 10, fig.height = 16}
+fig <- plt$figure()
+for (i in seq_along(plot_parameters)) {
+    p <- plot_parameters[[i]]
+    ax <- fig$add_subplot(7L, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$draw_graph(adata, color = p, size = cellsize, cmap = cmap, 
+                     show = FALSE, ax = ax)
+}
+ax <- fig$add_subplot(7L, 3L, i+1L)
+sc$pl$draw_graph(adata, color = "Gated Population", groups = c("LSC", "PROG"),
+                 size = cellsize, show = FALSE, ax = ax)
+plt$subplots_adjust(wspace = wspace, hspace = hspace)
+plt$show()
+```
+
+find changing genes
+
+```{r}
+cell_cl <- levels(adata$obs$leiden)
+min_cells <- 200
+log2fc <- 0.15
+markers <- list()
+for (i in cell_cl) {
+    key <- paste0("de_test_", i)
+    spt$de_test(adata, by = 'leiden', group1 = i, key = key)
+    df <- adata$uns[[key]]$results
+    df$group <- i
+    markers[[i]] <- df[df$pval_adj <= 0.05 & df$log2foldchange >= log2fc]
+}
+markers <- do.call(rbind, markers)
+markers$n_cells <- adata$raw$var[markers$gene, "n_cells"]
+markers <- markers[markers$n_cells >= min_cells, ]
+```
+
+```{r, fig.width = 6.8, fig.height = 4}
+out <- spt$ordered_clustermap(adata, markers$gene, use_raw = FALSE,
+                              plot_imputed = TRUE, moving_avg = 50L,
+                              show_gene_names = FALSE)
+clusters <- out[[1]]
+cl_map <- out[[2]]
+cl_legend <- out[[3]]
+
+lastfig <- max(plt$get_fignums())
+plt$figure(lastfig-1L)
+plt$show()
+
+plt$figure(lastfig)
+plt$show()
+```
+
+```{r}
+markers <- merge(markers, clusters)
+markers <- dplyr::left_join(
+    markers,
+    adata$var[, c("Accession", "Description", "Biological Process", 
+                  "Cellular Component", "Molecular Function",
+                  "KEGG Pathways", "Reactome Pathways", "WikiPathways")] %>% 
+        tibble::rownames_to_column("gene"),
+    by = 'gene')
+```
+
+aggregate each cluster into a signature
+
+```{r}
+clus <- unique(clusters$cluster)
+mstats <- import("scipy.stats")
+for (c in clus) {
+    sel <- clusters$gene[clusters$cluster == c]
+    s <- rowMeans(adata$X[, rownames(adata$var) %in% sel])
+    # normalize
+    s <- (s - min(s)) / max(s - min(s))
+    adata$obs[, paste("Cluster", c)] <- s
+}
+```
+
+plot the cluster signature
+
+```{r, fig.width = 8, fig.height = 6}
+genes <- c("Gated Population", "CD34 APC-Cy7-A", "CD38 PE-A", 
+           paste("Cluster", clus))
+n_row <- ceiling((length(genes) / 3) + 1)
+```
+
+
+```{r, fig.width = 8, fig.height = 6}
+fig <- plt$figure(figsize = c(8, 6))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$umap(adata, color = p, size = cellsize, cmap = cmap, 
+               show = FALSE, ax = ax, frameon = FALSE)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
+```{r, fig.width = 8, fig.height = 6}
+fig <- plt$figure(figsize = c(8, 6))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$draw_graph(adata, color = p, size = cellsize, cmap = cmap, 
+                     show = FALSE, ax = ax, frameon = FALSE)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
+
+```{r, fig.width = 7, fig.height = 4}
+fig <- plt$figure(figsize = c(7, 4))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$diffmap(adata, color = p, size = cellsize, cmap = cmap, 
+                  show = FALSE, ax = ax, frameon = FALSE)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
+term enrichment test
+
+```{r}
+for (c in clus)
+    spt$enrichment_test(adata,
+                        gene_set = clusters$gene[clusters$cluster == c],
+                        categories = c("Biological Process", "Cellular Component",
+                                       "Molecular Function", "KEGG Pathways",
+                                       "Reactome Pathways", "WikiPathways"),
+                        key = paste("Cluster", c))
+```
+
+```{r, fig.width = 3, fig.height = 1.5}
+curr <- plt$rcParams["figure.figsize"]
+plt$rcParams["figure.figsize"] <- c(3, 1.5)
+sc$pl$scatter(adata, x = "dpt_pseudotime", y = "CD38 PE-A", 
+              color = "CD34 APC-Cy7-A", size = 10, show = FALSE)
+plt$show()
+```
+
+
+```{r, fig.width = 3, fig.height = 1.5}
+sc$pl$scatter(adata, x = "dpt_pseudotime", y = "CD38 PE-A", 
+              color = "Gated Population", size = 10, show = FALSE)
+plt$show()
+plt$rcParams["figure.figsize"] = curr
+```
+
+```{r, fig.width = 2.4, fig.height = 1.4}
+curr <- plt$rcParams["figure.figsize"]
+plt$rcParams["figure.figsize"] <- c(2.4, 1.4)
+for (c in clus) {
+    sc$pl$scatter(adata, x = "dpt_pseudotime", y = paste("Cluster", c),
+                  color = "Gated Population", 
+                  groups = c("BLAST CD38-", "LSC", "PROG", "BLAST CD38+"),
+                  size = 10, alpha = 1, show = FALSE)
+    plt$show()
+}
+plt$rcParams["figure.figsize"] <- curr
+```
+
+plot the cluster signature
+
+```{r}
+genes <- c("PRDX1", "HAT1", "ELANE", "CTSG", "MPO", "AZU1")
+genes <- c("Gated Population", "CD34 APC-Cy7-A", "CD38 PE-A", genes)
+n_row <- as.integer((length(genes) / 3) + 1)
+
+v_min <- function(x) quantile(x, p = 0.01)
+v_max <- function(x) quantile(x, p = 0.99)
+```
+
+
+```{r, fig.width = 10, fig.height = 5}
+fig <- plt$figure(figsize = c(10, 5))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$umap(adata, color = p, size = cellsize, cmap = cmap, 
+               use_raw = FALSE, show = FALSE, ax = ax, frameon = FALSE,
+               vmin = v_min, vmax = v_max)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
+
+```{r, fig.width = 10, fig.height = 10}
+fig <- plt$figure(figsize = c(10, 10))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$draw_graph(adata, color = p, size = cellsize, cmap = cmap, 
+                     use_raw = FALSE, show = FALSE, ax = ax, frameon = FALSE,
+                     vmin = v_min, vmax = v_max)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
+
+```{r, fig.width = 10, fig.height = 10}
+fig <- plt$figure(figsize = c(10, 10))
+for (i in seq_along(genes)) {
+    p <- genes[i]
+    ax <- fig$add_subplot(n_row, 3L, i)
+    cmap <- if (p %in% names(plot_cmaps)) plot_cmaps[p] else NULL
+    sc$pl$diffmap(adata, color = p, size = cellsize, cmap = cmap, 
+                  use_raw = FALSE, show = FALSE, ax = ax, frameon = FALSE,
+                  vmin = v_min, vmax = v_max)
+}
+plt$subplots_adjust(wspace = 0.6, hspace = 0.3)
+plt$show()
+```
+
