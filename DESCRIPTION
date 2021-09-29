@@ -34,7 +34,17 @@ Suggests:
    bladderbatch,
    clusterProfiler,
    org.Hs.eg.db,
-   UpSetR
+   UpSetR,
+   scuttle,
+   scran,
+   scater,
+   reticulate,
+   zellkonverter,
+   destiny,
+   ComplexHeatmap,
+   RColorBrewer,
+   viridis, 
+   circlize
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8

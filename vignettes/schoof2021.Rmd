@@ -1,7 +1,7 @@
 ---
 title: "Reproduction of the AML model analysis (Schoof et al. 2021)"
 author: 
-  - Christophe Vanderaa, Computational Biology, UCLouvain
+  - Christophe Vanderaa, Computational %>% Biology, UCLouvain
   - Laurent Gatto, Computational Biology, UCLouvain
 date: \today
 output:
@@ -11,6 +11,15 @@ output:
     toc_float: true
 bibliography: ref.bib
 ---
+
+```{r setup, include = FALSE}
+timeStart <- Sys.time() ## Time the compilation
+knitr::opts_chunk$set(
+    message = FALSE,
+    collapse = TRUE,
+    crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+)
+```
 
 # Introduction 
 
@@ -69,13 +78,13 @@ The required packages for running this workflow are listed below.
 
 ```{r libraries}
 ## Core packages of this workflow
-library(SingleCellExperiment)
-library(QFeatures)
-library(scpdata)
-library(scp)
+library("SingleCellExperiment")
+library("QFeatures")
+library("scpdata")
+library("scp")
 ## Utility packages for data manipulation and visualization
-library(tidyverse)
-library(patchwork)
+library("tidyverse")
+library("patchwork")
 ```
 
 ### `scpdata` and the AML differentiation dataset
@@ -93,7 +102,7 @@ that contains 3072 single-cells. The authors refer to it as the bulk
 dataset because the cell were not sorted by flow cytometry but rather 
 processed using an unbiased cell isolation. The dataset was retrieved
 from the PRIDE repository (accession ID: PXD020586). It contains a zip
-file with all the quantitative data and the sample metadata. The 
+file with all the quantitative data and the sample annotations. The 
 dataset contains two types of quantitative data: quantified peptide to
 spectrum match (PSM) data and protein data. They were generated after 
 running ProteomeDiscoverer on the raw MS files. The quantification 
@@ -111,7 +120,7 @@ scp <- schoof2021
 
 The data contain 193 different `SingleCellExperiment` objects that we
 refer to as **assays**. Each assay contains expression data along with
-feature metadata. Each row in an assay represents a **feature** that 
+feature annotations. Each row in an assay represents a **feature** that 
 can either be a PSM or a protein depending on the assay. 
 Each column in an assay represents a **sample**. Below, we show the 
 overview of the `scp` dataset.
@@ -144,8 +153,8 @@ head(colData(scp))
 ```
 
 Throughout the vignette, we will use `ggplot2` from the `tidyverse` 
-project (@Wickham2019-fz) to visualize the data. We show how the 
-different cell types are distributed accross batches.
+project (@Wickham2019-fz) to visualize the data. As an example, we 
+plot how the different cell types are distributed across batches.
 
 ```{r}
 colData(scp) %>%
@@ -160,112 +169,197 @@ colData(scp) %>%
           legend.position = "none")
 ```
 
-As denoted in the article, this data set shows inbalance between the 
+As denoted in the article, this data set shows unbalance between the 
 different cell types. This reflects biological reality as some cell 
 types, such as blast cells, are more prevalent than others, such as 
 progenitor cells. An important point to highlight is that all MS batches
 do not contain PROG or LSC, which complicates the data integration 
 across batches. 
 
-# Explore the data
+## Useful links
 
-## PSMs per batch
+* Link to the [paper](http://dx.doi.org/10.1038/s41467-021-23667-y)
+* Link to the [preprint](https://www.biorxiv.org/content/10.1101/745679v2)
+* Link to the `sceptre` [source code](https://github.com/bfurtwa/SCeptre/blob/master/sceptre/sceptre.py)
+* Link to the SCeptre [notebooks](https://github.com/bfurtwa/SCeptre/tree/master/Schoof_et_al/code),
+our report replicates the `bulk.ipynb` notebook
 
-```{r}
-data.frame(npsms = dims(scp)[1, -193]) %>% 
+# MS run QC
+
+The SCeptre workflow starts with a MS run quality control (QC). In 
+this section, we will check for each run the distribution of the 
+number of PSMs, the average S/N distribution, the channel intensity 
+distribution and the isolation interference distribution. 
+
+## PSMs per run
+
+The number of features and samples per assay in a `QFeatures` object 
+is retrieved using `dims`. After removing the last assay (`proteins`),
+we plot the histogram with the number of features for the remaining 
+assays (*i.e.* PSMs). 
+
+```{r, fig.width = 4, fig.height = 4}
+npsms <- dims(scp)[1, -193]
+data.frame(npsms = npsms) %>% 
     ggplot() +
     aes(x = npsms) +
     geom_histogram()
 ```
 
+The plot indicates that a few runs failed with low number of PSMs.
+
+```{r}
+names(npsms)[npsms < 3000]
+```
+
+4 assays have less than 3000 PSMs and were flagged by the authors as
+failedd MS runs. 
+
 ## Intensity distributions
 
-Boxplot of the average S/N of each PSM for each file. 
+We expect similar average reporter signal to noise (S/N) distributions
+across MS runs. The averages are already computed for each PSM by 
+ProteomeDiscover and correspond to the reporter intensities averaged 
+over the 16 TMT channels divided by the noise estimated from the
+corresponding MS spectrum. The higher the S/N, the higher the signal
+quality. 
 
-```{r, fig.width=6, fig.height=20}
-rbindRowData(scp, grep("^F", names(scp))) %>% 
-    data.frame() %>% 
-    ## reorder the File IDs
-    mutate(assay = factor(assay, levels = paste0("F", 1:192))) %>% 
-    ## Plot
-    ggplot() +
-    aes(x = Average.Reporter.SN,
-        y = assay) +
-    geom_boxplot()
+The average S/N is available from the `rowData` of the PSM assays. We 
+here collect and combine the `rowData` from different assays using the 
+`rbindRowData` function that will return a single `DataFrame` table 
+with all the feature annotation columns common to all assays. Note that
+we don't plot all assays to avoid a crowded plot. We selected 4 
+representative and successful MS runs and the 4 MS runs that have 
+failed (we store this information in the table). 
+
+```{r}
+## A few selected runs
+succeeded <- c("F26", "F72", "F108", "F133")
+failed <- c("F5", "F44", "F58", "F117")
+## Collect the PSM annotations (including the average S/N)
+rd <- rbindRowData(scp, i = c(succeeded, failed))
+## Add whether a run is flagged as failed or succeeded
+rd$failed <- ifelse(rd$assay %in% failed, "failed", "succeeded")
 ```
 
-## Median intensity per channel
+We plot the average S/N (stored under `Average.Reporter.SN`) as 
+separate boxplots for each MS runs. The figure is split in 2 panels 
+depending on whether the MS runs succeeded of failed. 
 
-Barplot of the median log10(S/N) of each quantification channel in 
-each file
-
-```{r, fig.width = 6, fig.height = 50}
-lf <- longFormat(scp[, , grep("^F", names(scp))],
-                 colvars = c("File.ID", "Channel"))
-channelOrder <- c("126", paste0(rep(127:133, each = 2), c("N", "C")), "134N")
-data.frame(lf) %>% 
-    ## Comput the log10 median expression per sample
-    group_by(Channel, File.ID) %>% 
-    summarize(log10median = log10(median(value, na.rm = TRUE))) %>% 
-    ## reorder the File IDs and Channels
-    mutate(File.ID = factor(File.ID, levels = paste0("F", 1:192)),
-           Channel = factor(Channel, levels = channelOrder)) %>% 
-    ## Plot
-    ggplot() +
-    aes(x = Channel, 
-        y = log10median) +
-    geom_bar(stat = "identity") +
-    facet_wrap(~ File.ID, ncol = 3) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```{r, fig.width=6, fig.height=4}
+ggplot(data.frame(rd)) +
+    aes(y = Average.Reporter.SN,
+        x = assay) +
+    geom_boxplot() +
+    facet_grid(~ failed, scales = "free_x")
 ```
+
+There are no clear differences between succeeded and failed runs. 
 
 ## Isolation interference
 
-```{r, fig.width=6, fig.height=20}
-rbindRowData(scp, i = grep("^F", names(scp))) %>%
-    data.frame %>%
-    ## reorder the File IDs
-    mutate(assay = factor(assay, levels = paste0("F", 1:192))) %>%
-    ## Plot
-    ggplot() +
-    aes(x = Isolation.Interference.in.Percent,
-        y = assay) +
-    geom_boxplot()
+Similarly to the average S/N, we can also explore the isolation 
+interference that gives the percentage of signal that is attributed to
+co-isolated peptides. We plot the percent isolation interference 
+(stored under `Isolation.Interference.in.Percent`) using the same 
+layout as above. 
+
+```{r, fig.width = 6, fig.height = 4}
+ggplot(data.frame(rd)) +
+    aes(y = Isolation.Interference.in.Percent,
+        x = assay) +
+    geom_boxplot() +
+    facet_grid(~ failed, scales = "free_x")
 ```
 
-## Preliminary QC
+There are no differences between succeeded and failed runs. However, 
+the isolation interference can be used to filter low-quality PSMs (not
+performed in this workflow). 
 
-`perCellQCMetrics` not working with missing data. 
+## Median S/N per channel
+
+The authors next explored the median S/N per channel for all MS runs. 
+This time, the median S/N has to be computed. First, we focus on the 4
+succeeded and the 4 failed assays that were selected above. A 
+`QFeatures` object can be seen as a three-order array:
+$features \times samples \times assay$. Hence, `QFeatures` supports 
+three-order subsetting `x[rows, columns, assays]`.
 
 ```{r}
-library(scuttle)
-sce <- impute(scp[["proteins"]], method = "zero")
-qc <- perCellQCMetrics(sce, assay.type = 1)
+(sub <- scp[, , c(succeeded, failed)])
 ```
 
+Then, we retrieve the S/N quantifications along with the sample 
+annotations (`Channel` and `Population`) using the `longFormat` 
+function. This function will create a long table from the `QFeatures` 
+object where each row corresponds to a single quantification.
+
+```{r, fig.width = 6, fig.height = 50}
+lf <- longFormat(sub, colvars = c("Channel", "Population"))
+lf$failed <- ifelse(lf$assay %in% failed, "failed", "succeeded")
+lf
+```
+
+Also, we reorder the channel labels to a more conventional sequence. 
 
 ```{r}
-data.frame(qc, 
-           colData(scp)[rownames(qc), ]) %>% 
-    mutate(failed = File.ID %in% c("F5", "F44", "F58", "F117")) %>% 
-    ggplot() +
-    aes(x = log2(sum),
-        y = detected,
-        col = SampleType,
-        alpha = failed) +
-    geom_point(size = 0.9) +
-    geom_hline(yintercept = 700) +
-    scale_alpha_manual(values = c(0.5, 0.2))
+channelOrder <- c("126", "127N", "127C", "128N", "128C", "129N", "129C",
+                  "130N", "130C", "131N", "131C", "132N", "132C", "133N",
+                  "133C", "134N")
+lf$Channel <- factor(lf$Channel, levels = channelOrder)
 ```
-Failed runs (transparent) are detected by QC. 
 
-Booster are distinct
+We then need to compute the median S/N grouped by assay and channel. 
+This performed using `dplyr` functionality.
 
+```{r}
+lf <- group_by(data.frame(lf),
+               assay, Channel, failed, Population)
+lfsumm <- summarize(lf, medianSN = median(value, na.rm = TRUE))
+```
 
+We can now plot the median S/N for each channel in each assay. We also
+add a colouring scheme depending on the type of cell that was acquired
+per channel. Note the y-axis is displayed on a log10 scale.
+
+```{r, fig.width = 6, fig.height = 6}
+ggplot(lfsumm) +
+    aes(x = Channel, 
+        y = medianSN, 
+        fill = Population) +
+    geom_bar(stat = "identity") +
+    scale_y_log10() +
+    facet_wrap(~ failed + assay) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1),
+          legend.position = "bottom")
+```
+
+Again, there are no difference in the median intensity distribution 
+over the different channels between failed and succeeded runs and so 
+this is not a good proxy for MS run quality. However, it is a good way
+to identify technical biases. For instance, and as expected, the `126`
+channel consistently shows higher S/N because this channel was 
+allocated the booster sample containing more cells. We can also see
+that the cell type does not seem to influence the median S/N.
 
 # Filter data
 
+In this section, we proceed the processing by removing the contaminant
+proteins, remove the failed runs and removes the channels that are not
+single-cell samples. 
+
 ## Remove contaminants
+
+Contaminant proteins were flagged when create the `QFeatures` object 
+in the `scpdata` package. This was performed by matching the protein
+accession from the dataset from a list of known contaminants (provided
+by the authors). Whether a protein is a contaminant or not is 
+contained in the feature annotation as the `isContaminant` field. 
+We can directly filter this variable using the `filterFeatures` 
+function that will retrieve the required data from the `rowData` of
+each assay. 
+
+We keep only features that are not matched to a contaminant protein.
 
 ```{r}
 scp <- filterFeatures(scp, ~ !isContaminant)
@@ -273,233 +367,1067 @@ scp <- filterFeatures(scp, ~ !isContaminant)
 
 ## Remove failed runs 
 
+Next, we remove the failed runs that we flagged using the second index
+subsetting to remove the failed samples from the PSM as well as the 
+protein data. 
+
 ```{r}
-scp <- scp[, , dims(scp)[1, ] > 2000]
-scp
+scp <- subsetByColData(scp, !scp$File.ID %in% failed)
+## Takes 90 sec, but could probably be faster -> open issue
 ```
 
 ## Keep only single cells
 
+Finally, we keep only single-cell samples. The MS acquisitions contain
+different sample types. There is the booster channel that was mentioned
+above containing the equivalent of 200 cells. The 127N channel 
+contains a reference sample with 10-cell equivalents and the 127C 
+channel is left empty to due to cross-contamination of the 126 booster
+channel. Finally, a few negative controls (samples prepared as 
+single-cell samples but lack a cell) were randomly included in the 
+different MS runs. 
+
+Before performing the filter, we show that negative controls can
+be discriminated from single-cells based on the number of detected
+proteins and the summed quantifications in each sample. This is a 
+reassuring indicator of data quality. To perform this, we run sample
+quality control using the `scuttle` package that offers utility 
+functions for scRNA-Seq analysis. Those function can be directly 
+applied to our assays since they are stored as `SingleCellExperiment` 
+objects. We therefore extract the protein assay along with the sample
+annotation using the `getWithColData`. Then, we replace missing values
+by zero as expected by the `scuttle` package. 
+
 ```{r}
-scp <- scp[, !scp$Channel %in% c("126", "127C", "127N") &
-               scp$SortedPopulation != "empty", ]
+sce <- getWithColData(scp, "proteins")
+sce <- impute(sce, method = "zero")
 ```
 
-
-# Normalization 
+We then apply the `perCellQCMetrics` function that computes the number
+of detected features and the summed abundance per sample. 
 
 ```{r}
-system.time(scp <- normalizeSCeptre(scp, i = "proteins", 
-                                    batchCol = "File.ID", 
-                                    channelCol = "Channel", 
-                                    name = "proteins_norm",
-                                    iterThres = 1.1))
+library("scuttle")
+qc <- perCellQCMetrics(sce, assay.type = 1)
 ```
 
-# NA thres
+We then combine the computed QC with the sample annotation and plot 
+the sample QC data. 
 
 ```{r}
-thresholdNA <- function(object, i, threshold) {
-    for (ii in i) {
-        x <- assay(object[[ii]])
-        x[x < threshold] <- NA
-        assay(object@ExperimentList@listData[[ii]]) <- x
-    }
-    object
-}
-scp <- thresholdNA(scp, i = "proteins_norm", 1.1)
+qc <- data.frame(qc, colData(sce)[rownames(qc), ])
+ggplot(qc) +
+    aes(x = log2(sum),
+        y = detected,
+        col = SampleType) +
+    geom_point(size = 0.9, alpha = 0.5)
 ```
 
-# Filter NA
+First, we can clearly see that booster and reference channels show 
+higher total signal. This is expected since those channels contains
+more material than the single-cell samples. However, those channels 
+cannot be discriminated based on the number of quantified proteins. 
+Next, the `emtpy` empty channels (no TMT label added) are clearly 
+separated from the single-cell channels both based on the number of 
+quantified proteins and the summed signal. Finally, the negative 
+control samples overlap with the lower tail of the single-cell samples
+both for the number of proteins and the summed signal. The overlapping
+single-cells should be removed, but we will see in a later section 
+that those cells are removed during cell QC.
 
-Remove all NA proteins (end of SCeptre normalize)
+We now remove all samples but the single-cell samples. 
 
 ```{r}
-scp <- filterNA(scp, i = "proteins_norm", pNA = 1-1E-6)
+scp <- subsetByColData(scp, scp$SampleType == "sc")
+scp@assayLinks <- scp@assayLinks[names(tmp)]
+```
+
+# Normalization I
+
+The dataset needs to be processed before running downstream analyses. 
+The first step the authors take is normalizing the data. To perform 
+this, they implemented a new normalization method and included it in 
+their `sceptre` Python module. Their normalization method aims to 
+remove channel and MS run biases. This is often also called batch 
+correction. 
+
+We extract the assay to normalize using `getWithColData`. The 
+normalization method in `sceptre` expects that the sample annotation
+`File ID` is present. We therefore adapt the corresponding column name
+as requested. 
+
+```{r}
+sce <- getWithColData(scp, "proteins")
+colnames(colData(sce))[1] <- "File ID"
+sce
+```
+
+We are now faced with an issue. The algorithm we want to apply is only
+available in Python whereas this script is written in R. Luckily, we
+can make use of the `reticulate` R package (@reticulate) that provides
+an interface between an R and Python code. We setup the python 
+environment that contains the required modules to run `scpetre` (for
+more info, see the *Requirements* section at the end of the vignette).
+
+```{r}
+library("reticulate")
+use_condaenv("sceptre")
+spt <- import("sceptre")
+```
+
+Now that we can interface R with Python, we need to convert the 
+`SingleCellExperiment` object (R) into an `AnnData` object (Python).
+This can easily be done using the `SCE2AnnData` from the 
+`zellkonverter` package.
+
+```{r}
+library("zellkonverter")
+annd <- SCE2AnnData(sce, X_name = 1)
+```
+
+We can now apply the `normalize` function from `sceptre`. 
+
+```{r}
+spt$normalize(annd)
+```
+
+The `AnnData` object stored as `annd` now contains the normalized data.
+We can reinsert the object as a new assay. First, we convert the data 
+back to a `SingleCellExperiment` object using `AnnData2SCE`. Then, we
+add the normalized assay into the `QFeatures` object using `addAssay`.
+Finally, `addAssayLink` will retrieve the relationship between the 
+features of the old and new assay based on the protein accession. 
+
+```{r}
+sce <- AnnData2SCE(annd)
+scp <- addAssay(scp, sce, name = "proteins_norm")
+scp <- addAssayLink(scp, from = "proteins", to = "proteins_norm",
+                    varFrom = "Accession", varTo = "Accession")
+scp
 ```
 
 # Cell QC
 
+In this section, we proceed with the single-cell QC. Failed and 
+low- quality cells must be removed to avoid biasing the downstream 
+analyses. 
+
 ## Compute QC
 
-`perCellQCMetrics` not working with missing data. 
+We already showed how to perform cell QC using `perCellQCMetrics` in a
+previous section and showed that booster, reference, empty and 
+single-cell samples can easily be discriminated. This time, we will 
+apply the same procedure on the normalized data and show how to remove
+low-quality cells.
 
 ```{r}
-library(scuttle)
-sce <- impute(scp[["proteins_norm"]], method = "zero")
-qc <- perCellQCMetrics(sce, assay.type = 1)
+qc <- perCellQCMetrics(scp[["proteins_norm"]], assay.type = 1)
 ```
 
-Outlier detection based on MAD
+Once the QC metrics are computed, we need to define thresholds. In the
+SCeptre workflow, this is performed using the median absolute 
+deviation (MAD). We can use the `isOutlier` function that computes the
+MADs and return whether a cell is an outlier (low-quality cell) or not.
+This information is immediately stored in the QC table and we extract 
+the thresholds for later plotting. 
 
 ```{r}
 qc$outlier <- isOutlier(qc$sum, nmads = 2, log = TRUE, type = "both")
 mads <- attr(qc$outlier,"thresholds")
 ```
 
+The computed QCs are added to the `colData` of the `QFeatures` object.
+
 ```{r}
-colData(scp) <- cbind(colData(scp), qc[rownames(colData(scp)), ])
+colData(scp)[, colnames(qc)] <- qc[rownames(colData(scp)), ]
 ```
+
+## Note about QC in SCeptre
+
+The QC on single-cell is generally performed before batch correction 
+(here called normalization in `scpetre`) since the cell quality may 
+vary depending on the batch and hence bias the correction process. A 
+better approach is to compute the cell QC for each batch separately.
+This is easily performed with `isOutlier` by providing the `batch` 
+argument.
 
 ## Plot QC
 
-Failed runs (transparent) are detected by QC. 
+We plot the cell QC metrics and colour by channel.
 
 ```{r}
-data.frame(colData(scp)) %>% 
-    mutate(failed = File.ID %in% c("F5", "F44", "F58", "F117")) %>% 
-    ggplot() +
+ggplot(data.frame(colData(scp))) +
     aes(x = log2(sum),
         y = detected,
-        col = SampleType,
-        alpha = failed) +
-    geom_point(size = 0.9) +
+        col = Channel) +
+    geom_point(size = 0.9, alpha = 0.5) +
     geom_vline(xintercept = log2(mads)) +
     geom_hline(yintercept = 700) +
     scale_alpha_manual(values = c(0.5, 0.2))
 ```
 
-```{r, fig.height = 10, fig.width = 10}
-data.frame(colData(scp)) %>% 
-    filter(!is.na(Col) & !is.na(Row)) %>%
-    mutate(Col = factor(Col, levels = 1:24)) %>% 
-    ggplot() +
+As we already observed previously, the single-cell sample form a 
+compact cloud. The MAD and number of proteins thresholds remove a few
+outlying cells, but a large majority is retained. You may notice that 
+the first MAD threshold ($log_2(sum) \approx 14$) filters out all the
+negative controls that were discussed in a previous section. The 
+channel does not seem to affect the QC, but remember that difference
+between channels were already corrected during the normalization step.
+
+## Filter cells
+
+Now that we have defined filtering thresholds, we can apply the filter.
+Recall that `outlier` defines whether a cell passes the MAD threshold
+or not.
+
+```{r}
+scp <- subsetByColData(scp, !scp$outlier & scp$detected > 700)
+```
+
+## Further QC
+
+In their workflow, the authors displayed the summed intensities per 
+plate to identify biases linked to the plate, the rows of the plate 
+and the column of the plate. The data required to reproduce this plot
+is contained in the `colData`.
+
+```{r, fig.height = 9, fig.width = 15}
+df <- data.frame(colData(scp))
+df$Col <- factor(df$Col, levels = 1:24) ## TODO remove this line when added to scpdata
+ggplot(df) +
     aes(x = Col,
         y = Row, 
         fill = log2(sum)) +
-    geom_rect(xmin=-Inf, xmax=Inf, 
-              ymin=-Inf, ymax=Inf, 
-              fill="white") +
     geom_tile(col = "black") +
-    facet_wrap(~ Plate, ncol = 2) +
+    facet_wrap(~ Plate) +
+    theme(panel.grid.major = element_blank()) +
     scale_x_discrete(drop = FALSE)
 ```
 
-```{r}
-data.frame(colData(scp)) %>% 
-    ggplot() +
+The position on the plate does not seem to influence the quality of 
+the cells. 
+
+Another QC the authors performed is to check the correlation between 
+FACS parameters (that define the cell type) and the QC metrics. The
+information is again available from the `colData`. 
+
+```{r, fig.width = 4, fig.height = 6}
+df <- data.frame(colData(scp))
+## First plot is coloured by number of detected proteins
+p1 <- ggplot(df) + 
     aes(x = CD34_APC.Cy7.A,
         y = CD38_PE.A,
         colour = detected) +
     geom_point() +
-    scale_colour_continuous(type = "viridis")
+    scale_colour_continuous(type = "viridis") 
+## Second plot is coloured by log2 summed intensities
+p2 <- p1 + aes(colour = log2(sum))
+## Show plots
+p1 + p2 + plot_layout(ncol = 1)
 ```
 
-## Filter cells
+FACS signal is correlated neither with the number of detect proteins
+nor with the summed protein intensities.
+
+# Feature QC
+
+Next to cell QC, the authors also filter the data based on protein QC
+metrics. More specifically, they keep a proteins if it was detect in 
+at least 3 cells. 
+
+We can quickly compute this using the `perFeatureQCMetrics` from the 
+`scuttle` package. We convert the proportion of sample a protein is 
+detected in to the number of sample. 
 
 ```{r}
-selDf <- data.frame(colData(scp))
-selDf <- filter(selDf,
-                !outlier & detected > 700)
-sel <- rownames(selDf)
-scp <- scp[, sel, ]
+sce <- scp[["proteins_norm"]]
+qc <- perFeatureQCMetrics(sce, assay.type = 1)
+qc$ncells <- qc$detected / 100 * ncol(sce)
 ```
 
+We store the resulting QC in the `rowData` of the normalized protein
+assay. 
+
 ```{r}
-sce <- getWithColData(scp, "proteins_norm")
-library(scater)
-sce <- runPCA(impute(sce, method = "zero"), 
-              ncomponents = 50,
-              ntop = Inf,
-              scale = TRUE,
-              exprs_values = 1,
-              name = "PCA") 
-plotPCA(sce, colour_by = "Plate")
+rowData(scp[["proteins_norm"]])[, colnames(qc)] <- qc
 ```
 
-# Normalize data
+Next, we keep the proteins that are detected in at least 3 cells. Note
+that this time we don't use the `filterFeatures` function but the 3
+index subsetting. Since `ncells` is only available for the normalized
+protein assay, using `filterFeatures` would remove all the other 
+assays. Instead, subsetting on the feature names will take advantage of
+the fact that the normalized protein assay is linked to the other 
+assays thanks to the `QFeatures` data structure. 
 
 ```{r}
-sf <- colSums(assay(scp, "proteins_norm"), na.rm = TRUE)
-scp <- sweep(scp, MARGIN = 2, STATS = sf / median(sf), FUN = "/",
-             i = "proteins_norm", name = "proteins_medshift")
+sel <- qc[qc$ncells >= 3, ]
+scp <- scp[rownames(sel), , ]
+```
+
+# Normalization II
+
+The SCeptre workflow performs a second normalization step to prepare
+the data before embedding an dimension reduction. They apply a median
+shift of the total intensity across cells, as implemented in the 
+`scanpy` python library. We perform the same normalization using R 
+code. First, we compute median shifted total intensities that are used
+as scaling factor. Then, we run the `sweep` function on the `QFeatures`
+object. It acts as the base `sweep` for matrices: it takes the 
+quantitative data matrix and applies a scaling vector and function to
+the matrix along the desired dimension. The results are stored in a
+new assay that we here call `proteins_medshift`. 
+
+```{r}
+sf <- colSums(assay(scp, "proteins_norm"))
+sf <- sf / median(sf)
+(scp <- sweep(scp, MARGIN = 2, STATS = sf, FUN = "/",
+              i = "proteins_norm", name = "proteins_medshift"))
 ```
 
 # Log-transform
 
-log1p transform
+The next step in the SCeptre workflow is to $log_2$ transform the data. 
+This is performed in our workflow using the `logTransform` function 
+that adds a new assay containing the transformed data to the 
+`QFeatures` object. Note that the authors used a pseudo-count of 1.
 
 ```{r}
-scp <- logTransform(scp, base = exp(1), pc = 1,
+scp <- logTransform(scp, base = 2, pc = 1,
                     i = "proteins_medshift", name = "proteins_log") 
-```
-
-# Filter NA
-
-min 3 cells (duplicated operation performed in apply_cell_filter and
-right before imputation)
-
-```{r}
-pNA <- 1 - 3 / ncol(scp[["proteins_log"]])
-scp <- filterNA(scp, i = "proteins_log", pNA = pNA)
 ```
 
 # Impute 
 
-Using KNN with k = 5
+The SCeptre workflow then proceeds with imputation. The imputation is
+performed by the `impute` function implemented in `sceptre` library. 
+Under the hood, the function relies on the `KNNImputer` from the 
+`scikit-learn` Python library.
+
+Imputation can be performed on a `QFeatures` object using the `impute`
+function that relies on the `MsCoreUtils` package. However, the
+specific implementation differs from `KNNImputer`. Therefore, for sake
+of replication, we rather use the latter using the R-to-Python 
+interface by `reticulate`. Again, we need to convert the target assay
+to an `AnnData` object.
 
 ```{r}
-#scp <- zeroIsNA(scp, i = "proteins_log")
-scp <- impute(scp, i = "proteins_log", method = "knn", k = 5)
+sce <- getWithColData(scp, "proteins_log")
+annd <- SCE2AnnData(sce, X_name = 1)
 ```
 
-
-# Scale
-
-Scale proteins to unit variance and zero mean
+We then perform the imputation. 
 
 ```{r}
-means <- rowMeans(assay(scp, "proteins_log"))
+spt$impute(annd)
+```
+
+Finally, we convert the data back to a `SingleCellExperiment` object
+and add it to the `QFeatures` object. 
+
+```{r}
+sce <- AnnData2SCE(annd)
+scp <- addAssay(scp, sce, name = "proteins_imput")
+scp <- addAssayLink(scp, from = "proteins_log", to = "proteins_imput",
+                    varFrom = "Accession", varTo = "Accession")
+scp
+```
+
+# Normalization III
+
+The last step of the SCeptre workflow before running the downstream 
+analysis is to perform a last normalization, known as centering and 
+scaling to unit variance. While this is performed using `scanpy` in 
+the SCeptre workflow, we here apply the `sweep` function as shown 
+previously.
+
+```{r}
+means <- rowMeans(assay(scp, "proteins_imput"))
 scp <- sweep(scp, MARGIN = 1, STATS = means, FUN = "-",
-             i = "proteins_log", name = "proteins_centered")
-vars <- rowVars(assay(scp, "proteins_centered"))
-scp <- sweep(scp, MARGIN = 1, STATS = vars, FUN = "/",
+             i = "proteins_imput", name = "proteins_centered")
+stds <- rowSds(assay(scp, "proteins_centered"))
+scp <- sweep(scp, MARGIN = 1, STATS = stds, FUN = "/",
              i = "proteins_centered", name = "proteins_scaled")
 ```
 
+# Downstream analysis
 
-# Dimension reduction 
+After this extensive processing of the data, the authors perform the
+downstream analysis to answer the research question of interest, that
+is, is SCP able to retrieve the hierarchical structure of the AML 
+model. To evaluate this, they first performed various dimension 
+reductions, followed by pseudo-time analysis. Cell clustering is 
+performed as well as gene clustering to define novel gene signature.
+
+So, now that the processing is complete, we can extract the last assay
+on which we will perform the downstream analysis. 
 
 ```{r}
 sce <- getWithColData(scp, "proteins_scaled")
+# load("~/Desktop/SCE_temp.RData")
 ```
 
-## PCA
+## Dimension reduction 
+
+We perform 3 types of dimension reductions: PCA, UMAP and diffusion
+map. 
+
+### PCA
+
+PCA can be directly computed from `SingleCellExperiment` objects using
+the `runPCA` function from the `scater` package. The resulting 
+dimension reduction is stored in the `reducedDim` slot of the object.
 
 ```{r}
-sce <- getWithColData(scp, "")
-library(scater)
+library("scater")
 sce <- runPCA(sce, 
               ncomponents = 50,
               ntop = Inf,
-              scale = TRUE,
+              scale = FALSE,
               exprs_values = 1,
-              name = "PCA") 
-plotPCA(sce, colour_by = "Plate")
+              name = "PCA")
 ```
 
+The package also provides the `plotPCA` function to directly plot the 
+PCA from the `SingleCellExperiment` object.
 
-## UMAP 
+```{r}
+plotPCA(sce, colour_by = "Population")
+```
+
+We can already see the LSC and PROG populations are close together in 
+the latent space whereas the blast are spread over the latent space. 
+
+### UMAP 
+
+Similarly to PCA, we can use `runUMAP` and `plotUMAP` to generate and
+plot UMAP space. We modify the tuning arguments to match the parameters
+used in the SCeptre notebook. 
 
 ```{r}
 set.seed(1234)
+sce$File.ID <- factor(sce$File.ID, levels = paste0("F", 1:192)) ## TODO Remove when updated in scpdata
 sce <- runUMAP(sce, 
                ncomponents = 2,
                ntop = Inf,
-               scale = TRUE,
+               scale = FALSE,
+               n_neighbors = 30,
+               min_dist = 0.5,
                exprs_values = 1,
                dimred = "PCA",
-               name = "UMAP") 
-## Plotting is performed in a single line of code
+               name = "UMAP")
 plotUMAP(sce, colour_by = "Population")
 ```
 
+We can draw the same conclusion for the UMAP results than for the PCA
+result. LSC and PROG are also close in UMAP space while the BLAST are 
+spread evenly.  UMAP is used to visually assess the presence of 
+clusters. In this case, we cannot see clusters but rather an 
+homogeneous cloud. One reason could be that the present SCP data does
+not provide sufficient resolution (noise is too high) to discriminate 
+between the different cell types. Another explanation is that the 
+proteome between the different cell types is continuously shifting from
+one cell type to another. It is important to remember that the cell 
+types are defined based on the CD34/CD38 flow-cytometry data using hard
+thresholds. To investigate whether this transition might be a smooth 
+transition, we plot the score of the first UMAP vector along the
+FACS data. 
 
-## Diffusion map 
+```{r}
+df <- data.frame(colData(sce), UMAP = reducedDim(sce, "UMAP"))
+ggplot(df)+
+    aes(x = CD34_APC.Cy7.A, 
+        y = CD38_PE.A,
+        colour = UMAP.1) +
+    geom_point(alpha = 0.7) +
+    geom_hline(yintercept = 470) +
+    geom_vline(xintercept = 500) +
+    annotate("label", 
+             label = c("BLAST CD38+", "PROG", "BLAST CD38-", "LSC"),
+             x = c(300, 700, 300, 700), 
+             y = c(750, 750, 200, 200))
+```
 
-## Leiden clustering
+This plot indeed indicates a smooth transition between the different 
+cell types and this transition seems to be captured by the first UMAP
+vector. The higher the combination of the CD34 and or CD38 signal, the
+higher the UMAP score.
 
-# Pseudotime analysis
+While reassuring, the first scenario (too much noise to resolve
+cluster) might still hold as the LSC and PROG that are well separated 
+by the FACS data and display clear phenotypical differences (LSC can 
+self-renew, whereas PROG cannot) cannot be distinguished in UMAP space.
+
+### Diffusion map 
+
+Another dimension reduction technique is diffusion maps that generates
+a manifold where cells are spatially organized so that it reflects 
+their transition probabilities. This is a more suitable of 
+representation differentiation processes, like those happening in the 
+AML model. 
+
+Diffusion maps can be computed using `runDiffusionMap` in `scuttle`.
+However, we here prefer to use the `destiny` package to not only get
+the diffusion map components, but also the transition probability 
+matrix that we will use later during the pseudo-time analysis. 
+
+```{r}
+# BiocManager::install("theislab/destiny")
+library("destiny")
+set.seed(1234)
+dm <- DiffusionMap(reducedDim(sce, "PCA"))
+```
+
+We stored the diffusion components in the `reducedDim` slot so that we
+can plot the results using the `plotDimensionReduction` function. 
+
+```{r}
+reducedDim(sce, "DiffusionMap") <- eigenvectors(dm)
+plotDiffusionMap(sce, colour_by = "Population")
+```
+
+The first diffusion component recapitulates the expected 
+differentiation hierarchy from the AML model. One of the tips of the 
+diffusion map mainly contains LSC cells. PROG cells then also appear 
+as well as BLAST. 
+
+## Pseudo-time analysis
+
+The objective of the pseudo-time analysis is to order cells along their
+differentiation tracks. To do so, we first need to define a root cell.
+Since the cells should theoretically derive from LSC cells, we define
+the root cell as the LSC cell at the tip of the diffusion map. We store
+this which cell is the root in the `colData`. 
+
+```{r}
+df <- data.frame(DC1 = dm$DC1, Population = sce$Population)
+df <- df[df$Population == "LSC", ]
+root <- rownames(df)[abs(df$DC1) == max(abs(df$DC1))]
+sce$isRoot <- FALSE
+colData(sce)[root, "isRoot"] <- TRUE
+```
+
+We can now compute the diffusion pseudo-time using the `DPT` function.
+Again, we store the output in the `colData` after converting the 
+pseudo-time to percentage.
+
+```{r}
+dpt <- DPT(dm, tips = which(sce$isRoot))
+sce$dpt <- rank(dpt$dpt) / ncol(sce)
+```
+
+We map the pseudo-time on the diffusion map and on the UMAP plots.
+
+```{r, fig.width = 7, fig.height = 3}
+plotDiffusionMap(sce, colour_by = "dpt") +
+    plotUMAP(sce, colour_by = "dpt")
+```
+
+We also map the pseudo-time on the FACS data to highlight the 
+estimated differentation trajectory. 
+
+```{r}
+df <- data.frame(colData(sce))
+ggplot(df)+
+    aes(x = CD34_APC.Cy7.A, 
+        y = CD38_PE.A,
+        colour = dpt) +
+    geom_point(alpha = 0.7) +
+    geom_hline(yintercept = 470) +
+    geom_vline(xintercept = 500) +
+    annotate("label", 
+             label = c("BLAST CD38+", "PROG", "BLAST CD38-", "LSC"),
+             x = c(300, 700, 300, 700), 
+             y = c(750, 750, 200, 200))
+```
+
+From this plot, the pseudo-time analysis follows the trajectory from 
+the FACS data as descried in the literature, that is, LSC cells
+differentiate into PROG cells then into BLAST CD38+ cells and finish 
+as BLAST CD38- cells. Interestingly, this plot also suggests an 
+alternative trajectory going from LSC directly to BLAST CD38-. This 
+was also observed in the @Schoof2021-pv paper. 
+This represents a good
+replication of their work, we were able to 
+successfully replicate their work. 
+
+## Cell clustering
+
+Next to pseudo-time analysis, the authors also performed cell 
+clustering. They applied the leiden algorithm to identify clusters 
+from the data. Since this is only implemented in Python, we will again
+use the `reticulate` interface. First, we converted our data to an 
+`AnnData` object. 
+
+```{r}
+annd <- SCE2AnnData(sce, X_name = 1)
+```
+
+Next we load the `scanpy` module that contains the required function 
+to perform PCA, that is used to build the nearest neighbour graph, that
+is used to identify clusters using the Leiden algorithm. The resulting
+clusters are stored in the `colData`
+
+```{r}
+scanpy <- import("scanpy")
+scanpy$pp$pca(annd, random_state = 1L)
+scanpy$pp$neighbors(annd, n_neighbors = 30L, random_state = 5L)
+scanpy$tl$leiden(annd, resolution = 0.3)
+sce$leidenClust <- annd$obs$leiden
+```
+
+We map the clusters on the UMAP plot.
+
+```{r}
+plotUMAP(sce, colour_by = "leidenClust")
+```
+
+The clusters shown above differ from the clusters shown in the 
+SCeptre notebook. As we will see in a later section the data obtained
+in this vignette differ slightly from the data obtained in the SCeptre
+notebook. The discrepancies between the clusters from two slightly 
+different datasets puts into question the reliability of the identified
+clusters. This observation supports the observation we drew from the 
+UMAP where no grouping structure is found. Furthermore, we know 
+*a priori* the cell types thanks to the FACS staining and previous 
+work from literature. We can plot the concordance between the 
+identified cluster and the known cell types. 
+
+```{r}
+df <- data.frame(colData(sce))
+## Count cells per cell type per cluster
+df <- group_by(df, Population, leidenClust)
+df <- summarize(df, n = n())
+## Compute the relative frequency per cluster
+df <- group_by(df, leidenClust)
+df <- mutate(df, rfreq = n/sum(n))
+## Plot bar chart
+ggplot(df) +
+    aes(x = leidenClust, 
+        y = rfreq,
+        fill = Population) +
+    geom_histogram(stat = "identity")
+```
+
+The clustering does not recapitulate the known biological information.
+All the clusters contain several cell type (except for cluster 2), and
+all cell types are present in several clusters. So, this dataset, and 
+maybe more generally this biological model, should not be described as
+a set of discrete clusters. 
+
+## Find marker genes
+
+In the SCeptre workflow, the authors searched for marker genes across
+the different clusters. As argued above, we don't trust the clustering
+and will rather showcase how to identify marker gene between the 
+different cell types from a `SingleCellExperiment` object. The 
+functionality to perform this is provided in the `scran` package.
+
+We use the `findMarkers function that generates a list of tables, where
+each table provide the result of the differential expression analysis 
+for one cell type against the others. We here use the t-test as the 
+statistical method and decide to report p-values based one the one 
+cluster vs all framework (see `?findMarkers` for more info). We also 
+specify that we want up regulated genes. 
+
+```{r}
+library("scran")
+markers <- findMarkers(sce, 
+                       assay.type = 1, 
+                       groups = sce$Population, 
+                       test.type = "t",
+                       direction = "up",
+                       pval.type = "all")
+markers
+```
+
+We next combine the list of tables into a single table. We perform 
+some extra data wrangling to also include the smallest fold change 
+
+```{r}
+markers <- lapply(names(markers), 
+                  function(i) cbind(markers[[i]][, c("FDR", "summary.logFC")],
+                                    Population = i))
+markers <- do.call(rbind, markers)
+markers$gene <- rownames(markers)
+```
+
+We keep only genes that are differentially expressed, that is for which
+the false discovery rate (FDR) is lower than 5 \% and the log fold 
+change between the given cluster and the others is larger than 1. 
+
+```{r}
+markers <- markers[markers$FDR < 0.05 & markers$summary.logFC > 1, ]
+```
+
+We plot the marker expression as heatmap using `ComplexHeatmaps`. 
+First, we filter the data to include only marker genes.
+
+```{r}
+x <- sce[markers$gene, ]
+library("ComplexHeatmap")
+```
+
+We set a colouring scheme for the cell types using the `RColorBrewer` 
+package.
+
+```{r}
+library("RColorBrewer")
+popCols <- brewer.pal(4, "Set1")
+names(popCols) <- unique(x$Population)
+```
+
+Next, we create column annotation to highlight the cell types on the 
+columns of the heatmap. 
+
+```{r}
+colAnnot <- columnAnnotation(Population = x$Population, 
+                             col = list(Population = popCols))
+```
+
+Similarly, we create row annotation to highlight the cell types on the 
+rows of the heatmap. 
+
+```{r}
+rowAnnot <- rowAnnotation(Population = anno_simple(markers$Population, 
+                                                   col = popCols))
+```
+
+Finally, we define the colors of the heatmap using the `viridis` and
+the `circlize` color scheme. Note that we provide some trimming of the
+values for better rendering. 
+
+```{r}
+library("viridis")
+library("circlize")
+vircols <- viridis(100)
+trimmin <- -2
+trimmax <- 2
+vircols <- colorRamp2(seq(trimmin, trimmax, length.out = 100), vircols)
+```
+
+We can now generate the heatmap.
+
+```{r}
+Heatmap(matrix = assay(x), 
+        name = "logProteins",
+        col = vircols,
+        left_annotation = rowAnnot,
+        top_annotation = colAnnot,
+        cluster_rows = FALSE,
+        cluster_columns = FALSE,
+        show_row_names = FALSE, 
+        show_column_names = FALSE,
+        column_order = order(x$Population),
+        use_raster = TRUE,
+        heatmap_legend_param = list(at = c(trimmin, 0, trimmax)))
+```
+
+We can see that the more cells differentiate towards BLAST CD38- cells
+the more they expressed a unique set of genes. We could not find genes
+that are differentially over-expressed by PROG cells. 
+
+Let's have a look at the top markers for the different cell 
+populations. 
+
+### Top markers of the BLAST CD38- cells
+
+```{r}
+markerBlastCD38neg <- markers[markers$Population == "BLAST CD38-", ]
+head(markerBlastCD38neg[order(markerBlastCD38neg$FDR), ])
+```
+
+The most significant marker is ARL1 (ADP-ribosylation factor-like 
+protein 1). It is annotated as involved in the protein localization
+and transport to the Golgi appartus. 
+
+We also plot the evolution of the ARL1 expression with respect to the 
+pseudo-time. 
+
+```{r}
+df <- data.frame(exprs = assay(sce)["ARL1", ], 
+                 colData(sce))
+ggplot(df) +
+    aes(y = exprs, 
+        x = dpt,
+        col = Population) +
+    geom_point() +
+    ggtitle("ARL1 abundance")
+```
+
+We can indeed observe a strong correlation between ARL1 expression and
+the pseudo time. However, the distribution of the point shows an 
+undesired trend, that is that some observations are grouped along 
+stripes. We already observed this for other SCP data and we showed 
+that these stripes are artefacts of data processing (Vanderaa2021-xd). 
+
+### Top marker of the BLAST CD38+ cells
+
+```{r}
+markerBlastCD38pos <- markers[markers$Population == "BLAST CD38+", ]
+head(markerBlastCD38pos[order(markerBlastCD38pos$FDR), ])
+```
+
+The most significant marker is P4HB (Protein disulfide-isomerase). 
+
+```{r}
+df <- data.frame(exprs = assay(sce)["P4HB", ], 
+                 colData(sce))
+ggplot(df) +
+    aes(y = exprs, 
+        x = dpt,
+        col = Population) +
+    geom_point() +
+    ggtitle("P4HB abundance")
+```
+
+For this marker, the trend between protein abundance and diffusion 
+pseudo-time is bell-shaped. This is expected from the BLAST CD38+ 
+cells since they represent the intermediate step of differentiation. 
+
+- Marker of the LSC cells
+
+```{r}
+markerBlastLSC <- markers[markers$Population == "LSC", ]
+markerBlastLSC[order(markerBlastLSC$FDR), ]
+```
+
+Only two markers are found significant for the LSC population. One of
+the two, [PRDX1](https://www.uniprot.org/uniprot/Q06830) associated to
+cell proliferation and response to oxydative stress. These biological 
+processes are expected to occur in LSC (@ijms22052470). 
+
+```{r}
+df <- data.frame(exprs = assay(sce)["PRDX1", ], 
+                 colData(sce))
+ggplot(df) +
+    aes(y = exprs, 
+        x = dpt,
+        col = Population) +
+    geom_point() +
+    ggtitle("PRDX1 abundance")
+```
+
+The relationship between PRDX1 expression and pseudo-time is 
+anti-correlated with a strong expression by LSC at early estimated
+differentiation time and low expression at later time by BLAST cells. 
+
+## Gene set enrichment
+
+**UNDER PROGRESS**
+
+Finally, we run a gene set enrichment analysis to provide a 
+biologically meaningful interpretation of the markers we identified. 
+
+Let's start with the BLAST CD38- cells. 
+
+```{r, eval=FALSE, echo=FALSE}
+markerBlastCD38neg <- markers[markers$Population == "BLAST CD38-", ]
+
+rankedList <- markerBlastCD38neg$FDR
+names(rankedList) <- rownames(markerBlastCD38neg)
+rankedList <- sort(rankedList, decreasing = TRUE)
+
+library("clusterProfiler")
+library("org.Hs.eg.db")
+gseaBlastCD38neg <- gseGO(rankedList,
+                          ont = "BP",
+                          OrgDb = org.Hs.eg.db,
+                          keyType = "SYMBOL",
+                          minGSSize = 10,
+                          maxGSSize = 200,
+                          pvalueCutoff = 0.05,
+                          pAdjustMethod = "BH",
+                          verbose = TRUE,
+                          by = "fgsea")
+head(gseaBlastCD38neg)
+
+library("fgsea")
+
+library("biomaRt")
+mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL", 
+                dataset = "hsapiens_gene_ensembl") 
+
+go_id <- GOID(GOTERM[Ontology(GOTERM) == "BP"])
+
+library(org.Hs.egGO)
+
+revmap(org.Hs.eg.db)[[go_id[[1]]]]
+
+get(go_id, org.Hs.egGO2ALLEGS)
+
+grep("GO", listFilters(mart)$name, value=T, ignore.case = T)
+
+df <- getBM(attributes = "ensembl_gene_id",
+            
+            mart = mart)
+
+go_list <- getBM(attributes = c("go_id", "hgnc_symbol", "namespace_1003"),
+                 uniqueRows = TRUE,
+                 mart = mart)
+go_list <- 
+    
+    library("org.Hs.eg.db")
+
+Term(GOTERM)
+## Get the signatures of interest
+pattern <- paste0("massagu|tgf|", ifelse(i %% 2 == 0, "cd8", "treg"))
+sel <- grepl(pattern, names(fgseaSig), ignore.case = TRUE)
+fgseaSig <- fgseaSig[sel]
+## Perform fGSEA
+set.seed(1234)
+fgseaRes <- fgsea(fgseaSig, 
+                  rank, 
+                  minSize=15, 
+                  maxSize=500,
+                  nPermSimple = 5000)
+## Store results
+metadata(plate)$GSEA_res <- fgseaRes
+metadata(plate)$GSEA_rank <- rank
+plate
+```
+
+# Benchmarking
+
+Up to this point, we replicated the processing steps by SCeptre using
+our `scp` workflow and showed how to perform downstream analyses using
+R/Bioconductor software. We will now assess the quality of the 
+replication and see how well we can recreate the original data. We 
+retrieved the final data provided by the Schoof et al.  
+
+```{r}
+## TODO retrieve this from scpdata
+load("~/PhD/tmp/SCeptre/Schoof_et_al/results/bulk/replication/6.final.RData")
+sce_sceptre <- sce_schoof
+```
+
+We will compare the dataset processed through SCeptre and the dataset
+processed through `scp` based on 3 metrics: 
+
+- The overlap of the selected cells
+- The overlap of the selected proteins
+- The difference of the processed quantitative data
+
+## Compare the selected cells
+
+One of the above section filtered the single cells based on the summed
+abundance and the number of detected proteins. We will check that we 
+could indeed reproduce the cell filter performed by SCeptre.
+
+```{r benchm_cell_filt, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
+cells_sceptre <- paste0(sce_sceptre$`File ID`, sce_sceptre$Channel)
+cells_scp <- colnames(sce)
+cells <- unique(c(cells_sceptre, cells_scp))
+data.frame(SCeptre = cells %in% cells_sceptre,
+           scp = cells %in% cells_scp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(SCeptre, scp) %>%
+    summarise(count = n()) %>%
+    mutate(success = SCeptre == "present" & scp == "present") %>%
+    ggplot() +
+    aes(x = SCeptre,
+        y = scp,
+        col = success,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    scale_y_discrete(limits = c("absent", "present")) +
+    scale_color_manual(values = c("orange2", "green4")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title.y = element_text(vjust = 0),
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    ggtitle("Filtered cells")
+```
+
+The `scp` filtering step keeps 70 additional cells compared to SCeptre,
+and removed 1 cell that SCeptre kept, but the two workflows agreed on
+2024 cells. 
+
+## Compare the selected proteins
+
+The SCeptre and the `scp` protein data have comparable dimensions,
+although they are not exactly the same. We plot the overlap of the 
+selected proteins between the two workflows. 
+
+```{r benchm_prot_filt, echo=FALSE, fig.height = 5, fig.width = 5, message = FALSE}
+prots_sceptre <- rownames(sce_sceptre)
+prots_scp <- rownames(sce)
+prots <- unique(c(prots_sceptre, prots_scp))
+data.frame(SCeptre = prots %in% prots_sceptre,
+           scp = prots %in% prots_scp) %>%
+    mutate_all(function(x) ifelse(x, "present", "absent")) %>%
+    group_by(SCeptre, scp) %>%
+    summarise(count = n()) %>%
+    mutate(success = SCeptre == "present" & scp == "present") %>%
+    ggplot() +
+    aes(x = SCeptre,
+        y = scp,
+        col = success,
+        label = count) +
+    geom_point(aes(size = count)) +
+    geom_text(nudge_y = 0.2) +
+    scale_color_manual(values = c("orange2", "green4")) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          axis.title.y = element_text(vjust = 0),
+          axis.text.y = element_text(angle = 90, hjust = 0.5)) +
+    ggtitle("Filtered proteins")
+```
+
+The selected proteins highpy overlap between the two workflows. `scp`
+kept 4 proteins that were removed by SCeptre. 2723 proteins were 
+selected by both workflows. Similarly to the filtered cells, 
+the differences are negligible and demonstrate an almost perfect 
+replication of the feature filtering steps.
+
+## Compare the processed quantifications
+
+To assess the differences between the data matrices, we intersect the
+proteins and the cells to have comparable matrices. 
+
+```{r benchm_prot_diff, echo=FALSE, fig.width = 5, fig.height = 5}
+rows <- intersect(rownames(sce_sceptre),
+                  rownames(sce))
+cols <- intersect(paste0(sce_sceptre$`File ID`, sce_sceptre$Channel),
+                  colnames(sce))
+err <- assay(sce_sceptre)[rows, which(paste0(sce_sceptre$`File ID`, sce_sceptre$Channel) %in% cols)] -
+    assay(sce)[rows, cols]
+ggplot(data.frame(difference = as.vector(err))) +
+    aes(x = difference) +
+    geom_histogram(bins = 40) +
+    xlab("SCeptre - scp") +
+    xlim(c(-2, 2)) +
+    theme_minimal() +
+    ggtitle("Protein data")
+```
+
+95 \% of the differences are contained within (-0.42, 0.53) with a 
+sharp peak around 0. We compare this difference distribution to the 
+distribution of the protein abundance in the SCeptre dataset. 
+
+```{r benchm_prot_diff, echo=FALSE, fig.width = 5, fig.height = 5}
+ggplot(data.frame(SCeptre = as.vector(assay(sce_sceptre)))) +
+    aes(x = SCeptre) +
+    geom_histogram(bins = 40) +
+    xlim(c(-2, 2)) +
+    theme_minimal() +
+    ggtitle("Protein data")
+```
+
+Compared to the shape of the quantitative data, the differences 
+observed between the two workflows are negligeable. Therefore, the 
+`scp` workflow accurately replicates the SCeptre workflow.
+
+# Conclusion 
+
+In this vignette, we have demonstrated that the `scp` package is able
+to accurately reproduce the analysis published in @Schoof2021-pv. It
+also serves to showcase how to apply `scp` to real-life SCP data. 
+Finally, we also show how to bridge and integrate software from two 
+different programming languages. While this workflow is fully executed
+in R, we were able to include Python thanks to the `reticulate` 
+interface. 
 
 # Requirements
 
@@ -515,6 +1443,50 @@ cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
     "RAM: ", round(sd$ram / 1E9, 1), " GB\n",
     "CPU: ", sd$cpu$no_of_cores, " core(s) - ", sd$cpu$model_name, "\n",
     sep = "")
+```
+
+Further information about the Python environment:
+
+```{python}
+import IPython
+print(IPython.sys_info())
+```
+
+### Running the `sceptre` module in R
+
+In order to rerun this vignette, you will need to create a `conda` 
+environment containing the required modules to run the SCeptre 
+workflow. 
+
+First, you need to install Python (we used 
+[Python3](https://www.python.org/downloads/)) and
+[conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
+(or [miniconda](https://docs.conda.io/en/latest/miniconda.html)).
+
+Next, as mentioned in the 
+[author's installation instructions](https://github.com/bfurtwa/SCeptre#installation-from-github),
+create a new `conda` environment by running the following in a 
+terminal.
+
+```{bash, eval = FALSE}
+conda create -n sceptre python=3.7
+conda activate sceptre
+```
+
+Then you need to install `sceptre` and its dependencies. To do so, 
+download the [GitHub repository](https://github.com/bfurtwa/SCeptre), 
+and `cd` to the downloaded `SCeptre/` folder. Then run in the terminal: 
+
+```{bash, eval = FALSE}
+pip install .
+```
+
+To make use of sceptre within an R session, simply call (from the R 
+terminal): 
+
+```{r, eval = FALSE}
+library("reticulate")
+use_condaenv("sceptre")
 ```
 
 ### Timing
