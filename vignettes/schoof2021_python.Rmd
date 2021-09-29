@@ -71,7 +71,7 @@ spt$plot_avg_sn(dataset, figsize = c(7.2, 18))
 plt$show()
 ```
 
-```{r, fig.height = 18, fig.width = 7.2}
+```{r, fig.height = 18, fig.width = 7.2, eval = FALSE}
 spt$plot_set_overview(dataset, figsize = c(7.2, 80))
 plt$show()
 ```
@@ -163,11 +163,24 @@ r.adata = r.adata[~r.adata.obs['Channel'].isin(['126', '127C', '127N'])].copy()
 r.adata = r.adata[~r.adata.obs['Sorted Population'].isin(['empty'])].copy()
 ```
 
+```{r}
+library(zellkonverter)
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/1.post_filter.RData"))
+```
+
+
 # Normalization
 
 ```{r}
 spt$normalize(adata)
 ```
+
+```{r}
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/2.post_norm.RData"))
+```
+
 
 # Cell QC 
 
@@ -224,6 +237,10 @@ sc$pl$pca(adata, color = "Channel", size = cellsize, show = FALSE,
 plt$show()
 ```
 
+```{r}
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/3.post_QC.RData"))
+```
 
 # Prepare embedding
 
@@ -237,6 +254,11 @@ log2(x+1) transformation
 
 ```{r}
 sc$pp$log1p(adata, base = 2)
+```
+
+```{r}
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/4.post_log.RData"))
 ```
 
 save the normalized and log2 transformed data as raw data for 
@@ -284,11 +306,22 @@ impute for the embedding
 spt$impute(adata)
 ```
 
+```{r}
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/5.post_imputation.RData"))
+```
+
 scale to unit variance and zero mean
 
 ```{r}
 sc$pp$scale(adata)
 ```
+
+```{r}
+sce_sceptre <- AnnData2SCE(adata)
+save(sce_sceptre, file = paste0(outDir, "replication/6.final.RData"))
+```
+
 
 ```{r}
 plot_parameters <- c("Sorted Population", "Gated Population", "Channel",
