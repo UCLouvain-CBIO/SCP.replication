@@ -984,6 +984,7 @@
 <h2 class="hasAnchor">
 <a href="#compare-the-processed-quantifications" class="anchor"></a>Compare the processed quantifications</h2>
 <p>To assess the differences between the data matrices, we intersect the proteins and the cells to have comparable matrices.</p>
+<pre><code>## Warning: Removed 8788 rows containing non-finite values (stat_bin).</code></pre>
 <p><img src="schoof2021_files/figure-html/benchm_prot_diff-1.png" width="480"></p>
 <p>95 % of the differences are contained within (-0.42, 0.53) with a sharp peak around 0. We compare this difference distribution to the distribution of the protein abundance in the SCeptre dataset.</p>
 <pre><code>## Warning: Removed 246447 rows containing non-finite values (stat_bin).</code></pre>
@@ -1008,20 +1009,20 @@
 ## RAM: 8.2 GB
 ## CPU: 4 core(s) - Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz</code></pre>
 <p>Further information about the Python environment:</p>
-<div class="sourceCode" id="cb77"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> IPython</span>
-<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(IPython.sys_info())</span>
-<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="co">## {'commit_hash': '033ab93c7',</span></span>
-<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a><span class="co">##  'commit_source': 'installation',</span></span>
-<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a><span class="co">##  'default_encoding': 'UTF-8',</span></span>
-<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_path': '/home/christophe/miniconda3/envs/sceptre/lib/python3.7/site-packages/IPython',</span></span>
-<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_version': '5.8.0',</span></span>
-<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a><span class="co">##  'os_name': 'posix',</span></span>
-<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a><span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-debian-buster-sid',</span></span>
-<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_executable': '/home/christophe/miniconda3/envs/sceptre/bin/python',</span></span>
-<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_platform': 'linux',</span></span>
-<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_version': '3.7.9 | packaged by conda-forge | (default, Dec  9 2020, '</span></span>
-<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '21:13:23) \n'</span></span>
-<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '[GCC 9.3.0]'}</span></span></code></pre></div>
+<div class="sourceCode" id="cb78"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> IPython</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(IPython.sys_info())</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="co">## {'commit_hash': '033ab93c7',</span></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a><span class="co">##  'commit_source': 'installation',</span></span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a><span class="co">##  'default_encoding': 'UTF-8',</span></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_path': '/home/christophe/miniconda3/envs/sceptre/lib/python3.7/site-packages/IPython',</span></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_version': '5.8.0',</span></span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a><span class="co">##  'os_name': 'posix',</span></span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a><span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-debian-buster-sid',</span></span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_executable': '/home/christophe/miniconda3/envs/sceptre/bin/python',</span></span>
+<span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_platform': 'linux',</span></span>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_version': '3.7.9 | packaged by conda-forge | (default, Dec  9 2020, '</span></span>
+<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '21:13:23) \n'</span></span>
+<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '[GCC 9.3.0]'}</span></span></code></pre></div>
 </div>
 <div id="running-the-sceptre-module-in-r" class="section level3">
 <h3 class="hasAnchor">
@@ -1029,12 +1030,12 @@
 <p>In order to rerun this vignette, you will need to create a <code>conda</code> environment containing the required modules to run the SCeptre workflow.</p>
 <p>First, you need to install Python (we used <a href="https://www.python.org/downloads/">Python3</a>) and <a href="https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a> (or <a href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>).</p>
 <p>Next, as mentioned in the <a href="https://github.com/bfurtwa/SCeptre#installation-from-github">author’s installation instructions</a>, create a new <code>conda</code> environment by running the following in a terminal.</p>
-<div class="sourceCode" id="cb78"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create -n sceptre python=3.7</span>
-<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate sceptre</span></code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create -n sceptre python=3.7</span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate sceptre</span></code></pre></div>
 <p>Then you need to install <code>sceptre</code> and its dependencies. To do so, download the <a href="https://github.com/bfurtwa/SCeptre">GitHub repository</a>, and <code>cd</code> to the downloaded <code>SCeptre/</code> folder. Then run in the terminal:</p>
-<div class="sourceCode" id="cb79"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div>
+<div class="sourceCode" id="cb80"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div>
 <p>To make use of sceptre within an R session, simply call (from the R terminal):</p>
-<div class="sourceCode" id="cb80"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb81"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/rstudio/reticulate">"reticulate"</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/use_python.html">use_condaenv</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span></code></pre></div>
 </div>
@@ -1042,7 +1043,7 @@
 <h3 class="hasAnchor">
 <a href="#timing" class="anchor"></a>Timing</h3>
 <p>The total time required to compile this vignette is:</p>
-<pre><code>## 37.66808 mins</code></pre>
+<pre><code>## 30.60378 mins</code></pre>
 </div>
 <div id="memory" class="section level3">
 <h3 class="hasAnchor">
@@ -1053,7 +1054,7 @@
 <div id="session-info" class="section level3">
 <h3 class="hasAnchor">
 <a href="#session-info" class="anchor"></a>Session info</h3>
-<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb84"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">## R Under development (unstable) (2020-10-12 r79334)</span>
 <span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span>

@@ -1315,7 +1315,7 @@ abundance and the number of detected proteins. We will check that we
 could indeed reproduce the cell filter performed by SCeptre.
 
 ```{r benchm_cell_filt, fig.width = 5, fig.height = 5, echo=FALSE, message = FALSE}
-cells_sceptre <- paste0(sce_sceptre$`File ID`, sce_sceptre$Channel)
+cells_sceptre <- colnames(sce_sceptre)
 cells_scp <- colnames(sce)
 cells <- unique(c(cells_sceptre, cells_scp))
 data.frame(SCeptre = cells %in% cells_sceptre,
@@ -1387,12 +1387,9 @@ To assess the differences between the data matrices, we intersect the
 proteins and the cells to have comparable matrices. 
 
 ```{r benchm_prot_diff, echo=FALSE, fig.width = 5, fig.height = 5}
-rows <- intersect(rownames(sce_sceptre),
-                  rownames(sce))
-cols <- intersect(paste0(sce_sceptre$`File ID`, sce_sceptre$Channel),
-                  colnames(sce))
-err <- assay(sce_sceptre)[rows, which(paste0(sce_sceptre$`File ID`, sce_sceptre$Channel) %in% cols)] -
-    assay(sce)[rows, cols]
+rows <- intersect(rownames(sce_sceptre), rownames(sce))
+cols <- intersect(colnames(sce_sceptre), colnames(sce))
+err <- assay(sce_sceptre)[rows, cols] - assay(sce)[rows, cols]
 ggplot(data.frame(difference = as.vector(err))) +
     aes(x = difference) +
     geom_histogram(bins = 40) +
