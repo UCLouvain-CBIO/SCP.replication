@@ -60,6 +60,15 @@
       <a href="../articles/liang2020.html">Exploring the autoPOTS data (Liang et al. 2020)</a>
     </li>
     <li>
+      <a href="../articles/schoof2021.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
+    </li>
+    <li>
+      <a href="../articles/schoof2021_R.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
+    </li>
+    <li>
+      <a href="../articles/schoof2021_python.html">Reproduction of the AML model analysis with python (Schoof et al. 2021)</a>
+    </li>
+    <li>
       <a href="../articles/zhu2019EL.html">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a>
     </li>
   </ul>
@@ -75,14 +84,14 @@
 
       
 
-      </header><script src="SCoPE2_files/header-attrs-2.9/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Reproduction of the SCoPE2 analysis (Specht et al. 2021)</h1>
-                        <h4 class="author">Christophe Vanderaa<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, Computational Biology, UCLouvain</h4>
+      <h1 data-toc-skip>Reproduction of the SCoPE2 analysis (Specht et al. 2021)</h1>
+                        <h4 class="author">Christophe Vanderaa<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>, Computational Biology, UCLouvain</h4>
                         <h4 class="author">Laurent Gatto, Computational Biology, UCLouvain</h4>
             
-            <h4 class="date">7 July 2021</h4>
+            <h4 class="date">1 Oktober 2021</h4>
       
       
       <div class="hidden name"><code>SCoPE2.Rmd</code></div>
@@ -100,8 +109,8 @@
 <a href="#introduction" class="anchor"></a>Introduction</h1>
 <p>SCoPE2 (<span class="citation">Specht et al. (2021)</span>) is the first mass spectrometry (MS)-based single cell proteomics (SCP) protocol that has been used to profile thousands of proteins in thousands of single-cells. This is a technical milestone for SCP and it opens the door for fine-grain understanding of biological processes within and between cells at the protein level. The emergence of SCP data leads to the need of new computational developments that can deal with the specificities and challenges of this new type of data.</p>
 <p>Although the authors provided all code and data required for fully reproducing their analysis, the code is difficult to read, implements many functions from scratch, and is based on generic table formats not suited for easy SCP data manipulation. This makes their workflow difficult to re-use for other analyses. Our goal is to bridge the gap between data acquisition and data interpretation by providing a new computational framework that is tailored for MS-SCP data. The SCoPE2 dataset is an ideal dataset to showcase the application of our standardized software solution.</p>
-<p>Let’s first load the replication package to make use of some helper functions. Those functions are only meant for this reproduction vignette and are not designed for general use.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>Let's first load the replication package to make use of some helper functions. Those functions are only meant for this reproduction vignette and are not designed for general use.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"SCP.replication"</span><span class="op">)</span></code></pre></div>
 <div id="scp-and-the-scope2-workflow" class="section level3">
 <h3 class="hasAnchor">
@@ -114,7 +123,7 @@ Overview of the SCoPE2 workflow.
 </div>
 <p>Blue boxes highlight steps that are already routinely performed in bulk proteomics. The orange boxes depict the steps that are specific to single-cell applications and require new implementations. We have developed a new data framework dedicated to SCP data analysis that combines two existing Bioconductor classes. The <code>SingleCellExperiment</code> class provides an interface to many cutting edge methods for single-cell analysis and the <code>QFeatures</code> class facilitates manipulation and processing of MS-based quantitative data (blue boxes in the flowchart). The <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html"><code>scp</code> vignette</a> provides detailed information about the data structure. The <code>scp</code> package extends the functionality of <code>QFeatures</code> for single-cell application. <code>scp</code> offers a standardized implementation of the single-cell steps in the flowchart above (orange boxes).</p>
 <p>The required packages for running this workflow are listed below.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Core packages of this workflow</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">SingleCellExperiment</span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/RforMassSpectrometry/QFeatures">QFeatures</a></span><span class="op">)</span>
@@ -137,12 +146,12 @@ Overview of the SCoPE2 workflow.
 </ul>
 <p>The workflow starts with the PSM table and will generate the peptide and the protein data. The authors provided the PSM dataset as a data table (<code>data.frame</code>) in the R data environment called <a href="https://drive.google.com/drive/folders/1Zhjik_JFjCQNIVjg63-fooJ4K0HZxWjV"><code>raw.RData</code></a>. Peptide and protein data are shared as CSV files. We highly value the effort the authors of SCoPE2 have made to publicly share all the data generated in their project, from raw files to final expression tables (see the Slavov Lab <a href="http://scope2.slavovlab.net/">website</a>).</p>
 <p>We formatted the SCoPE2 dataset following our data framework. The formatted data can be retrieved from the <code>scpdata</code> package using the <code><a href="https://rdrr.io/pkg/scpdata/man/specht2019v3.html">specht2019v3()</a></code> function. All datasets in <code>scpdata</code> are called after the first author and the date of publication (the preprint and data were first published in 2019). <code>v3</code> stands for the third version of the data that was released in October 2020.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scpdata/man/specht2019v3.html">specht2019v3</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <pre><code>## see ?scpdata and browseVignettes('scpdata') for documentation</code></pre>
 <pre><code>## loading from cache</code></pre>
-<p>The data contain 179 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature metadata. Each row in an assay represents a <strong>feature</strong> that can either be a PSM, a peptide or a protein depending on the assay. Each column in an assay represents a <strong>sample</strong>. In the SCoPE2 data, samples are acquired as a TMT channel because several sample are multiplexed in a single MS run, hence each assay contains multiple columns. Most samples are single-cells, but some samples are blanks, references, carriers, … (see later). Below, we show the overview of the <code>scp</code> dataset.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p>The data contain 179 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature metadata. Each row in an assay represents a <strong>feature</strong> that can either be a PSM, a peptide or a protein depending on the assay. Each column in an assay represents a <strong>sample</strong>. In the SCoPE2 data, samples are acquired as a TMT channel because several sample are multiplexed in a single MS run, hence each assay contains multiple columns. Most samples are single-cells, but some samples are blanks, references, carriers, ... (see later). Below, we show the overview of the <code>scp</code> dataset.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span></code></pre></div>
 <pre><code>## An instance of class QFeatures containing 179 assays:
 ##  [1] 190222S_LCA9_X_FP94AA: SingleCellExperiment with 2777 rows and 11 columns 
@@ -156,7 +165,7 @@ Overview of the SCoPE2 workflow.
 <p><img src="SCoPE2_files/figure-html/plot_lcbatch-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>The dataset also contains a <code>peptides</code> assay and a <code>proteins</code> assay that hold peptide and protein level information, respectively. Those were provided by the authors. The objective of this vignette is to produce the <code>peptides</code> and <code>proteins</code> assays from the 177 PSM assays following the same procedure as the SCoPE2 script but using standardized functionalities.</p>
 <p>We extract the <code>peptides</code> and <code>proteins</code> assays and keep them for later benchmarking. Using double brackets <code>[[...]]</code> extracts the desired assay as a <code>SingleCellExperiment</code> object. On the other hand, using simple brackets <code>[row, col, assay]</code> subsets the desired elements/assays but preserves the <code>QFeatures</code> data structure.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">peptides_SCoPE2</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[[</span><span class="st">"peptides"</span><span class="op">]</span><span class="op">]</span>
 <span class="va">proteins_SCoPE2</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[[</span><span class="st">"proteins"</span><span class="op">]</span><span class="op">]</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, , <span class="op">-</span><span class="op">(</span><span class="fl">178</span><span class="op">:</span><span class="fl">179</span><span class="op">)</span><span class="op">]</span></code></pre></div>
@@ -170,7 +179,7 @@ Overview of the SCoPE2 workflow.
 <h1 class="hasAnchor">
 <a href="#filter-the-psm-data" class="anchor"></a>Filter the PSM data</h1>
 <p>After importing the data, the SCoPE2 analysis filters low-confidence PSMs. Each PSM assay contains feature meta-information that are stored in the assay <code>rowData</code>. The <code>QFeatures</code> package allows to quickly filter the rows of an assay by using these information. The available variables in the <code>rowData</code> are listed below for each assay.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rowDataNames</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span></code></pre></div>
 <pre><code>## CharacterList of length 177
 ## [["190222S_LCA9_X_FP94AA"]] uid Sequence Length ... digest modseq peptide
@@ -188,25 +197,25 @@ Overview of the SCoPE2 workflow.
 <div id="filter-out-failed-runs-based-on-psm-content" class="section level2">
 <h2 class="hasAnchor">
 <a href="#filter-out-failed-runs-based-on-psm-content" class="anchor"></a>Filter out failed runs based on PSM content</h2>
-<p>First, only the assays that have sufficient PSMs are kept. The authors keep an assay if it has over 500 PSMs. Before filtering, let’s first look at the distribution of the number of PSMs per assay. Note that we can easily extract the number of rows (here PSMs) and the number of columns (TMT channels) of each assay using the <code>dims</code> function implemented in <code>QFeatures</code>.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<p>First, only the assays that have sufficient PSMs are kept. The authors keep an assay if it has over 500 PSMs. Before filtering, let's first look at the distribution of the number of PSMs per assay. Note that we can easily extract the number of rows (here PSMs) and the number of columns (TMT channels) of each assay using the <code>dims</code> function implemented in <code>QFeatures</code>.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">nPSMs</span> <span class="op">&lt;-</span> <span class="fu">dims</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="op">]</span></code></pre></div>
-<p>Let’s have a look at the number of features that were identified in the different runs.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<p>Let's have a look at the number of features that were identified in the different runs.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">nPSMs</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">nPSMs</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_histogram</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_vline</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></code></pre></div>
 <p><img src="SCoPE2_files/figure-html/plot_dims-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>4 assays have very few number of PSMs, probably because those runs failed. They are hence below the threshold of 500 and are removed from the analysis. To perform this, we take advantage of the subsetting method of a <code>QFeatures</code> object. It can be seen as a three-order array: <span class="math inline">\(features \times samples \times assay\)</span>. Hence, <code>QFeatures</code> supports three-order subsetting <code>x[rows, columns, assays]</code>.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, , <span class="va">nPSMs</span> <span class="op">&gt;</span> <span class="fl">500</span><span class="op">]</span></code></pre></div>
 <pre><code>## Warning: 'experiments' dropped; see 'metadata'</code></pre>
 <pre><code>## harmonizing input:
 ##   removing 59 sampleMap rows not in names(experiments)
 ##   removing 59 colData rownames not in sampleMap 'primary'</code></pre>
 <p>You may notice that a warning is thrown when performing the subsetting step. This is because, as we expected, a few assays were dropped. Removed assays are listed in the <code>metadata</code> slot:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">metadata</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span></code></pre></div>
 <pre><code>## $drops.experiments
 ## [1] "peptides"                          "proteins"                         
@@ -218,7 +227,7 @@ Overview of the SCoPE2 workflow.
 <a href="#filter-out-psms-with-high-false-discovery-rate" class="anchor"></a>Filter out PSMs with high false discovery rate</h2>
 <p>Next, SCoPE2 filters PSMs based on the false discovery rate (FDR) for identification. The PSM data were already processed with DART-ID (<span class="citation">Chen, Franks, and Slavov (2019)</span>), a python software that updates the confidence in peptide identification using an Bayesian inference approach. DART-ID outputs for every PSM the updated posterior error probability (PEP). Filtering on the PEP is too conservative and it is rather advised to filter based on FDR (<span class="citation">Käll et al. (2008)</span>). To control for the FDR, we need to compute q-values, that correspond to the minimal FDR threshold that would still select the associated feature.</p>
 <p>We can use the <code>pep2qvalue</code> function to easily compute q-values from the PEPs computed by MaxQuant or updated by DART-ID. In the SCoPE2 workflow, the features are selected based on the FDR at PSM level and at protein level. The DART-ID PEPs (<code>dart_PEP</code>) as well as the protein information (<code>protein</code>) are automatically retrieved from the <code>rowData</code> of each assay. The function will store the computed q-values back in the <code>rowData</code>. It will be stored under <code>qvalue_psm</code> and <code>qvalue_protein</code> for the PSM and proteins q-values, respectively.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/pep2qvalue.html">pep2qvalue</a></span><span class="op">(</span><span class="va">scp</span>,
                   i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
                   PEP <span class="op">=</span> <span class="st">"dart_PEP"</span>,
@@ -229,7 +238,7 @@ Overview of the SCoPE2 workflow.
                   PEP <span class="op">=</span> <span class="st">"dart_PEP"</span>,
                   rowDataName <span class="op">=</span> <span class="st">"qvalue_protein"</span><span class="op">)</span></code></pre></div>
 <p>We can extract the q-values from the <code>rowData</code> of several assays using the <code>rbindRowData</code> function. It takes the <code>rowData</code> of interest and returns a single <code>DataFrame</code> table with variables of interest. We plot the q-values along with the DART-ID PEPs using <code>ggplot2</code> facets.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">pivot_longer</span><span class="op">(</span>cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"dart_PEP"</span>, <span class="st">"qvalue_psm"</span>, <span class="st">"qvalue_protein"</span><span class="op">)</span>,
@@ -243,7 +252,7 @@ Overview of the SCoPE2 workflow.
 <pre><code>## Warning: Removed 6690 rows containing non-finite values (stat_bin).</code></pre>
 <p><img src="SCoPE2_files/figure-html/qvalue_plot-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>We filter the PSMs to control for a 1% PSM and protein FDR. We can perform this on our <code>QFeatures</code> object by using the <code>filterFeatures</code> function. The q-values are directly accessed from the <code>rowData</code> of each assay.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">scp</span>,
                       <span class="op">~</span> <span class="va">qvalue_psm</span> <span class="op">&lt;</span> <span class="fl">0.01</span> <span class="op">&amp;</span> <span class="va">qvalue_protein</span> <span class="op">&lt;</span> <span class="fl">0.01</span><span class="op">)</span></code></pre></div>
 </div>
@@ -251,7 +260,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#filter-out-contaminants" class="anchor"></a>Filter out contaminants</h2>
 <p>We will now remove PSMs that were matched to contaminant proteins (the protein name starts with <code>CON</code>) or to the decoy database (the protein name starts with <code>REV</code>). Again, <code>filterFeatures</code> can directly access the protein names from the <code>rowData</code>.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">scp</span>,
                       <span class="op">~</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"REV|CON"</span>, <span class="va">protein</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
@@ -259,7 +268,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#filter-out-noisy-spectra" class="anchor"></a>Filter out noisy spectra</h2>
 <p>A PIF (parental ion fraction) smaller than 80 % indicates the associated spectra is contaminated by co-isolated peptides and therefore the quantification becomes unreliable. The PIF was computed by MaxQuant and is readily available for filtering.</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">scp</span>,
                       <span class="op">~</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">PIF</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">PIF</span> <span class="op">&gt;</span> <span class="fl">0.8</span><span class="op">)</span></code></pre></div>
 </div>
@@ -267,7 +276,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#filter-out-psms-with-high-sample-to-carrier-ratio" class="anchor"></a>Filter out PSMs with high sample to carrier ratio</h2>
 <p>The PSMs are next filtered based on the sample to carrier ratio (SCR), that is the TMT ion intensity of a single-cell sample divided by the TMT ion intensity of the carrier (200 cells) acquired during the same run as the sample. It is expected that the carrier intensities are much higher than the single-cell intensities. We implemented the <code>computeSCR</code> function that computes the SCR for each PSM averaged over all samples of interest in a given assay. A PSM is removed when the mean SCR exceeds 10 %. To perform this, we need to tell the function which columns are the samples of interest and which column is the carrier. The <code>colData</code> of the <code>QFeatures</code> object is used to define this.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="va">scp</span><span class="op">$</span><span class="va">SampleType</span><span class="op">)</span></code></pre></div>
 <pre><code>## 
 ##      Blank    Carrier Macrophage   Monocyte  Reference     Unused 
@@ -281,18 +290,19 @@ Overview of the SCoPE2 workflow.
 <li>The single-cell sample channels contain the single-cell samples of interest (<code>Macrophage</code> or <code>Monocyte</code>).</li>
 </ul>
 <p>The <code>computeSCR</code> function expects the user to provide a pattern (following regular expression syntax) that uniquely identifies a carrier channel in each run and the samples or blanks. The function will store the mean SCR of each feature in the <code>rowData</code> of each assay.</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/computeSCR.html">computeSCR</a></span><span class="op">(</span><span class="va">scp</span>,
                   i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
                   colvar <span class="op">=</span> <span class="st">"SampleType"</span>,
                   carrierPattern <span class="op">=</span> <span class="st">"Carrier"</span>,
-                  samplePattern <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">16</span><span class="op">)</span></code></pre></div>
+                  samplePattern <span class="op">=</span> <span class="fl">4</span><span class="op">:</span><span class="fl">16</span>,
+                  rowDataName <span class="op">=</span> <span class="st">"MeanSCR"</span><span class="op">)</span></code></pre></div>
 <pre><code>## Warning in computeSCR(scp, i = names(scp), colvar = "SampleType", carrierPattern
 ## = "Carrier", : The pattern is numeric. This is only allowed for replicating the
 ## SCoPE2 analysis and will later get defunct.</code></pre>
 <p>In this step, we supplied numeric entries as <code>samplePattern</code> instead of a regular expression pattern. This is to replicate the SCoPE2 analysis. We refrain from using a numeric pattern (as indicated by the warning above) because this can lead to unnoticed artefacts. In fact, the empty channels of the TMT-16 runs but not TMT-11 channels are here also used to compute the average SCR which could have been avoided when using a character pattern.</p>
 <p>Before applying the filter, we plot the distribution of the mean SCR.</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">MeanSCR</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
@@ -302,7 +312,7 @@ Overview of the SCoPE2 workflow.
     <span class="fu">scale_x_log10</span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p><img src="SCoPE2_files/figure-html/meanSCR_plot-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>A great majority of the PSMs have a mean SCR that is lower than 10%, as expected. Interestingly, the mode of the distribution is located close to 1%. This is expected since every sample channel contains a single-cell and the carrier contains 200 cells leading to an expected ratio of 0.5% (dashed line). We remove the PSMs for which the mean SCR exceeds the 10% threshold.</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">scp</span>,
                       <span class="op">~</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">MeanSCR</span><span class="op">)</span> <span class="op">&amp;</span>
                           <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html">is.infinite</a></span><span class="op">(</span><span class="va">MeanSCR</span><span class="op">)</span> <span class="op">&amp;</span>
@@ -313,7 +323,7 @@ Overview of the SCoPE2 workflow.
 <h1 class="hasAnchor">
 <a href="#normalize-to-reference" class="anchor"></a>Normalize to reference</h1>
 <p>In order to partially correct for between-run variation, SCoPE2 computes relative reporter ion intensities. This means that intensities measured for single-cells are divided by the reference channel (5-cell equivalents). We use the <code>divideByReference</code> function that divides channels of interest by the reference channel. Similarly to <code>computeSCR</code>, we can point to the samples and the reference columns in each assay using the annotation contained in the <code>colData</code>. We will here divide all columns (using the regular expression wildcard <code>.</code>) by the reference channel (<code>Reference</code>). Notice that when taking all samples we also include the reference channel itself. Hence, from now on, the reference channels will contain only ones.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/divideByReference.html">divideByReference</a></span><span class="op">(</span><span class="va">scp</span>,
                          i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
                          colvar <span class="op">=</span> <span class="st">"SampleType"</span>,
@@ -324,21 +334,21 @@ Overview of the SCoPE2 workflow.
 <h1 class="hasAnchor">
 <a href="#aggregate-psm-data-to-peptide-data" class="anchor"></a>Aggregate PSM data to peptide data</h1>
 <p>Now that the PSM assays are processed, we can aggregate them to peptides. This is performed using the <code>aggregateFeaturesOverAssays</code> function. This is a wrapper function in <code>scp</code> that sequentially calls the <code>aggregateFeatures</code> from the <code>QFeatures</code> package over the different assays. For each assay, the function aggregates several PSMs into a unique peptide given an aggregating variable in the <code>rowData</code> (peptide sequence) and a user-supplied aggregating function (the median for instance). Regarding the aggregating function, the SCoPE2 analysis removes duplicated peptide sequences per run by taking the first non-missing value. While better alternatives are documented in <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-aggregate.html">QFeatures::aggregateFeatures</a></code>, we still use this approach for the sake of replication and for illustrating that custom functions can be applied.</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">remove.duplicates</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>
     <span class="fu"><a href="https://rdrr.io/r/base/apply.html">apply</a></span><span class="op">(</span><span class="va">x</span>, <span class="fl">2</span>, <span class="kw">function</span><span class="op">(</span><span class="va">xx</span><span class="op">)</span> <span class="va">xx</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">xx</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">)</span></code></pre></div>
 <p>The aggregated peptide assays must be given a name. We here used the original names with <code>peptides_</code> at the start.</p>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">peptideAssays</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste0</a></span><span class="op">(</span><span class="st">"peptides_"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>We now have all the required information to aggregate the PSMs in the different batches to peptides.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/aggregateFeaturesOverAssays.html">aggregateFeaturesOverAssays</a></span><span class="op">(</span><span class="va">scp</span>,
                                    i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>,
                                    fcol <span class="op">=</span> <span class="st">"peptide"</span>,
                                    name <span class="op">=</span> <span class="va">peptideAssays</span>,
                                    fun <span class="op">=</span> <span class="va">remove.duplicates</span><span class="op">)</span></code></pre></div>
 <p>Under the hood, the <code>QFeatures</code> architecture preserves the relationship between the aggregated assays. See <code><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html">?AssayLinks</a></code> for more information on relationships between assays. Notice that <code>aggregateFeaturesOverAssays</code> created as many new assays as the number of supplied assays.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span></code></pre></div>
 <pre><code>## An instance of class QFeatures containing 346 assays:
 ##  [1] 190222S_LCA9_X_FP94AA: SingleCellExperiment with 1098 rows and 11 columns 
@@ -357,7 +367,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#consensus-mapping-of-peptides-to-proteins" class="anchor"></a>Consensus mapping of peptides to proteins</h2>
 <p>We need to account for an issue in the data. <code>joinAssays</code> will only keep the metadata variables that have the same value between matching rows. However, some peptide sequences map to one protein in one run and to another protein in another run. Hence, the protein sequence is not constant for all peptides and is removed during joining. It is important we keep the protein sequence in the <code>rowData</code> since we will later need it to aggregate peptides to proteins. To avoid this issue, we replace the problematic peptides to protein mappings through a majority vote.</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">173</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">group_by</span><span class="op">(</span><span class="va">peptide</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -373,14 +383,14 @@ Overview of the SCoPE2 workflow.
 <span class="op">}</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">consensus</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">peptideAssays</span>
 <span class="fu">rowData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">consensus</span></code></pre></div>
-<p>This code chunk is hard to read, but this issue should represent a special case and we therefore don’t consider this step worth standardizing. Some peptides are mapped to different proteins because the TMT-11 and TMT-16 data sets were analysed separately in MaxQuant. Razor peptides, <em>i.e.</em> peptides that are found in several protein groups, are assigned to the protein group with most peptides (<span class="citation">Tyanova, Temu, and Cox (2016)</span>,) and this can vary from one analysis to another. Therefore, inconsistent peptide mapping should not occur when all runs are preprocessed at once. We will see later that this issue does not impair the replication of the SCoPE2 analysis, but it recalls that mapping of shared peptides to proteins is not a trivial task.</p>
+<p>This code chunk is hard to read, but this issue should represent a special case and we therefore don't consider this step worth standardizing. Some peptides are mapped to different proteins because the TMT-11 and TMT-16 data sets were analysed separately in MaxQuant. Razor peptides, <em>i.e.</em> peptides that are found in several protein groups, are assigned to the protein group with most peptides (<span class="citation">Tyanova, Temu, and Cox (2016)</span>,) and this can vary from one analysis to another. Therefore, inconsistent peptide mapping should not occur when all runs are preprocessed at once. We will see later that this issue does not impair the replication of the SCoPE2 analysis, but it recalls that mapping of shared peptides to proteins is not a trivial task.</p>
 </div>
 <div id="cleaning-missing-data" class="section level2">
 <h2 class="hasAnchor">
 <a href="#cleaning-missing-data" class="anchor"></a>Cleaning missing data</h2>
 <p>Another important step before we join the assays is to replace zero and infinite values by <code>NA</code>s. The zeros can be biological zeros or technical zeros and differentiating between the two types is a difficult task, they are therefore better considered as missing. The infinite values arose during the normalization by the reference because the channel values are divide by a zero from the reference channel. This artefact could easily be avoided if we had replace the zeros by <code>NA</code>s at the beginning of the workflow, what we strongly recommend for future analyses.</p>
 <p>The <code>infIsNA</code> and the <code>zeroIsNA</code> functions automatically detect infinite and zero values, respectively, and replace them with <code>NA</code>s. Those two functions are provided by the <code>QFeatures</code> package.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html">infIsNA</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="va">peptideAssays</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html">zeroIsNA</a></span><span class="op">(</span><span class="va">scp</span>, i <span class="op">=</span> <span class="va">peptideAssays</span><span class="op">)</span></code></pre></div>
 </div>
@@ -388,12 +398,12 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#join-assays" class="anchor"></a>Join assays</h2>
 <p>Now that the peptides are correctly matched to proteins and missing values are correctly formatted, we can join the assays.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/joinAssays.html">joinAssays</a></span><span class="op">(</span><span class="va">scp</span>,
                   i <span class="op">=</span> <span class="va">peptideAssays</span>,
                   name <span class="op">=</span> <span class="st">"peptides"</span><span class="op">)</span></code></pre></div>
 <p><code>joinAssays</code> has created a new assay called <code>peptides</code> that combines the previously aggregated peptide assays.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span></code></pre></div>
 <pre><code>## An instance of class QFeatures containing 347 assays:
 ##  [1] 190222S_LCA9_X_FP94AA: SingleCellExperiment with 1098 rows and 11 columns 
@@ -409,7 +419,7 @@ Overview of the SCoPE2 workflow.
 <h1 class="hasAnchor">
 <a href="#filter-single-cells-based-on-median-cv" class="anchor"></a>Filter single-cells based on median CV</h1>
 <p>The SCoPE2 script proceeds with filtering the single-cells. The filtering is mainly based on the median coefficient of variation (CV) per cell. The median CV measures the consistency of quantification for a group of peptides that belong to a protein. We remove cells that exhibit high median CV over the different proteins. We compute the median CV per cell using the <code>medianCVperCell</code> function from the <code>scp</code> package. The function takes the protein information from the <code>rowData</code> of the assays that will tell how to group the features (peptides) when computing the CV. Note that we supply the peptide assays before joining in a single assays (<code>i = peptideAssays</code>). This is because SCoPE2 performs a custom normalization (<code>norm = "SCoPE2"</code>). Each row in an assay is normalized by a scaling factor. This scaling factor is the row mean after dividing the columns by the median. The authors retained CVs that are computed using at least 6 peptides (<code>nobs = 6</code>). See the methods section in <span class="citation">Specht et al. (2021)</span> for more information.</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/medianCVperCell.html">medianCVperCell</a></span><span class="op">(</span><span class="va">scp</span>,
                        i <span class="op">=</span> <span class="va">peptideAssays</span>,
                        groupBy <span class="op">=</span> <span class="st">"protein"</span>,
@@ -418,7 +428,7 @@ Overview of the SCoPE2 workflow.
                        colDataName <span class="op">=</span> <span class="st">"MedianCV"</span>,
                        norm <span class="op">=</span> <span class="st">"SCoPE2"</span><span class="op">)</span></code></pre></div>
 <p>The computed CVs are stored in the <code>colData</code>. We can now filter cells that have reliable quantifications. The blank samples are not expected to have reliable quantifications and hence can be used to estimate a null distribution of the CV. This distribution helps defining a threshold that filters out single-cells that contain noisy quantification.</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="va">SampleType</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Macrophage"</span>,  <span class="st">"Monocyte"</span>, <span class="st">"Blank"</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -429,7 +439,7 @@ Overview of the SCoPE2 workflow.
 <p><img src="SCoPE2_files/figure-html/medianCV_plot-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>We can see that the protein quantification for single-cells are much more consistent within single-cell channels than within blank channels. A threshold of 0.365 best separates single-cells from empty channels.</p>
 <p>We keep the cells that pass the median CV threshold. Furthermore, we keep macrophages and monocytes as those represent the samples of interest. We can extract the sample names that pass the CV and sample type filters using <code>tidyverse</code> manipulations.</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">rownames_to_column</span><span class="op">(</span><span class="st">"cells"</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -442,11 +452,11 @@ Overview of the SCoPE2 workflow.
 ## [3] "190222S_LCA9_X_FP94AA_RI6" "190222S_LCA9_X_FP94AA_RI7"
 ## [5] "190222S_LCA9_X_FP94AB_RI4" "190222S_LCA9_X_FP94AB_RI5"</code></pre>
 <p>We have already demonstrated how to remove assays from the dataset, but we can apply a similar subsetting for the samples. Recall that the second entry in the <code><a href="https://rdrr.io/r/base/Extract.html">[</a></code> method is for subsetting sample names.</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, <span class="va">keep</span>, <span class="op">]</span></code></pre></div>
 <pre><code>## harmonizing input:
 ##   removing 2 sampleMap rows with 'colname' not in colnames of experiments</code></pre>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span></code></pre></div>
 <pre><code>## An instance of class QFeatures containing 347 assays:
 ##  [1] 190222S_LCA9_X_FP94AA: SingleCellExperiment with 1098 rows and 4 columns 
@@ -465,7 +475,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#normalization" class="anchor"></a>Normalization</h2>
 <p>The columns (samples) of the peptide data are first normalized by dividing the relative intensities by the median relative intensities. Then, the rows (peptides) are normalized by dividing the relative intensities by the mean relative intensities. The first normalization is available from the <code>normalize</code> function and accessible under the <code>div.median</code> method. The second is not available from <code>normalize</code>, but is easily performed using the <code>sweep</code> function from the <code>QFeatures</code> package that is inspired from the <code><a href="https://rdrr.io/r/base/sweep.html">base::sweep</a></code> function.</p>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Scale column with median</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">normalize</a></span><span class="op">(</span><span class="va">scp</span>,
                  i <span class="op">=</span> <span class="st">"peptides"</span>,
@@ -484,7 +494,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#remove-peptides-with-high-missing-rate" class="anchor"></a>Remove peptides with high missing rate</h2>
 <p>Peptides that contain many missing values are not informative. Therefore, we remove those with more than 99 % missing data. This is done using the <code>filterNA</code> function from <code>QFeatures</code>.</p>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html">filterNA</a></span><span class="op">(</span><span class="va">scp</span>,
                 i <span class="op">=</span> <span class="st">"peptides_norm2"</span>,
                 pNA <span class="op">=</span> <span class="fl">0.99</span><span class="op">)</span></code></pre></div>
@@ -493,7 +503,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#log-transformation" class="anchor"></a>Log-transformation</h2>
 <p>The last processing step of the peptide data before aggregating to proteins is to log-transform the data. SCoPE2 uses a base 2 log-transformation and this is implemented in <code>logTransform</code> in <code>QFeatures</code>.</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">logTransform</a></span><span class="op">(</span><span class="va">scp</span>,
                     base <span class="op">=</span> <span class="fl">2</span>,
                     i <span class="op">=</span> <span class="st">"peptides_norm2"</span>,
@@ -503,7 +513,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#the-scope2-peptide-data" class="anchor"></a>The SCoPE2 peptide data</h2>
 <p>Before exporting the data as <code>Peptides-raw.csv</code>, the authors performed an additional normalization step. This step is however not considered in the remainder of the workflow.</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Center columns with median</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">normalize</a></span><span class="op">(</span><span class="va">scp</span>,
                  i <span class="op">=</span> <span class="st">"peptides_log"</span>,
@@ -524,15 +534,12 @@ Overview of the SCoPE2 workflow.
 <h1 class="hasAnchor">
 <a href="#aggregate-peptide-data-to-protein-data" class="anchor"></a>Aggregate peptide data to protein data</h1>
 <p>Similarly to aggregating PSM data to peptide data, we can aggregate peptide data to protein data using the <code>aggregateFeatures</code> function. Note that we here use the median as a summarizing function.</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-aggregate.html">aggregateFeatures</a></span><span class="op">(</span><span class="va">scp</span>,
                          i <span class="op">=</span> <span class="st">"peptides_log"</span>,
                          name <span class="op">=</span> <span class="st">"proteins"</span>,
                          fcol <span class="op">=</span> <span class="st">"protein"</span>,
                          fun <span class="op">=</span> <span class="fu">matrixStats</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/matrixStats/man/rowMedians.html">colMedians</a></span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
-<pre><code>## Your quantitative and row data contain missing values. Please read the
-## relevant section(s) in the aggregateFeatures manual page regarding the
-## effects of missing values on data aggregation.</code></pre>
 </div>
 <div id="process-the-protein-data" class="section level1">
 <h1 class="hasAnchor">
@@ -542,7 +549,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#normalization-1" class="anchor"></a>Normalization</h2>
 <p>Normalization is performed similarly to peptide normalization. We use the same functions, but since the data were log-transformed at the peptide level, we subtract/center by the statistic (median or mean) instead of dividing.</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Center columns with median</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">normalize</a></span><span class="op">(</span><span class="va">scp</span>,
                  i <span class="op">=</span> <span class="st">"proteins"</span>,
@@ -561,7 +568,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#imputation" class="anchor"></a>Imputation</h2>
 <p>The protein data contains a lot of missing values. The graph below shows the distribution of the proportion missingness in cells. Cells contain on average over 75 % missing values!</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">longFormat</a></span><span class="op">(</span><span class="va">scp</span><span class="op">[</span>, , <span class="st">"proteins_norm2"</span><span class="op">]</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
     <span class="fu">group_by</span><span class="op">(</span><span class="va">colname</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -570,14 +577,14 @@ Overview of the SCoPE2 workflow.
     <span class="fu">geom_histogram</span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <pre><code>## Warning: 'experiments' dropped; see 'metadata'</code></pre>
 <p><img src="SCoPE2_files/figure-html/missing_plot-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>The missing data is imputed using K nearest neighbors. The SCoPE2 script runs KNN with k = 3. We made a wrapper around the author’s code to apply imputation to our <code>QFeatures</code> object.</p>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<p>The missing data is imputed using K nearest neighbors. The SCoPE2 script runs KNN with k = 3. We made a wrapper around the author's code to apply imputation to our <code>QFeatures</code> object.</p>
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/imputeKnnSCoPE2.html">imputeKnnSCoPE2</a></span><span class="op">(</span><span class="va">scp</span>,
                        i <span class="op">=</span> <span class="st">"proteins_norm2"</span>,
                        name <span class="op">=</span> <span class="st">"proteins_impd"</span>,
                        k <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
 <p><code>QFeatures</code> provides the <code>impute</code> function that serves as an interface to different imputation algorithms among which the KNN algorithm from <code><a href="https://rdrr.io/pkg/impute/man/impute.knn.html">impute::impute.knn</a></code>. However, the KNN implementation in SCoPE2 and in <code>impute.knn</code> are different. SCoPE2 performs KNN imputation in the sample space, meaning that data from neighbouring cells are used to impute the central cell, whereas <code><a href="https://rdrr.io/pkg/impute/man/impute.knn.html">impute::impute.knn</a></code> performs KNN imputation in the feature space, meaning that data from neighbouring features are used to impute the missing values from the central features. We provide the code for KNN imputation with <code>QFeatures</code> but do not run in order to reproduce the SCoPE2 analysis.</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/impute.html">impute</a></span><span class="op">(</span><span class="va">scp</span>,
               i <span class="op">=</span> <span class="st">"proteins_norm2"</span>,
               method <span class="op">=</span> <span class="st">"knn"</span>,
@@ -588,20 +595,18 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#batch-correction" class="anchor"></a>Batch correction</h2>
 <p>The final step is to model the remaining batch effects and correct for it. The data were acquired as a series of MS runs. Recall we had 177 assays at the beginning of the workflow. Each MS run can be subjected to technical perturbations that lead to differences in the data. This must be accounted for to avoid attributing biological effects to technical effects. The <code>ComBat</code> algorithm (<span class="citation">Johnson, Li, and Rabinovic (2007)</span>) is used in the SCoPE2 script to correct for those batch effects. <code>ComBat</code> is part of the <code>sva</code> package. It requires a batch variable, in this case the LC-MS/MS run, and adjusts for batch effects, while protecting variables of interest, the sample type in this case. All the information is contained in the <code>colData</code> of the <code>QFeatures</code> object. We first extract the assays with the associated <code>colData</code>.</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_impd"</span><span class="op">)</span></code></pre></div>
 <pre><code>## Warning: 'experiments' dropped; see 'metadata'</code></pre>
-<pre><code>## harmonizing input:
-##   removing 16797 sampleMap rows not in names(experiments)</code></pre>
 <p>We next store the batch variable and create the design matrix. We then perform the batch correction and overwrite the data matrix. Recall the data matrix can be accessed using the <code>assay</code> function. Note also that we here use the <code>ComBatv3.34</code> function that is provided in this package. This function was taken from an older version of the <code>sva</code> package (version <code>3.34.0</code>). This is to replicate the SCoPE2 results. More recent versions will avoid batch correction for proteins that show no variance within at least one batch and this occurs for a significant proportion of the proteins (artefact of imputation).</p>
-<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">batch</span> <span class="op">&lt;-</span> <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">Set</span>
 <span class="va">model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/model.matrix.html">model.matrix</a></span><span class="op">(</span><span class="op">~</span> <span class="va">SampleType</span>, data <span class="op">=</span> <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ComBatv3.34.html">ComBatv3.34</a></span><span class="op">(</span>dat <span class="op">=</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span>,
                           batch <span class="op">=</span> <span class="va">batch</span>,
                           mod <span class="op">=</span> <span class="va">model</span><span class="op">)</span></code></pre></div>
 <p>Finally, we add the batch corrected assay to the <code>QFeatures</code> object and create the feature links.</p>
-<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">%&gt;%</span>
     <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">addAssay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">sce</span>,
              name <span class="op">=</span> <span class="st">"proteins_batchC"</span><span class="op">)</span> <span class="op">%&gt;%</span>
@@ -613,7 +618,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#the-scope2-protein-data" class="anchor"></a>The SCoPE2 protein data</h2>
 <p>Before exporting the data as <code>Proteins-processed.csv</code>, the authors performed an additional normalization step.</p>
-<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Center columns with median</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">normalize</a></span><span class="op">(</span><span class="va">scp</span>,
                  i <span class="op">=</span> <span class="st">"proteins_batchC"</span>,
@@ -661,7 +666,7 @@ Overview of the SCoPE2 workflow.
 <h2 class="hasAnchor">
 <a href="#pca" class="anchor"></a>PCA</h2>
 <p>To assess the separability between macrophages and monocytes, Specht and colleagues perform weighted principal component analysis (PCA) on the protein data. The weights are applied to the protein space and the weight of a protein is proportional to the amount of correlation between that protein and the other proteins. The implementation of the weighted PCA was taken from the SCoPE2 script and wrapped in the <code>pcaSCoPE2</code> function that is accessible from within this replication package. We compute the PCA on the SCopE2 protein data and plot the results. This is figure 4a in <span class="citation">Specht et al. (2021)</span>.</p>
-<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">pcaRes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pcaSCoPE2.html">pcaSCoPE2</a></span><span class="op">(</span><span class="va">proteins_SCoPE2</span><span class="op">)</span>
 <span class="co">## Compute percent explained variance</span>
 <span class="va">pcaPercentVar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">pcaRes</span><span class="op">$</span><span class="va">values</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">pcaRes</span><span class="op">$</span><span class="va">values</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span><span class="op">)</span>
@@ -678,7 +683,7 @@ Overview of the SCoPE2 workflow.
     <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"SCoPE2"</span><span class="op">)</span></code></pre></div>
 <p><img src="SCoPE2_files/figure-html/PCA_SCoPE2-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>Below is the resulting PCA when applied on the data processed using the <code>scp</code> package.</p>
-<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">pcaRes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pcaSCoPE2.html">pcaSCoPE2</a></span><span class="op">(</span><span class="va">scp</span><span class="op">[[</span><span class="st">"proteins_scp"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>
 <span class="co">## Compute percent explained variance</span>
 <span class="va">pcaPercentVar</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">pcaRes</span><span class="op">$</span><span class="va">values</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">pcaRes</span><span class="op">$</span><span class="va">values</span><span class="op">)</span> <span class="op">*</span> <span class="fl">100</span><span class="op">)</span>
@@ -696,10 +701,10 @@ Overview of the SCoPE2 workflow.
 <p><img src="SCoPE2_files/figure-html/PCA_scp-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>These two plots are highly similar and further demonstrate the ability to accurately reproduce the SCoPE2 analysis using <code>scp</code>.</p>
 <p>As a side note, the <code>scater</code> Bioconductor packages provides a suite of functions to perform dimension reduction for <code>SingleCellExperiment</code> objects. Since our assays are all <code>SingleCellExperiment</code> objects, we can perform and store standard PCA on the protein data in just a few commands.</p>
-<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="http://bioconductor.org/packages/scater/">scater</a></span><span class="op">)</span></code></pre></div>
 <pre><code>## Loading required package: scuttle</code></pre>
-<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_scp"</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="co">## Perform PCA, see ?runPCA for more info about arguments</span>
     <span class="fu"><a href="https://rdrr.io/pkg/scater/man/runPCA.html">runPCA</a></span><span class="op">(</span>ncomponents <span class="op">=</span> <span class="fl">50</span>,
@@ -710,8 +715,6 @@ Overview of the SCoPE2 workflow.
     <span class="co">## Plotting is performed in a single line of code</span>
     <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotPCA</a></span><span class="op">(</span>colour_by <span class="op">=</span> <span class="st">"SampleType"</span><span class="op">)</span></code></pre></div>
 <pre><code>## Warning: 'experiments' dropped; see 'metadata'</code></pre>
-<pre><code>## harmonizing input:
-##   removing 21378 sampleMap rows not in names(experiments)</code></pre>
 <pre><code>## Warning: Ignoring redundant column names in 'colData(x)':</code></pre>
 <p><img src="SCoPE2_files/figure-html/PCA_scater-1.png" width="70%" style="display: block; margin: auto;"></p>
 <p>This plot is different from the previous plot because this PCA is not weighted.</p>
@@ -729,16 +732,16 @@ Overview of the SCoPE2 workflow.
 <h3 class="hasAnchor">
 <a href="#hardware-and-software" class="anchor"></a>Hardware and software</h3>
 <p>The system details of the machine that built the vignette are:</p>
-<pre><code>## Machine: Linux (5.4.124-1-MANJARO)
-## R version: R.4.1.0 (svn: 80317)
-## RAM: 33.6 GB
-## CPU: 8 core(s) - Intel(R) Core(TM) i7-7700 CPU @ 3.60GHz</code></pre>
+<pre><code>## Machine: Linux (4.15.0-158-generic)
+## R version: R.4.1.0 (svn: 79334)
+## RAM: 8.2 GB
+## CPU: 4 core(s) - Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz</code></pre>
 </div>
 <div id="timing" class="section level3">
 <h3 class="hasAnchor">
 <a href="#timing" class="anchor"></a>Timing</h3>
 <p>The total time required to compile this vignette is:</p>
-<pre><code>## 1.571403 hours</code></pre>
+<pre><code>## 1.771035 hours</code></pre>
 </div>
 <div id="memory" class="section level3">
 <h3 class="hasAnchor">
@@ -749,142 +752,142 @@ Overview of the SCoPE2 workflow.
 <div id="session-info" class="section level3">
 <h3 class="hasAnchor">
 <a href="#session-info" class="anchor"></a>Session info</h3>
-<div class="sourceCode" id="cb80"><pre class="downlit sourceCode r">
+<div class="sourceCode"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
-<pre><code>## R version 4.1.0 (2021-05-18)
+<pre><code>## R Under development (unstable) (2020-10-12 r79334)
 ## Platform: x86_64-pc-linux-gnu (64-bit)
-## Running under: Manjaro Linux
+## Running under: Ubuntu 18.04.5 LTS
 ## 
 ## Matrix products: default
-## BLAS:   /usr/lib/libblas.so.3.9.1
-## LAPACK: /usr/lib/liblapack.so.3.9.1
+## BLAS/LAPACK: /usr/lib/x86_64-linux-gnu/libopenblasp-r0.2.20.so
 ## 
 ## locale:
 ##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
-##  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
-##  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
-##  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+##  [3] LC_TIME=de_BE.UTF-8        LC_COLLATE=en_US.UTF-8    
+##  [5] LC_MONETARY=de_BE.UTF-8    LC_MESSAGES=en_US.UTF-8   
+##  [7] LC_PAPER=de_BE.UTF-8       LC_NAME=C                 
 ##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            
-## [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+## [11] LC_MEASUREMENT=de_BE.UTF-8 LC_IDENTIFICATION=C       
 ## 
 ## attached base packages:
 ## [1] stats4    stats     graphics  grDevices utils     datasets  methods  
 ## [8] base     
 ## 
 ## other attached packages:
-##  [1] benchmarkme_1.0.7           scater_1.21.2              
-##  [3] scuttle_1.3.0               patchwork_1.1.1            
-##  [5] forcats_0.5.1               stringr_1.4.0              
-##  [7] dplyr_1.0.7                 purrr_0.3.4                
-##  [9] readr_1.4.0                 tidyr_1.1.3                
-## [11] tibble_3.1.2                ggplot2_3.3.5              
-## [13] tidyverse_1.3.1             SCP.replication_0.2.1      
-## [15] scpdata_1.1.0               ExperimentHub_2.1.1        
-## [17] AnnotationHub_3.1.3         BiocFileCache_2.1.1        
-## [19] dbplyr_2.1.1                scp_1.3.1                  
-## [21] QFeatures_1.3.5             MultiAssayExperiment_1.19.1
-## [23] SingleCellExperiment_1.15.1 SummarizedExperiment_1.23.1
-## [25] Biobase_2.53.0              GenomicRanges_1.45.0       
-## [27] GenomeInfoDb_1.29.3         IRanges_2.27.0             
-## [29] S4Vectors_0.31.0            BiocGenerics_0.39.1        
-## [31] MatrixGenerics_1.5.1        matrixStats_0.59.0         
-## [33] BiocStyle_2.21.3           
+##  [1] benchmarkme_1.0.7            scater_1.21.7               
+##  [3] scuttle_1.3.1                patchwork_1.1.1             
+##  [5] forcats_0.5.1                stringr_1.4.0               
+##  [7] dplyr_1.0.7                  purrr_0.3.4                 
+##  [9] readr_2.0.2                  tidyr_1.1.4                 
+## [11] tibble_3.1.4                 ggplot2_3.3.5               
+## [13] tidyverse_1.3.1              SCP.replication_0.2.1       
+## [15] scpdata_1.1.0                ExperimentHub_2.1.4         
+## [17] AnnotationHub_3.1.5          BiocFileCache_2.1.1         
+## [19] dbplyr_2.1.1                 scp_1.3.3                   
+## [21] QFeatures_1.3.6              MultiAssayExperiment_1.19.12
+## [23] SingleCellExperiment_1.15.2  SummarizedExperiment_1.23.4 
+## [25] Biobase_2.53.0               GenomicRanges_1.45.0        
+## [27] GenomeInfoDb_1.29.8          IRanges_2.27.2              
+## [29] S4Vectors_0.31.4             BiocGenerics_0.39.2         
+## [31] MatrixGenerics_1.5.4         matrixStats_0.61.0          
+## [33] BiocStyle_2.21.3            
 ## 
 ## loaded via a namespace (and not attached):
 ##   [1] readxl_1.3.1                  backports_1.2.1              
-##   [3] systemfonts_1.0.2             lazyeval_0.2.2               
-##   [5] splines_4.1.0                 BiocParallel_1.27.1          
-##   [7] sva_3.41.0                    digest_0.6.27                
-##   [9] foreach_1.5.1                 htmltools_0.5.1.1            
-##  [11] viridis_0.6.1                 fansi_0.5.0                  
-##  [13] magrittr_2.0.1                memoise_2.0.0                
-##  [15] ScaledMatrix_1.1.0            doParallel_1.0.16            
-##  [17] cluster_2.1.2                 limma_3.49.1                 
-##  [19] Biostrings_2.61.1             annotate_1.71.0              
-##  [21] modelr_0.1.8                  pkgdown_1.6.1                
-##  [23] colorspace_2.0-2              blob_1.2.1                   
-##  [25] rvest_1.0.0                   rappdirs_0.3.3               
-##  [27] textshaping_0.3.5             haven_2.4.1                  
-##  [29] xfun_0.24                     crayon_1.4.1                 
-##  [31] RCurl_1.98-1.3                jsonlite_1.7.2               
-##  [33] genefilter_1.75.0             iterators_1.0.13             
-##  [35] survival_3.2-11               glue_1.4.2                   
-##  [37] gtable_0.3.0                  zlibbioc_1.39.0              
-##  [39] XVector_0.33.0                DelayedArray_0.19.1          
-##  [41] BiocSingular_1.9.1            scales_1.1.1                 
-##  [43] DBI_1.1.1                     edgeR_3.35.0                 
-##  [45] Rcpp_1.0.6                    viridisLite_0.4.0            
-##  [47] xtable_1.8-4                  clue_0.3-59                  
-##  [49] rsvd_1.0.5                    bit_4.0.4                    
-##  [51] MsCoreUtils_1.5.0             httr_1.4.2                   
-##  [53] ellipsis_0.3.2                farver_2.1.0                 
-##  [55] pkgconfig_2.0.3               XML_3.99-0.6                 
-##  [57] sass_0.4.0                    locfit_1.5-9.4               
-##  [59] utf8_1.2.1                    labeling_0.4.2               
-##  [61] tidyselect_1.1.1              rlang_0.4.11                 
-##  [63] later_1.2.0                   AnnotationDbi_1.55.1         
-##  [65] munsell_0.5.0                 BiocVersion_3.14.0           
-##  [67] cellranger_1.1.0              tools_4.1.0                  
-##  [69] cachem_1.0.5                  cli_3.0.0                    
-##  [71] generics_0.1.0                RSQLite_2.2.7                
-##  [73] broom_0.7.8                   evaluate_0.14                
-##  [75] fastmap_1.1.0                 yaml_2.2.1                   
-##  [77] ragg_1.1.3                    knitr_1.33                   
-##  [79] bit64_4.0.5                   fs_1.5.0                     
-##  [81] KEGGREST_1.33.0               AnnotationFilter_1.17.0      
-##  [83] sparseMatrixStats_1.5.0       nlme_3.1-152                 
-##  [85] mime_0.11                     xml2_1.3.2                   
-##  [87] compiler_4.1.0                rstudioapi_0.13              
-##  [89] beeswarm_0.4.0                filelock_1.0.2               
-##  [91] curl_4.3.2                    png_0.1-7                    
-##  [93] interactiveDisplayBase_1.31.0 reprex_2.0.0                 
-##  [95] bslib_0.2.5.1                 stringi_1.6.2                
-##  [97] highr_0.9                     desc_1.3.0                   
-##  [99] lattice_0.20-44               ProtGenerics_1.25.2          
-## [101] Matrix_1.3-4                  vctrs_0.3.8                  
-## [103] pillar_1.6.1                  lifecycle_1.0.0              
-## [105] BiocManager_1.30.16           jquerylib_0.1.4              
-## [107] BiocNeighbors_1.11.0          cowplot_1.1.1                
-## [109] irlba_2.3.3                   bitops_1.0-7                 
-## [111] httpuv_1.6.1                  R6_2.5.0                     
-## [113] bookdown_0.22                 promises_1.2.0.1             
-## [115] gridExtra_2.3                 vipor_0.4.5                  
-## [117] codetools_0.2-18              benchmarkmeData_1.0.4        
-## [119] MASS_7.3-54                   assertthat_0.2.1             
-## [121] rprojroot_2.0.2               withr_2.4.2                  
-## [123] GenomeInfoDbData_1.2.6        mgcv_1.8-36                  
-## [125] parallel_4.1.0                hms_1.1.0                    
-## [127] beachmat_2.9.0                grid_4.1.0                   
-## [129] DelayedMatrixStats_1.15.0     rmarkdown_2.9                
-## [131] shiny_1.6.0                   lubridate_1.7.10             
-## [133] ggbeeswarm_0.6.0</code></pre>
+##   [3] systemfonts_1.0.2             igraph_1.2.6                 
+##   [5] lazyeval_0.2.2                splines_4.1.0                
+##   [7] BiocParallel_1.27.10          sva_3.41.0                   
+##   [9] digest_0.6.28                 foreach_1.5.1                
+##  [11] htmltools_0.5.2               viridis_0.6.1                
+##  [13] fansi_0.5.0                   magrittr_2.0.1               
+##  [15] memoise_2.0.0                 ScaledMatrix_1.1.0           
+##  [17] doParallel_1.0.16             cluster_2.1.2                
+##  [19] tzdb_0.1.2                    limma_3.49.4                 
+##  [21] Biostrings_2.61.2             annotate_1.71.0              
+##  [23] modelr_0.1.8                  pkgdown_1.6.1                
+##  [25] colorspace_2.0-2              ggrepel_0.9.1                
+##  [27] blob_1.2.2                    rvest_1.0.1                  
+##  [29] rappdirs_0.3.3                textshaping_0.3.5            
+##  [31] haven_2.4.3                   xfun_0.26                    
+##  [33] crayon_1.4.1                  RCurl_1.98-1.5               
+##  [35] jsonlite_1.7.2                genefilter_1.75.1            
+##  [37] iterators_1.0.13              survival_3.2-13              
+##  [39] glue_1.4.2                    gtable_0.3.0                 
+##  [41] zlibbioc_1.39.0               XVector_0.33.0               
+##  [43] DelayedArray_0.19.4           BiocSingular_1.9.1           
+##  [45] scales_1.1.1                  DBI_1.1.1                    
+##  [47] edgeR_3.35.1                  Rcpp_1.0.7                   
+##  [49] viridisLite_0.4.0             xtable_1.8-4                 
+##  [51] clue_0.3-59                   rsvd_1.0.5                   
+##  [53] bit_4.0.4                     MsCoreUtils_1.5.1            
+##  [55] httr_1.4.2                    ellipsis_0.3.2               
+##  [57] farver_2.1.0                  pkgconfig_2.0.3              
+##  [59] XML_3.99-0.8                  sass_0.4.0                   
+##  [61] locfit_1.5-9.4                utf8_1.2.2                   
+##  [63] labeling_0.4.2                tidyselect_1.1.1             
+##  [65] rlang_0.4.11                  later_1.3.0                  
+##  [67] AnnotationDbi_1.55.1          munsell_0.5.0                
+##  [69] BiocVersion_3.14.0            cellranger_1.1.0             
+##  [71] tools_4.1.0                   cachem_1.0.6                 
+##  [73] cli_3.0.1                     generics_0.1.0               
+##  [75] RSQLite_2.2.8                 broom_0.7.9                  
+##  [77] evaluate_0.14                 fastmap_1.1.0                
+##  [79] yaml_2.2.1                    ragg_1.1.3                   
+##  [81] knitr_1.36                    bit64_4.0.5                  
+##  [83] fs_1.5.0                      KEGGREST_1.33.0              
+##  [85] AnnotationFilter_1.17.1       sparseMatrixStats_1.5.3      
+##  [87] nlme_3.1-153                  mime_0.12                    
+##  [89] xml2_1.3.2                    rstudioapi_0.13              
+##  [91] compiler_4.1.0                beeswarm_0.4.0               
+##  [93] filelock_1.0.2                curl_4.3.2                   
+##  [95] png_0.1-7                     interactiveDisplayBase_1.31.2
+##  [97] reprex_2.0.1                  bslib_0.3.0                  
+##  [99] stringi_1.7.4                 highr_0.9                    
+## [101] desc_1.4.0                    lattice_0.20-45              
+## [103] ProtGenerics_1.25.1           Matrix_1.3-4                 
+## [105] vctrs_0.3.8                   pillar_1.6.3                 
+## [107] lifecycle_1.0.1               BiocManager_1.30.16          
+## [109] jquerylib_0.1.4               BiocNeighbors_1.11.0         
+## [111] cowplot_1.1.1                 irlba_2.3.3                  
+## [113] bitops_1.0-7                  httpuv_1.6.3                 
+## [115] R6_2.5.1                      bookdown_0.24                
+## [117] promises_1.2.0.1              gridExtra_2.3                
+## [119] vipor_0.4.5                   codetools_0.2-18             
+## [121] benchmarkmeData_1.0.4         MASS_7.3-54                  
+## [123] assertthat_0.2.1              rprojroot_2.0.2              
+## [125] withr_2.4.2                   GenomeInfoDbData_1.2.7       
+## [127] mgcv_1.8-37                   parallel_4.1.0               
+## [129] hms_1.1.1                     beachmat_2.9.1               
+## [131] grid_4.1.0                    DelayedMatrixStats_1.15.4    
+## [133] rmarkdown_2.11                shiny_1.7.0                  
+## [135] lubridate_1.7.10              ggbeeswarm_0.6.0</code></pre>
 </div>
 </div>
 <div id="reference" class="section level1 unnumbered">
 <h1 class="hasAnchor">
 <a href="#reference" class="anchor"></a>Reference</h1>
-<div id="refs" class="references csl-bib-body hanging-indent">
-<div id="ref-Chen2019-uc" class="csl-entry">
-Chen, Albert Tian, Alexander Franks, and Nikolai Slavov. 2019. <span>“<span>DART-ID</span> Increases Single-Cell Proteome Coverage.”</span> <em>PLoS Comput. Biol.</em> 15 (7): e1007082.
+<div id="refs" class="references">
+<div id="ref-Chen2019-uc">
+<p>Chen, Albert Tian, Alexander Franks, and Nikolai Slavov. 2019. “DART-ID Increases Single-Cell Proteome Coverage.” <em>PLoS Comput. Biol.</em> 15 (7): e1007082.</p>
 </div>
-<div id="ref-Johnson2007-nc" class="csl-entry">
-Johnson, W Evan, Cheng Li, and Ariel Rabinovic. 2007. <span>“Adjusting Batch Effects in Microarray Expression Data Using Empirical Bayes Methods.”</span> <em>Biostatistics</em> 8 (1): 118–27.
+<div id="ref-Johnson2007-nc">
+<p>Johnson, W Evan, Cheng Li, and Ariel Rabinovic. 2007. “Adjusting Batch Effects in Microarray Expression Data Using Empirical Bayes Methods.” <em>Biostatistics</em> 8 (1): 118–27.</p>
 </div>
-<div id="ref-Kall2008-hb" class="csl-entry">
-Käll, Lukas, John D Storey, Michael J MacCoss, and William Stafford Noble. 2008. <span>“Posterior Error Probabilities and False Discovery Rates: Two Sides of the Same Coin.”</span> <em>J. Proteome Res.</em> 7 (1): 40–44.
+<div id="ref-Kall2008-hb">
+<p>Käll, Lukas, John D Storey, Michael J MacCoss, and William Stafford Noble. 2008. “Posterior Error Probabilities and False Discovery Rates: Two Sides of the Same Coin.” <em>J. Proteome Res.</em> 7 (1): 40–44.</p>
 </div>
-<div id="ref-Specht2021-jm" class="csl-entry">
-Specht, Harrison, Edward Emmott, Aleksandra A Petelski, R Gray Huffman, David H Perlman, Marco Serra, Peter Kharchenko, Antonius Koller, and Nikolai Slavov. 2021. <span>“Single-Cell Proteomic and Transcriptomic Analysis of Macrophage Heterogeneity Using <span>SCoPE2</span>.”</span> <em>Genome Biol.</em> 22 (1): 50.
+<div id="ref-Specht2021-jm">
+<p>Specht, Harrison, Edward Emmott, Aleksandra A Petelski, R Gray Huffman, David H Perlman, Marco Serra, Peter Kharchenko, Antonius Koller, and Nikolai Slavov. 2021. “Single-Cell Proteomic and Transcriptomic Analysis of Macrophage Heterogeneity Using SCoPE2.” <em>Genome Biol.</em> 22 (1): 50.</p>
 </div>
-<div id="ref-Tyanova2016-yj" class="csl-entry">
-Tyanova, Stefka, Tikira Temu, and Juergen Cox. 2016. <span>“The <span>MaxQuant</span> Computational Platform for Mass Spectrometry-Based Shotgun Proteomics.”</span> <em>Nat. Protoc.</em> 11 (12): 2301–19.
+<div id="ref-Tyanova2016-yj">
+<p>Tyanova, Stefka, Tikira Temu, and Juergen Cox. 2016. “The MaxQuant Computational Platform for Mass Spectrometry-Based Shotgun Proteomics.” <em>Nat. Protoc.</em> 11 (12): 2301–19.</p>
 </div>
 </div>
 </div>
 <div class="footnotes">
 <hr>
 <ol>
-<li id="fn1"><p><a href="mailto:christophe.vanderaa@uclouvain.be" class="email">christophe.vanderaa@uclouvain.be</a><a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p><a href="mailto:christophe.vanderaa@uclouvain.be">christophe.vanderaa@uclouvain.be</a><a href="#fnref1">↩</a></p></li>
 </ol>
 </div>
   </div>
