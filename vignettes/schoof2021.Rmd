@@ -1,7 +1,7 @@
 ---
 title: "Reproduction of the AML model analysis (Schoof et al. 2021)"
 author: 
-  - Christophe Vanderaa, Computational %>% Biology, UCLouvain
+  - Christophe Vanderaa, Computational Biology, UCLouvain
   - Laurent Gatto, Computational Biology, UCLouvain
 date: \today
 output:
