@@ -63,12 +63,6 @@
       <a href="../articles/schoof2021.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
     </li>
     <li>
-      <a href="../articles/schoof2021_R.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
-    </li>
-    <li>
-      <a href="../articles/schoof2021_python.html">Reproduction of the AML model analysis with python (Schoof et al. 2021)</a>
-    </li>
-    <li>
       <a href="../articles/zhu2019EL.html">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a>
     </li>
   </ul>
@@ -84,11 +78,11 @@
 
       
 
-      </header><div class="row">
+      </header><script src="schoof2021_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Reproduction of the AML model analysis (Schoof et al. 2021)</h1>
-                        <h4 class="author">Christophe Vanderaa, Computational %&gt;% Biology, UCLouvain</h4>
+      <h1 data-toc-skip>Reproduction of the AML model analysis (Schoof et al. 2021)</h1>
+                        <h4 class="author">Christophe Vanderaa, Computational Biology, UCLouvain</h4>
                         <h4 class="author">Laurent Gatto, Computational Biology, UCLouvain</h4>
             
       
@@ -106,7 +100,7 @@
 <p>The research question here is whether SCP is able to retrieve the different population that occur in the AML model. In this culture, we expect to find a small population of leukemic stem cells (LSC) that are CD34+ and CD38-. This population has the ability of self renewal or to differentiate into progenitor cells (PROG) that loose the self renewal ability and start to express CD38+. The PROG progressively differentiate into blast cells (BLAST) that loose the expression of CD38. The CD34/CD38 expression profiles in this model is already well characterized thanks to flow cytometry. A great advantage of the data set provided in <span class="citation">Schoof et al. (2021)</span> is that the flow cytometry data is also available. This allows for a characterization of the cell types before starting the data analysis on the SCP data.</p>
 <p>The authors performed the analysis using <code>python</code> and made the effort to provide the code needed to reproduce the results of the article. Furthermore, they developed a library called <code>SCeptre</code> that extends the <code>scanpy</code> library, a python library to process scRNA-Seq data. This vignette replicates this analysis in <code>R</code> using our recently developed <code>scp</code> package.</p>
 <p>Before starting, we load the replication package to make use of some helper functions. Those functions are only meant for this reproduction vignette and are not designed for general use.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"SCP.replication"</span><span class="op">)</span></code></pre></div>
 <div id="scp-workflow-and-data-structure" class="section level3">
 <h3 class="hasAnchor">
@@ -114,7 +108,7 @@
 <p>The data processing workflow we carry out in this vignette is converted or takes the <code>R</code> equivalent of the <code>python</code> scripts and libraries provided in this <a href="https://github.com/bfurtwa/SCeptre">GitHub repository</a>.</p>
 <p>To perform SCP data analysis in <code>R</code>, we make use of our data framework that combines two existing Bioconductor classes. The <code>SingleCellExperiment</code> class provides an interface to many cutting edge methods for single-cell analysis and the <code>QFeatures</code> class facilitates manipulation and processing of MS-based quantitative data. The <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html"><code>scp</code> vignette</a> provides detailed information about the data structure. The <code>scp</code> package extends the functionality of <code>QFeatures</code> for single-cell application.</p>
 <p>The required packages for running this workflow are listed below.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Core packages of this workflow</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"SingleCellExperiment"</span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/RforMassSpectrometry/QFeatures">"QFeatures"</a></span><span class="op">)</span>
@@ -128,28 +122,30 @@
 <h3 class="hasAnchor">
 <a href="#scpdata-and-the-aml-differentiation-dataset" class="anchor"></a><code>scpdata</code> and the AML differentiation dataset</h3>
 <p>We also implemented a data package called <code>scpdata</code>. It distributes published MS-SCP datasets, such as the dataset that will be analysed in this vignette. The data were downloaded from the data source provided in the publication and formatted to a <code>QFeatures</code> object so that it is compatible with our software. The underlying data storage is based on the <code>ExperimentHub</code> package that provides a cloud-based storage infrastructure.</p>
-<p>The dataset we uploaded to <code>scpdata</code> is the so called "bulk" dataset that contains 3072 single-cells. The authors refer to it as the bulk dataset because the cell were not sorted by flow cytometry but rather processed using an unbiased cell isolation. The dataset was retrieved from the PRIDE repository (accession ID: PXD020586). It contains a zip file with all the quantitative data and the sample annotations. The dataset contains two types of quantitative data: quantified peptide to spectrum match (PSM) data and protein data. They were generated after running ProteomeDiscoverer on the raw MS files. The quantification data are given as signal to noise ratios (S/N). See <code>?schoof2021</code> for more info about data acquisition and data formatting.</p>
+<p>The dataset we uploaded to <code>scpdata</code> is the so called “bulk” dataset that contains 3072 single-cells. The authors refer to it as the bulk dataset because the cell were not sorted by flow cytometry but rather processed using an unbiased cell isolation. The dataset was retrieved from the PRIDE repository (accession ID: PXD020586). It contains a zip file with all the quantitative data and the sample annotations. The dataset contains two types of quantitative data: quantified peptide to spectrum match (PSM) data and protein data. They were generated after running ProteomeDiscoverer on the raw MS files. The quantification data are given as signal to noise ratios (S/N). See <code>?schoof2021</code> for more info about data acquisition and data formatting.</p>
 <p>The formatted data can be retrieved from the <code>scpdata</code> package using the <code>schoof2021()</code> function.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/load.html">load</a></span><span class="op">(</span><span class="st">"~/PhD/.localdata/scpdata/schoof2021.Rda"</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">schoof2021</span>
 <span class="co"># scp &lt;- schoof2021()</span></code></pre></div>
-<p>The data contain 194 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature annotations. Each row in an assay represents a <strong>feature</strong> that can either be a PSM or a protein depending on the assay. Each column in an assay represents a <strong>sample</strong>. Below, we show the overview of the <code>scp</code> dataset.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<p>The dataset contains PSM and protein data generated by Proteome Discoverer. It also contains the protein data after processing by the authors using the SCeptre workflow. We extract the processed protein data in a separate variable that we will use later to benchmark the replication of the data processing using <code>scp</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">sce_sceptre</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"logNormProteins"</span><span class="op">)</span>
+<span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
+<span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">:</span><span class="fl">193</span><span class="op">]</span>
+<span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></code></pre></div>
+<p>The data now contain 194 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature annotations. Each row in an assay represents a <strong>feature</strong> that can either be a PSM or a protein depending on the assay. Each column in an assay represents a <strong>sample</strong>. Below, we show the overview of the <code>scp</code> dataset.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span>
-<span class="co">## An instance of class QFeatures containing 194 assays:</span>
+<span class="co">## An instance of class QFeatures containing 193 assays:</span>
 <span class="co">##  [1] F1: SingleCellExperiment with 4455 rows and 16 columns </span>
 <span class="co">##  [2] F10: SingleCellExperiment with 4604 rows and 16 columns </span>
 <span class="co">##  [3] F100: SingleCellExperiment with 5056 rows and 16 columns </span>
 <span class="co">##  ...</span>
+<span class="co">##  [191] F98: SingleCellExperiment with 4025 rows and 16 columns </span>
 <span class="co">##  [192] F99: SingleCellExperiment with 3898 rows and 16 columns </span>
-<span class="co">##  [193] proteins: SingleCellExperiment with 2898 rows and 3072 columns </span>
-<span class="co">##  [194] logNormProteins: SingleCellExperiment with 2723 rows and 2025 columns</span></code></pre></div>
-<p>The 192 first assays contain the PSM quantifications for each run. PSMs were quantified and identified by ProteomeDiscoverer. The samples were acquired using a TMT-16 labelling protocol meaning that every run contains 16 samples and therefore every assay contains 16 columns. The <code>proteins</code> assay contains the protein quantifications also generated by ProteomeDiscoverer and the <code>logNormProteins</code> assay contains the protein data processed by the authors using the SCeptre workflow. We store the later assay as a separate <code>SingleCellExperiment</code> object that we will use later to benchmark the replication of the data processing using <code>scp</code>. Note that a <code>QFeatures</code> object can be seen as a three-order array: <span class="math inline">\(features \times samples \times assay\)</span>. Hence, <code>QFeatures</code> supports three-order subsetting <code>x[rows, columns, assays]</code>. We here extract the last assay, and remove it from the <code>QFeatures</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">sce_sceptre</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[[</span><span class="st">"logNormProteins"</span><span class="op">]</span><span class="op">]</span>
-<span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">:</span><span class="fl">193</span><span class="op">]</span>
-<span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></code></pre></div>
+<span class="co">##  [193] proteins: SingleCellExperiment with 2898 rows and 3072 columns</span></code></pre></div>
+<p>The 192 first assays contain the PSM quantifications for each run. The samples were acquired using a TMT-16 labelling protocol meaning that every run contains 16 samples and therefore every assay contains 16 columns. The <code>proteins</code> assay contains the protein quantifications.</p>
 <p>The sample annotation can be found in the <code>colData</code> of the dataset. The most informative annotation fields are:</p>
 <ul>
 <li>
@@ -161,9 +157,9 @@
 <li>
 <code>SampleType</code>: samples are either boosters (200-cell equivalents), empty wells, normalization channels (10-cell equivalents), or single</li>
 <li>
-<code>FSC.A</code>, <code>FSC.H</code>, ..., <code>APC.Cy7.A</code>, <code>PE.A</code>: the flow cytometry data acquired during the single-cell isolation.</li>
+<code>FSC.A</code>, <code>FSC.H</code>, …, <code>APC.Cy7.A</code>, <code>PE.A</code>: the flow cytometry data acquired during the single-cell isolation.</li>
 </ul>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## DataFrame with 6 rows and 32 columns</span>
 <span class="co">##         File.ID  Channel Input.Files.Workflow.ID Input.Files.Workflow.Level</span>
@@ -223,10 +219,10 @@
 <span class="co">## F1128C         1</span>
 <span class="co">## F1129N         1</span></code></pre></div>
 <p>Throughout the vignette, we will use <code>ggplot2</code> from the <code>tidyverse</code> project (<span class="citation">Wickham et al. (2019)</span>) to visualize the data. As an example, we plot how the different cell types are distributed across batches.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>
-    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">Population</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
+    <span class="fu"><a href="https://rdrr.io/r/stats/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">Population</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">Population</span>, 
         x <span class="op">=</span> <span class="va">File.ID</span>,
@@ -259,7 +255,7 @@
 <h2 class="hasAnchor">
 <a href="#psms-per-run" class="anchor"></a>PSMs per run</h2>
 <p>The number of features and samples per assay in a <code>QFeatures</code> object is retrieved using <code>dims</code>. After removing the last assay (<code>proteins</code>), we plot the histogram with the number of features for the remaining assays (<em>i.e.</em> PSMs).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">npsms</span> <span class="op">&lt;-</span> <span class="fu">dims</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span>, <span class="op">-</span><span class="fl">193</span><span class="op">]</span>
 <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>npsms <span class="op">=</span> <span class="va">npsms</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
@@ -267,7 +263,7 @@
     <span class="fu">geom_histogram</span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-5-1.png" width="384"></p>
 <p>The plot indicates that a few runs failed with low number of PSMs.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">npsms</span><span class="op">)</span><span class="op">[</span><span class="va">npsms</span> <span class="op">&lt;</span> <span class="fl">3000</span><span class="op">]</span>
 <span class="co">## [1] "F117" "F44"  "F5"   "F58"</span></code></pre></div>
 <p>4 assays have less than 3000 PSMs and were flagged by the authors as failedd MS runs.</p>
@@ -276,8 +272,8 @@
 <h2 class="hasAnchor">
 <a href="#intensity-distributions" class="anchor"></a>Intensity distributions</h2>
 <p>We expect similar average reporter signal to noise (S/N) distributions across MS runs. The averages are already computed for each PSM by ProteomeDiscover and correspond to the reporter intensities averaged over the 16 TMT channels divided by the noise estimated from the corresponding MS spectrum. The higher the S/N, the higher the signal quality.</p>
-<p>The average S/N is available from the <code>rowData</code> of the PSM assays. We here collect and combine the <code>rowData</code> from different assays using the <code>rbindRowData</code> function that will return a single <code>DataFrame</code> table with all the feature annotation columns common to all assays. Note that we don't plot all assays to avoid a crowded plot. We selected 4 representative and successful MS runs and the 4 MS runs that have failed (we store this information in the table).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<p>The average S/N is available from the <code>rowData</code> of the PSM assays. We here collect and combine the <code>rowData</code> from different assays using the <code>rbindRowData</code> function that will return a single <code>DataFrame</code> table with all the feature annotation columns common to all assays. Note that we don’t plot all assays to avoid a crowded plot. We selected 4 representative and successful MS runs and the 4 MS runs that have failed (we store this information in the table).</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## A few selected runs</span>
 <span class="va">succeeded</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"F26"</span>, <span class="st">"F72"</span>, <span class="st">"F108"</span>, <span class="st">"F133"</span><span class="op">)</span>
 <span class="va">failed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"F5"</span>, <span class="st">"F44"</span>, <span class="st">"F58"</span>, <span class="st">"F117"</span><span class="op">)</span>
@@ -286,7 +282,7 @@
 <span class="co">## Add whether a run is flagged as failed or succeeded</span>
 <span class="va">rd</span><span class="op">$</span><span class="va">failed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">rd</span><span class="op">$</span><span class="va">assay</span> <span class="op">%in%</span> <span class="va">failed</span>, <span class="st">"failed"</span>, <span class="st">"succeeded"</span><span class="op">)</span></code></pre></div>
 <p>We plot the average S/N (stored under <code>Average.Reporter.SN</code>) as separate boxplots for each MS runs. The figure is split in 2 panels depending on whether the MS runs succeeded of failed.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">rd</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">Average.Reporter.SN</span>,
         x <span class="op">=</span> <span class="va">assay</span><span class="op">)</span> <span class="op">+</span>
@@ -300,7 +296,7 @@
 <h2 class="hasAnchor">
 <a href="#isolation-interference" class="anchor"></a>Isolation interference</h2>
 <p>Similarly to the average S/N, we can also explore the isolation interference that gives the percentage of signal that is attributed to co-isolated peptides. We plot the percent isolation interference (stored under <code>Isolation.Interference.in.Percent</code>) using the same layout as above.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">rd</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">Isolation.Interference.in.Percent</span>,
         x <span class="op">=</span> <span class="va">assay</span><span class="op">)</span> <span class="op">+</span>
@@ -312,8 +308,8 @@
 <div id="median-sn-per-channel" class="section level2">
 <h2 class="hasAnchor">
 <a href="#median-sn-per-channel" class="anchor"></a>Median S/N per channel</h2>
-<p>The authors next explored the median S/N per channel for all MS runs. This time, the median S/N has to be computed. First, we focus on the 4 succeeded and the 4 failed assays that were selected above.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<p>The authors next explored the median S/N per channel for all MS runs. This time, the median S/N has to be computed. First, we focus on the 4 succeeded and the 4 failed assays that were selected above. Note that a <code>QFeatures</code> object can be seen as a three-order array: <span class="math inline">\(features \times samples \times assay\)</span>. Hence, <code>QFeatures</code> supports three-order subsetting <code>x[rows, columns, assays]</code>.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="op">(</span><span class="va">sub</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span>, , <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">succeeded</span>, <span class="va">failed</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>
 <span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
 <span class="co">## An instance of class QFeatures containing 8 assays:</span>
@@ -325,7 +321,7 @@
 <span class="co">##  [7] F58: SingleCellExperiment with 2727 rows and 16 columns </span>
 <span class="co">##  [8] F117: SingleCellExperiment with 202 rows and 16 columns</span></code></pre></div>
 <p>Then, we retrieve the S/N quantifications along with the sample annotations (<code>Channel</code> and <code>Population</code>) using the <code>longFormat</code> function. This function will create a long table from the <code>QFeatures</code> object where each row corresponds to a single quantification.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">longFormat</a></span><span class="op">(</span><span class="va">sub</span>, colvars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Channel"</span>, <span class="st">"Population"</span><span class="op">)</span><span class="op">)</span>
 <span class="va">lf</span><span class="op">$</span><span class="va">failed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html">ifelse</a></span><span class="op">(</span><span class="va">lf</span><span class="op">$</span><span class="va">assay</span> <span class="op">%in%</span> <span class="va">failed</span>, <span class="st">"failed"</span>, <span class="st">"succeeded"</span><span class="op">)</span>
 <span class="va">lf</span>
@@ -356,18 +352,18 @@
 <span class="co">## 348430 BLAST CD38...      failed</span>
 <span class="co">## 348431 BLAST CD38...      failed</span>
 <span class="co">## 348432 BLAST CD38...      failed</span></code></pre></div>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># channelOrder &lt;- c("126", "127N", "127C", "128N", "128C", "129N", "129C",</span>
 <span class="co">#                   "130N", "130C", "131N", "131C", "132N", "132C", "133N",</span>
 <span class="co">#                   "133C", "134N")</span>
 <span class="co"># lf$Channel &lt;- factor(lf$Channel, levels = channelOrder)</span></code></pre></div>
 <p>We then need to compute the median S/N grouped by assay and channel. This performed using <code>dplyr</code> functionality.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">lf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lf</span><span class="op">)</span>,
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">lf</span> <span class="op">&lt;-</span> <span class="fu">group_by</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lf</span><span class="op">)</span>,
                <span class="va">assay</span>, <span class="va">Channel</span>, <span class="va">failed</span>, <span class="va">Population</span><span class="op">)</span>
 <span class="va">lfsumm</span> <span class="op">&lt;-</span> <span class="fu">summarize</span><span class="op">(</span><span class="va">lf</span>, medianSN <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">value</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>We can now plot the median S/N for each channel in each assay. We also add a colouring scheme depending on the type of cell that was acquired per channel. Note the y-axis is displayed on a log10 scale.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="va">lfsumm</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">Channel</span>, 
         y <span class="op">=</span> <span class="va">medianSN</span>, 
@@ -390,14 +386,14 @@
 <a href="#remove-contaminants" class="anchor"></a>Remove contaminants</h2>
 <p>Contaminant proteins were flagged when create the <code>QFeatures</code> object in the <code>scpdata</code> package. This was performed by matching the protein accession from the dataset from a list of known contaminants (provided by the authors). Whether a protein is a contaminant or not is contained in the feature annotation as the <code>isContaminant</code> field. We can directly filter this variable using the <code>filterFeatures</code> function that will retrieve the required data from the <code>rowData</code> of each assay.</p>
 <p>We keep only features that are not matched to a contaminant protein.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">scp</span>, <span class="op">~</span> <span class="op">!</span><span class="va">isContaminant</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="remove-failed-runs" class="section level2">
 <h2 class="hasAnchor">
 <a href="#remove-failed-runs" class="anchor"></a>Remove failed runs</h2>
 <p>Next, we remove the failed runs that we flagged using the second index subsetting to remove the failed samples from the PSM as well as the protein data.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">scp</span>, <span class="op">!</span><span class="va">scp</span><span class="op">$</span><span class="va">File.ID</span> <span class="op">%in%</span> <span class="va">failed</span><span class="op">)</span>
 <span class="co">## Takes 90 sec, but could probably be faster -&gt; open issue</span></code></pre></div>
 </div>
@@ -406,16 +402,16 @@
 <a href="#keep-only-single-cells" class="anchor"></a>Keep only single cells</h2>
 <p>Finally, we keep only single-cell samples. The MS acquisitions contain different sample types. There is the booster channel that was mentioned above containing the equivalent of 200 cells. The 127N channel contains a reference sample with 10-cell equivalents and the 127C channel is left empty to due to cross-contamination of the 126 booster channel. Finally, a few negative controls (samples prepared as single-cell samples but lack a cell) were randomly included in the different MS runs.</p>
 <p>Before performing the filter, we show that negative controls can be discriminated from single-cells based on the number of detected proteins and the summed quantifications in each sample. This is a reassuring indicator of data quality. To perform this, we run sample quality control using the <code>scuttle</code> package that offers utility functions for scRNA-Seq analysis. Those function can be directly applied to our assays since they are stored as <code>SingleCellExperiment</code> objects. We therefore extract the protein assay along with the sample annotation using the <code>getWithColData</code>. Then, we replace missing values by zero as expected by the <code>scuttle</code> package.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins"</span><span class="op">)</span>
 <span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
 <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/impute.html">impute</a></span><span class="op">(</span><span class="va">sce</span>, method <span class="op">=</span> <span class="st">"zero"</span><span class="op">)</span></code></pre></div>
 <p>We then apply the <code>perCellQCMetrics</code> function that computes the number of detected features and the summed abundance per sample.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"scuttle"</span><span class="op">)</span>
 <span class="va">qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scuttle/man/perCellQCMetrics.html">perCellQCMetrics</a></span><span class="op">(</span><span class="va">sce</span>, assay.type <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>We then combine the computed QC with the sample annotation and plot the sample QC data.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">qc</span>, <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">qc</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">qc</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log2</a></span><span class="op">(</span><span class="va">sum</span><span class="op">)</span>,
@@ -425,7 +421,7 @@
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-19-1.png" width="700"></p>
 <p>First, we can clearly see that booster and reference channels show higher total signal. This is expected since those channels contains more material than the single-cell samples. However, those channels cannot be discriminated based on the number of quantified proteins. Next, the <code>emtpy</code> empty channels (no TMT label added) are clearly separated from the single-cell channels both based on the number of quantified proteins and the summed signal. Finally, the negative control samples overlap with the lower tail of the single-cell samples both for the number of proteins and the summed signal. The overlapping single-cells should be removed, but we will see in a later section that those cells are removed during cell QC.</p>
 <p>We now remove all samples but the single-cell samples.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">scp</span>, <span class="va">scp</span><span class="op">$</span><span class="va">SampleType</span> <span class="op">==</span> <span class="st">"sc"</span><span class="op">)</span>
 <span class="va">scp</span><span class="op">@</span><span class="va">assayLinks</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">@</span><span class="va">assayLinks</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">]</span></code></pre></div>
 </div>
@@ -435,7 +431,7 @@
 <a href="#normalization-i" class="anchor"></a>Normalization I</h1>
 <p>The dataset needs to be processed before running downstream analyses. The first step the authors take is normalizing the data. To perform this, they implemented a new normalization method and included it in their <code>sceptre</code> Python module. Their normalization method aims to remove channel and MS run biases. This is often also called batch correction.</p>
 <p>We extract the assay to normalize using <code>getWithColData</code>. The normalization method in <code>sceptre</code> expects that the sample annotation <code>File ID</code> is present. We therefore adapt the corresponding column name as requested.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins"</span><span class="op">)</span>
 <span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
 <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"File ID"</span>
@@ -453,19 +449,19 @@
 <span class="co">## mainExpName: NULL</span>
 <span class="co">## altExpNames(0):</span></code></pre></div>
 <p>We are now faced with an issue. The algorithm we want to apply is only available in Python whereas this script is written in R. Luckily, we can make use of the <code>reticulate</code> R package (<span class="citation">Ushey, Allaire, and Tang (2021)</span>) that provides an interface between an R and Python code. We setup the python environment that contains the required modules to run <code>scpetre</code> (for more info, see the <em>Requirements</em> section at the end of the vignette).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/rstudio/reticulate">"reticulate"</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/use_python.html">use_condaenv</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span>
 <span class="va">spt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/import.html">import</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span></code></pre></div>
 <p>Now that we can interface R with Python, we need to convert the <code>SingleCellExperiment</code> object (R) into an <code>AnnData</code> object (Python). This can easily be done using the <code>SCE2AnnData</code> from the <code>zellkonverter</code> package.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/theislab/zellkonverter">"zellkonverter"</a></span><span class="op">)</span>
 <span class="va">adata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/zellkonverter/man/AnnData-Conversion.html">SCE2AnnData</a></span><span class="op">(</span><span class="va">sce</span>, X_name <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>We can now apply the <code>normalize</code> function from <code>sceptre</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">spt</span><span class="op">$</span><span class="fu">normalize</span><span class="op">(</span><span class="va">adata</span><span class="op">)</span></code></pre></div>
 <p>The <code>AnnData</code> object stored as <code>adata</code> now contains the normalized data. We can reinsert the object as a new assay. First, we convert the data back to a <code>SingleCellExperiment</code> object using <code>AnnData2SCE</code>. Then, we add the normalized assay into the <code>QFeatures</code> object using <code>addAssay</code>. Finally, <code>addAssayLink</code> will retrieve the relationship between the features of the old and new assay based on the protein accession.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/zellkonverter/man/AnnData-Conversion.html">AnnData2SCE</a></span><span class="op">(</span><span class="va">adata</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">addAssay</a></span><span class="op">(</span><span class="va">scp</span>, <span class="va">sce</span>, name <span class="op">=</span> <span class="st">"proteins_norm"</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html">addAssayLink</a></span><span class="op">(</span><span class="va">scp</span>, from <span class="op">=</span> <span class="st">"proteins"</span>, to <span class="op">=</span> <span class="st">"proteins_norm"</span>,
@@ -488,14 +484,14 @@
 <h2 class="hasAnchor">
 <a href="#compute-qc" class="anchor"></a>Compute QC</h2>
 <p>We already showed how to perform cell QC using <code>perCellQCMetrics</code> in a previous section and showed that booster, reference, empty and single-cell samples can easily be discriminated. This time, we will apply the same procedure on the normalized data and show how to remove low-quality cells.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scuttle/man/perCellQCMetrics.html">perCellQCMetrics</a></span><span class="op">(</span><span class="va">scp</span><span class="op">[[</span><span class="st">"proteins_norm"</span><span class="op">]</span><span class="op">]</span>, assay.type <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>Once the QC metrics are computed, we need to define thresholds. In the SCeptre workflow, this is performed using the median absolute deviation (MAD). We can use the <code>isOutlier</code> function that computes the MADs and return whether a cell is an outlier (low-quality cell) or not. This information is immediately stored in the QC table and we extract the thresholds for later plotting.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">qc</span><span class="op">$</span><span class="va">outlier</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scuttle/man/isOutlier.html">isOutlier</a></span><span class="op">(</span><span class="va">qc</span><span class="op">$</span><span class="va">sum</span>, nmads <span class="op">=</span> <span class="fl">2</span>, log <span class="op">=</span> <span class="cn">TRUE</span>, type <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span>
 <span class="va">mads</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html">attr</a></span><span class="op">(</span><span class="va">qc</span><span class="op">$</span><span class="va">outlier</span>,<span class="st">"thresholds"</span><span class="op">)</span></code></pre></div>
 <p>The computed QCs are added to the <code>colData</code> of the <code>QFeatures</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="va">qc</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">qc</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span></code></pre></div>
 </div>
 <div id="note-about-qc-in-sceptre" class="section level2">
@@ -507,7 +503,7 @@
 <h2 class="hasAnchor">
 <a href="#plot-qc" class="anchor"></a>Plot QC</h2>
 <p>We plot the cell QC metrics and colour by channel.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log2</a></span><span class="op">(</span><span class="va">sum</span><span class="op">)</span>,
         y <span class="op">=</span> <span class="va">detected</span>,
@@ -523,14 +519,14 @@
 <h2 class="hasAnchor">
 <a href="#filter-cells" class="anchor"></a>Filter cells</h2>
 <p>Now that we have defined filtering thresholds, we can apply the filter. Recall that <code>outlier</code> defines whether a cell passes the MAD threshold or not.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">scp</span>, <span class="op">!</span><span class="va">scp</span><span class="op">$</span><span class="va">outlier</span> <span class="op">&amp;</span> <span class="va">scp</span><span class="op">$</span><span class="va">detected</span> <span class="op">&gt;</span> <span class="fl">700</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="further-qc" class="section level2">
 <h2 class="hasAnchor">
 <a href="#further-qc" class="anchor"></a>Further QC</h2>
 <p>In their workflow, the authors displayed the summed intensities per plate to identify biases linked to the plate, the rows of the plate and the column of the plate. The data required to reproduce this plot is contained in the <code>colData</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span>
 <span class="co"># df$Col &lt;- factor(df$Col, levels = 1:24) ## TODO remove this line when added to scpdata</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
@@ -544,7 +540,7 @@
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-31-1.png" width="1440"></p>
 <p>The position on the plate does not seem to influence the quality of the cells.</p>
 <p>Another QC the authors performed is to check the correlation between FACS parameters (that define the cell type) and the QC metrics. The information is again available from the <code>colData</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">scp</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## First plot is coloured by number of detected proteins</span>
 <span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span> 
@@ -566,15 +562,15 @@
 <a href="#feature-qc" class="anchor"></a>Feature QC</h1>
 <p>Next to cell QC, the authors also filter the data based on protein QC metrics. More specifically, they keep a proteins if it was detect in at least 3 cells.</p>
 <p>We can quickly compute this using the <code>perFeatureQCMetrics</code> from the <code>scuttle</code> package. We convert the proportion of sample a protein is detected in to the number of sample.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[[</span><span class="st">"proteins_norm"</span><span class="op">]</span><span class="op">]</span>
 <span class="va">qc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scuttle/man/perFeatureQCMetrics.html">perFeatureQCMetrics</a></span><span class="op">(</span><span class="va">sce</span>, assay.type <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
 <span class="va">qc</span><span class="op">$</span><span class="va">ncells</span> <span class="op">&lt;-</span> <span class="va">qc</span><span class="op">$</span><span class="va">detected</span> <span class="op">/</span> <span class="fl">100</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></code></pre></div>
 <p>We store the resulting QC in the <code>rowData</code> of the normalized protein assay.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">rowData</span><span class="op">(</span><span class="va">scp</span><span class="op">[[</span><span class="st">"proteins_norm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="va">qc</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">qc</span></code></pre></div>
-<p>Next, we keep the proteins that are detected in at least 3 cells. Note that this time we don't use the <code>filterFeatures</code> function but the 3 index subsetting. Since <code>ncells</code> is only available for the normalized protein assay, using <code>filterFeatures</code> would remove all the other assays. Instead, subsetting on the feature names will take advantage of the fact that the normalized protein assay is linked to the other assays thanks to the <code>QFeatures</code> data structure.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<p>Next, we keep the proteins that are detected in at least 3 cells. Note that this time we don’t use the <code>filterFeatures</code> function but the 3 index subsetting. Since <code>ncells</code> is only available for the normalized protein assay, using <code>filterFeatures</code> would remove all the other assays. Instead, subsetting on the feature names will take advantage of the fact that the normalized protein assay is linked to the other assays thanks to the <code>QFeatures</code> data structure.</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sel</span> <span class="op">&lt;-</span> <span class="va">qc</span><span class="op">[</span><span class="va">qc</span><span class="op">$</span><span class="va">ncells</span> <span class="op">&gt;=</span> <span class="fl">3</span>, <span class="op">]</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="va">scp</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">sel</span><span class="op">)</span>, , <span class="op">]</span></code></pre></div>
 </div>
@@ -582,7 +578,7 @@
 <h1 class="hasAnchor">
 <a href="#normalization-ii" class="anchor"></a>Normalization II</h1>
 <p>The SCeptre workflow performs a second normalization step to prepare the data before embedding an dimension reduction. They apply a median shift of the total intensity across cells, as implemented in the <code>scanpy</code> python library. We perform the same normalization using R code. First, we compute median shifted total intensities that are used as scaling factor. Then, we run the <code>sweep</code> function on the <code>QFeatures</code> object. It acts as the base <code>sweep</code> for matrices: it takes the quantitative data matrix and applies a scaling vector and function to the matrix along the desired dimension. The results are stored in a new assay that we here call <code>proteins_medshift</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html">colSums</a></span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_norm"</span><span class="op">)</span><span class="op">)</span>
 <span class="va">sf</span> <span class="op">&lt;-</span> <span class="va">sf</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/stats/median.html">median</a></span><span class="op">(</span><span class="va">sf</span><span class="op">)</span>
 <span class="op">(</span><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">sweep</a></span><span class="op">(</span><span class="va">scp</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, STATS <span class="op">=</span> <span class="va">sf</span>, FUN <span class="op">=</span> <span class="st">"/"</span>,
@@ -600,7 +596,7 @@
 <h1 class="hasAnchor">
 <a href="#log-transformation" class="anchor"></a>Log-transformation</h1>
 <p>The next step in the SCeptre workflow is to <span class="math inline">\(log_2\)</span> transform the data. This is performed in our workflow using the <code>logTransform</code> function that adds a new assay containing the transformed data to the <code>QFeatures</code> object. Note that the authors used a pseudo-count of 1.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">logTransform</a></span><span class="op">(</span><span class="va">scp</span>, base <span class="op">=</span> <span class="fl">2</span>, pc <span class="op">=</span> <span class="fl">1</span>,
                     i <span class="op">=</span> <span class="st">"proteins_medshift"</span>, name <span class="op">=</span> <span class="st">"proteins_log"</span><span class="op">)</span> </code></pre></div>
 </div>
@@ -609,16 +605,16 @@
 <a href="#imputation-of-missing-data" class="anchor"></a>Imputation of missing data</h1>
 <p>The SCeptre workflow then proceeds with imputation. The imputation is performed by the <code>impute</code> function implemented in <code>sceptre</code> library. Under the hood, the function relies on the <code>KNNImputer</code> from the <code>scikit-learn</code> Python library.</p>
 <p>Imputation can be performed on a <code>QFeatures</code> object using the <code>impute</code> function that relies on the <code>MsCoreUtils</code> package. However, the specific implementation differs from <code>KNNImputer</code>. Therefore, for sake of replication, we rather use the latter using the R-to-Python interface by <code>reticulate</code>. Again, we need to convert the target assay to an <code>AnnData</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_log"</span><span class="op">)</span>
 <span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
 <span class="co">## Warning: Ignoring redundant column names in 'colData(x)': Channel, Col</span>
 <span class="va">adata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/zellkonverter/man/AnnData-Conversion.html">SCE2AnnData</a></span><span class="op">(</span><span class="va">sce</span>, X_name <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>We then perform the imputation.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">spt</span><span class="op">$</span><span class="fu">impute</span><span class="op">(</span><span class="va">adata</span><span class="op">)</span></code></pre></div>
 <p>Finally, we convert the data back to a <code>SingleCellExperiment</code> object and add it to the <code>QFeatures</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/zellkonverter/man/AnnData-Conversion.html">AnnData2SCE</a></span><span class="op">(</span><span class="va">adata</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">addAssay</a></span><span class="op">(</span><span class="va">scp</span>, <span class="va">sce</span>, name <span class="op">=</span> <span class="st">"proteins_imput"</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html">addAssayLink</a></span><span class="op">(</span><span class="va">scp</span>, from <span class="op">=</span> <span class="st">"proteins_log"</span>, to <span class="op">=</span> <span class="st">"proteins_imput"</span>,
@@ -637,7 +633,7 @@
 <h1 class="hasAnchor">
 <a href="#normalization-iii" class="anchor"></a>Normalization III</h1>
 <p>The last step of the SCeptre workflow before running the downstream analysis is to perform a last normalization, known as centering and scaling to unit variance. While this is performed using <code>scanpy</code> in the SCeptre workflow, we here apply the <code>sweep</code> function as shown previously.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">means</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html">rowMeans</a></span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_imput"</span><span class="op">)</span><span class="op">)</span>
 <span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html">sweep</a></span><span class="op">(</span><span class="va">scp</span>, MARGIN <span class="op">=</span> <span class="fl">1</span>, STATS <span class="op">=</span> <span class="va">means</span>, FUN <span class="op">=</span> <span class="st">"-"</span>,
              i <span class="op">=</span> <span class="st">"proteins_imput"</span>, name <span class="op">=</span> <span class="st">"proteins_centered"</span><span class="op">)</span>
@@ -650,7 +646,7 @@
 <a href="#downstream-analysis" class="anchor"></a>Downstream analysis</h1>
 <p>After this extensive processing of the data, the authors perform the downstream analysis to answer the research question of interest, that is, is SCP able to retrieve the hierarchical structure of the AML model. To evaluate this, they first performed various dimension reductions, followed by pseudo-time analysis. Cell clustering is performed as well as gene clustering to define novel gene signature.</p>
 <p>So, now that the processing is complete, we can extract the last assay on which we will perform the downstream analysis.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">scp</span>, <span class="st">"proteins_scaled"</span><span class="op">)</span>
 <span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
 <span class="co">## Warning: Ignoring redundant column names in 'colData(x)': Channel, Col, outlier</span>
@@ -663,7 +659,7 @@
 <h3 class="hasAnchor">
 <a href="#pca" class="anchor"></a>PCA</h3>
 <p>PCA can be directly computed from <code>SingleCellExperiment</code> objects using the <code>runPCA</code> function from the <code>scater</code> package. The resulting dimension reduction is stored in the <code>reducedDim</code> slot of the object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="http://bioconductor.org/packages/scater/">"scater"</a></span><span class="op">)</span>
 <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scater/man/runPCA.html">runPCA</a></span><span class="op">(</span><span class="va">sce</span>, 
               ncomponents <span class="op">=</span> <span class="fl">50</span>,
@@ -672,7 +668,7 @@
               exprs_values <span class="op">=</span> <span class="fl">1</span>,
               name <span class="op">=</span> <span class="st">"PCA"</span><span class="op">)</span></code></pre></div>
 <p>The package also provides the <code>plotPCA</code> function to directly plot the PCA from the <code>SingleCellExperiment</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotPCA</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-44-1.png" width="700"></p>
 <p>We can already see the LSC and PROG populations are close together in the latent space whereas the blast are spread over the latent space.</p>
@@ -681,7 +677,7 @@
 <h3 class="hasAnchor">
 <a href="#umap" class="anchor"></a>UMAP</h3>
 <p>Similarly to PCA, we can use <code>runUMAP</code> and <code>plotUMAP</code> to generate and plot UMAP space. We modify the tuning arguments to match the parameters used in the SCeptre notebook.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
 <span class="co"># sce$File.ID &lt;- factor(sce$File.ID, levels = paste0("F", 1:192)) ## TODO Remove when updated in scpdata</span>
 <span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scater/man/runUMAP.html">runUMAP</a></span><span class="op">(</span><span class="va">sce</span>, 
@@ -696,7 +692,7 @@
 <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-45-1.png" width="700"></p>
 <p>We can draw the same conclusion for the UMAP results than for the PCA result. LSC and PROG are also close in UMAP space while the BLAST are spread evenly. UMAP is used to visually assess the presence of clusters. In this case, we cannot see clusters but rather an homogeneous cloud. One reason could be that the present SCP data does not provide sufficient resolution (noise is too high) to discriminate between the different cell types. Another explanation is that the proteome between the different cell types is continuously shifting from one cell type to another. It is important to remember that the cell types are defined based on the CD34/CD38 flow-cytometry data using hard thresholds. To investigate whether this transition might be a smooth transition, we plot the score of the first UMAP vector along the FACS data.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span>, UMAP <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html">reducedDim</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"UMAP"</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">CD34_APC.Cy7.A</span>, 
@@ -718,13 +714,13 @@
 <a href="#diffusion-map" class="anchor"></a>Diffusion map</h3>
 <p>Another dimension reduction technique is diffusion maps that generates a manifold where cells are spatially organized so that it reflects their transition probabilities. This is a more suitable of representation differentiation processes, like those happening in the AML model.</p>
 <p>Diffusion maps can be computed using <code>runDiffusionMap</code> in <code>scuttle</code>. However, we here prefer to use the <code>destiny</code> package to not only get the diffusion map components, but also the transition probability matrix that we will use later during the pseudo-time analysis.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># BiocManager::install("theislab/destiny")</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://theislab.github.io/destiny/">"destiny"</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
 <span class="va">dm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://theislab.github.io/destiny/reference/DiffusionMap-class.html">DiffusionMap</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html">reducedDim</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"PCA"</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>We stored the diffusion components in the <code>reducedDim</code> slot so that we can plot the results using the <code>plotDimensionReduction</code> function.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html">reducedDim</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"DiffusionMap"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://theislab.github.io/destiny/reference/destiny-generics.html">eigenvectors</a></span><span class="op">(</span><span class="va">dm</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotDiffusionMap</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-48-1.png" width="700"></p>
@@ -735,23 +731,23 @@
 <h2 class="hasAnchor">
 <a href="#pseudo-time-analysis" class="anchor"></a>Pseudo-time analysis</h2>
 <p>The objective of the pseudo-time analysis is to order cells along their differentiation tracks. To do so, we first need to define a root cell. Since the cells should theoretically derive from LSC cells, we define the root cell as the LSC cell at the tip of the diffusion map. We store this which cell is the root in the <code>colData</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>DC1 <span class="op">=</span> <span class="va">dm</span><span class="op">$</span><span class="va">DC1</span>, Population <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">Population</span><span class="op">)</span>
 <span class="va">df</span> <span class="op">&lt;-</span> <span class="va">df</span><span class="op">[</span><span class="va">df</span><span class="op">$</span><span class="va">Population</span> <span class="op">==</span> <span class="st">"LSC"</span>, <span class="op">]</span>
 <span class="va">root</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">DC1</span><span class="op">)</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html">abs</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">DC1</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>
 <span class="va">sce</span><span class="op">$</span><span class="va">isRoot</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>
 <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="va">root</span>, <span class="st">"isRoot"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">TRUE</span></code></pre></div>
 <p>We can now compute the diffusion pseudo-time using the <code>DPT</code> function. Again, we store the output in the <code>colData</code> after converting the pseudo-time to percentage.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">dpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://theislab.github.io/destiny/reference/DPT.html">DPT</a></span><span class="op">(</span><span class="va">dm</span>, tips <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html">which</a></span><span class="op">(</span><span class="va">sce</span><span class="op">$</span><span class="va">isRoot</span><span class="op">)</span><span class="op">)</span>
 <span class="va">sce</span><span class="op">$</span><span class="va">dpt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rank.html">rank</a></span><span class="op">(</span><span class="va">dpt</span><span class="op">$</span><span class="va">dpt</span><span class="op">)</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html">ncol</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></code></pre></div>
 <p>We map the pseudo-time on the diffusion map and on the UMAP plots.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotDiffusionMap</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"dpt"</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"dpt"</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-51-1.png" width="672"></p>
 <p>We also map the pseudo-time on the FACS data to highlight the estimated differentation trajectory.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">CD34_APC.Cy7.A</span>, 
@@ -771,28 +767,28 @@
 <h2 class="hasAnchor">
 <a href="#cell-clustering" class="anchor"></a>Cell clustering</h2>
 <p>Next to pseudo-time analysis, the authors also performed cell clustering. They applied the leiden algorithm to identify clusters from the data. Since this is only implemented in Python, we will again use the <code>reticulate</code> interface. First, we converted our data to an <code>AnnData</code> object.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">adata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/zellkonverter/man/AnnData-Conversion.html">SCE2AnnData</a></span><span class="op">(</span><span class="va">sce</span>, X_name <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
 <p>Next we load the <code>scanpy</code> module that contains the required function to perform PCA, that is used to build the nearest neighbour graph, that is used to identify clusters using the Leiden algorithm. The resulting clusters are stored in the <code>colData</code></p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">scanpy</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/import.html">import</a></span><span class="op">(</span><span class="st">"scanpy"</span><span class="op">)</span>
 <span class="va">scanpy</span><span class="op">$</span><span class="va">pp</span><span class="op">$</span><span class="fu">pca</span><span class="op">(</span><span class="va">adata</span>, random_state <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span>
 <span class="va">scanpy</span><span class="op">$</span><span class="va">pp</span><span class="op">$</span><span class="fu">neighbors</span><span class="op">(</span><span class="va">adata</span>, n_neighbors <span class="op">=</span> <span class="fl">30L</span>, random_state <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span>
 <span class="va">scanpy</span><span class="op">$</span><span class="va">tl</span><span class="op">$</span><span class="fu">leiden</span><span class="op">(</span><span class="va">adata</span>, resolution <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>
 <span class="va">sce</span><span class="op">$</span><span class="va">leidenClust</span> <span class="op">&lt;-</span> <span class="va">adata</span><span class="op">$</span><span class="va">obs</span><span class="op">$</span><span class="va">leiden</span></code></pre></div>
 <p>We map the clusters on the UMAP plot.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"leidenClust"</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-55-1.png" width="700"></p>
 <p>The clusters shown above differ from the clusters shown in the SCeptre notebook. As we will see in a later section the data obtained in this vignette differ slightly from the data obtained in the SCeptre notebook. The discrepancies between the clusters from two slightly different datasets puts into question the reliability of the identified clusters. This observation supports the observation we drew from the UMAP where no grouping structure is found. Furthermore, we know <em>a priori</em> the cell types thanks to the FACS staining and previous work from literature. We can plot the concordance between the identified cluster and the known cell types.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## Count cells per cell type per cluster</span>
-<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">Population</span>, <span class="va">leidenClust</span><span class="op">)</span>
-<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">summarize</span><span class="op">(</span><span class="va">df</span>, n <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">n</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
+<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">group_by</span><span class="op">(</span><span class="va">df</span>, <span class="va">Population</span>, <span class="va">leidenClust</span><span class="op">)</span>
+<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">summarize</span><span class="op">(</span><span class="va">df</span>, n <span class="op">=</span> <span class="fu">n</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## Compute the relative frequency per cluster</span>
-<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">leidenClust</span><span class="op">)</span>
-<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html">mutate</a></span><span class="op">(</span><span class="va">df</span>, rfreq <span class="op">=</span> <span class="va">n</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span>
+<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">group_by</span><span class="op">(</span><span class="va">df</span>, <span class="va">leidenClust</span><span class="op">)</span>
+<span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">mutate</span><span class="op">(</span><span class="va">df</span>, rfreq <span class="op">=</span> <span class="va">n</span><span class="op">/</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html">sum</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## Plot bar chart</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">leidenClust</span>, 
@@ -806,9 +802,9 @@
 <div id="find-marker-genes" class="section level2">
 <h2 class="hasAnchor">
 <a href="#find-marker-genes" class="anchor"></a>Find marker genes</h2>
-<p>In the SCeptre workflow, the authors searched for marker genes across the different clusters. As argued above, we don't trust the clustering and will rather showcase how to identify marker gene between the different cell types from a <code>SingleCellExperiment</code> object. The functionality to perform this is provided in the <code>scran</code> package.</p>
+<p>In the SCeptre workflow, the authors searched for marker genes across the different clusters. As argued above, we don’t trust the clustering and will rather showcase how to identify marker gene between the different cell types from a <code>SingleCellExperiment</code> object. The functionality to perform this is provided in the <code>scran</code> package.</p>
 <p>We use the <code>findMarkers function that generates a list of tables, where each table provide the result of the differential expression analysis  for one cell type against the others. We here use the t-test as the  statistical method and decide to report p-values based one the one  cluster vs all framework (see</code>?findMarkers` for more info). We also specify that we want up regulated genes.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"scran"</span><span class="op">)</span>
 <span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scran/man/findMarkers.html">findMarkers</a></span><span class="op">(</span><span class="va">sce</span>, 
                        assay.type <span class="op">=</span> <span class="fl">1</span>, 
@@ -820,34 +816,34 @@
 <span class="co">## List of length 4</span>
 <span class="co">## names(4): BLAST CD38- BLAST CD38+ LSC PROG</span></code></pre></div>
 <p>We next combine the list of tables into a single table. We perform some extra data wrangling to also include the smallest fold change</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, 
                   <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">cbind</a></span><span class="op">(</span><span class="va">markers</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"FDR"</span>, <span class="st">"summary.logFC"</span><span class="op">)</span><span class="op">]</span>,
                                     Population <span class="op">=</span> <span class="va">i</span><span class="op">)</span><span class="op">)</span>
 <span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="va">markers</span><span class="op">)</span>
 <span class="va">markers</span><span class="op">$</span><span class="va">gene</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">rownames</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span></code></pre></div>
 <p>We keep only genes that are differentially expressed, that is for which the false discovery rate (FDR) is lower than 5 % and the log fold change between the given cluster and the others is larger than 1.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markers</span> <span class="op">&lt;-</span> <span class="va">markers</span><span class="op">[</span><span class="va">markers</span><span class="op">$</span><span class="va">FDR</span> <span class="op">&lt;</span> <span class="fl">0.05</span> <span class="op">&amp;</span> <span class="va">markers</span><span class="op">$</span><span class="va">summary.logFC</span> <span class="op">&gt;</span> <span class="fl">1</span>, <span class="op">]</span></code></pre></div>
 <p>We plot the marker expression as heatmap using <code>ComplexHeatmaps</code>. First, we filter the data to include only marker genes.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">sce</span><span class="op">[</span><span class="va">markers</span><span class="op">$</span><span class="va">gene</span>, <span class="op">]</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/jokergoo/ComplexHeatmap">"ComplexHeatmap"</a></span><span class="op">)</span></code></pre></div>
 <p>We set a colouring scheme for the cell types using the <code>RColorBrewer</code> package.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"RColorBrewer"</span><span class="op">)</span>
 <span class="va">popCols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html">brewer.pal</a></span><span class="op">(</span><span class="fl">4</span>, <span class="st">"Set1"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">popCols</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">Population</span><span class="op">)</span></code></pre></div>
 <p>Next, we create column annotation to highlight the cell types on the columns of the heatmap.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">colAnnot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/columnAnnotation.html">columnAnnotation</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">Population</span>, 
                              col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">popCols</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>Similarly, we create row annotation to highlight the cell types on the rows of the heatmap.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">rowAnnot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/rowAnnotation.html">rowAnnotation</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/anno_simple.html">anno_simple</a></span><span class="op">(</span><span class="va">markers</span><span class="op">$</span><span class="va">Population</span>, 
                                                    col <span class="op">=</span> <span class="va">popCols</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>Finally, we define the colors of the heatmap using the <code>viridis</code> and the <code>circlize</code> color scheme. Note that we provide some trimming of the values for better rendering.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://sjmgarnier.github.io/viridis/">"viridis"</a></span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/jokergoo/circlize">"circlize"</a></span><span class="op">)</span>
 <span class="va">vircols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html">viridis</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span>
@@ -855,7 +851,7 @@
 <span class="va">trimmax</span> <span class="op">&lt;-</span> <span class="fl">2</span>
 <span class="va">vircols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/circlize/man/colorRamp2.html">colorRamp2</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html">seq</a></span><span class="op">(</span><span class="va">trimmin</span>, <span class="va">trimmax</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>, <span class="va">vircols</span><span class="op">)</span></code></pre></div>
 <p>We can now generate the heatmap.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/Heatmap.html">Heatmap</a></span><span class="op">(</span>matrix <span class="op">=</span> <span class="fu">assay</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, 
         name <span class="op">=</span> <span class="st">"logProteins"</span>,
         col <span class="op">=</span> <span class="va">vircols</span>,
@@ -870,11 +866,11 @@
         heatmap_legend_param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">trimmin</span>, <span class="fl">0</span>, <span class="va">trimmax</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p><img src="schoof2021_files/figure-html/unnamed-chunk-65-1.png" width="700"></p>
 <p>We can see that the more cells differentiate towards BLAST CD38- cells the more they expressed a unique set of genes. We could not find genes that are differentially over-expressed by PROG cells.</p>
-<p>Let's have a look at the top markers for the different cell populations.</p>
+<p>Let’s have a look at the top markers for the different cell populations.</p>
 <div id="top-markers-of-the-blast-cd38--cells" class="section level3">
 <h3 class="hasAnchor">
 <a href="#top-markers-of-the-blast-cd38--cells" class="anchor"></a>Top markers of the BLAST CD38- cells</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markerBlastCD38neg</span> <span class="op">&lt;-</span> <span class="va">markers</span><span class="op">[</span><span class="va">markers</span><span class="op">$</span><span class="va">Population</span> <span class="op">==</span> <span class="st">"BLAST CD38-"</span>, <span class="op">]</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">markerBlastCD38neg</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">markerBlastCD38neg</span><span class="op">$</span><span class="va">FDR</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span>
 <span class="co">## DataFrame with 6 rows and 4 columns</span>
@@ -888,7 +884,7 @@
 <span class="co">## FHL1              1.17468e-15       1.46280 BLAST CD38...          FHL1</span></code></pre></div>
 <p>The most significant marker is ARL1 (ADP-ribosylation factor-like protein 1). It is annotated as involved in the protein localization and transport to the Golgi appartus.</p>
 <p>We also plot the evolution of the ARL1 expression with respect to the pseudo-time.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>exprs <span class="op">=</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="st">"ARL1"</span>, <span class="op">]</span>, 
                  <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
@@ -903,7 +899,7 @@
 <div id="top-marker-of-the-blast-cd38-cells" class="section level3">
 <h3 class="hasAnchor">
 <a href="#top-marker-of-the-blast-cd38-cells" class="anchor"></a>Top marker of the BLAST CD38+ cells</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markerBlastCD38pos</span> <span class="op">&lt;-</span> <span class="va">markers</span><span class="op">[</span><span class="va">markers</span><span class="op">$</span><span class="va">Population</span> <span class="op">==</span> <span class="st">"BLAST CD38+"</span>, <span class="op">]</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span><span class="op">(</span><span class="va">markerBlastCD38pos</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">markerBlastCD38pos</span><span class="op">$</span><span class="va">FDR</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span>
 <span class="co">## DataFrame with 6 rows and 4 columns</span>
@@ -916,7 +912,7 @@
 <span class="co">## MDC1   7.04419e-06       1.22853 BLAST CD38...        MDC1</span>
 <span class="co">## ELANE  7.70134e-06       1.75155 BLAST CD38...       ELANE</span></code></pre></div>
 <p>The most significant marker is P4HB (Protein disulfide-isomerase).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>exprs <span class="op">=</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="st">"P4HB"</span>, <span class="op">]</span>, 
                  <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
@@ -930,7 +926,7 @@
 <ul>
 <li>Marker of the LSC cells</li>
 </ul>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">markerBlastLSC</span> <span class="op">&lt;-</span> <span class="va">markers</span><span class="op">[</span><span class="va">markers</span><span class="op">$</span><span class="va">Population</span> <span class="op">==</span> <span class="st">"LSC"</span>, <span class="op">]</span>
 <span class="va">markerBlastLSC</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">markerBlastLSC</span><span class="op">$</span><span class="va">FDR</span><span class="op">)</span>, <span class="op">]</span>
 <span class="co">## DataFrame with 2 rows and 4 columns</span>
@@ -939,7 +935,7 @@
 <span class="co">## PPIG  0.0301131       1.04888         LSC        PPIG</span>
 <span class="co">## PRDX1 0.0369504       1.29379         LSC       PRDX1</span></code></pre></div>
 <p>Only two markers are found significant for the LSC population. One of the two, <a href="https://www.uniprot.org/uniprot/Q06830">PRDX1</a> associated to cell proliferation and response to oxydative stress. These biological processes are expected to occur in LSC (<span class="citation">Trombetti et al. (2021)</span>).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span>exprs <span class="op">=</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="st">"PRDX1"</span>, <span class="op">]</span>, 
                  <span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
 <span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
@@ -957,13 +953,13 @@
 <a href="#gene-set-enrichment" class="anchor"></a>Gene set enrichment</h2>
 <p><strong>UNDER PROGRESS</strong></p>
 <p>Finally, we run a gene set enrichment analysis to provide a biologically meaningful interpretation of the markers we identified.</p>
-<p>Let's start with the BLAST CD38- cells.</p>
+<p>Let’s start with the BLAST CD38- cells.</p>
 </div>
 </div>
 <div id="benchmarking" class="section level1">
 <h1 class="hasAnchor">
 <a href="#benchmarking" class="anchor"></a>Benchmarking</h1>
-<p>Up to this point, we replicated the processing steps by SCeptre using our <code>scp</code> workflow and showed how to perform downstream analyses using R/Bioconductor software. We will now assess the quality of the replication and see how well we can recreate the original data. We retrieved the final data provided by the Schoof et al.</p>
+<p>Up to this point, we replicated the processing steps by SCeptre using our <code>scp</code> workflow and showed how to perform downstream analyses using R/Bioconductor software. We will now assess the quality of the replication and see how well we can recreate the original data. We retrieved the final data provided by the Schoof et al. </p>
 <p>We will compare the dataset processed through SCeptre and the dataset processed through <code>scp</code> based on 3 metrics:</p>
 <ul>
 <li>The overlap of the selected cells</li>
@@ -1012,33 +1008,33 @@
 ## RAM: 8.2 GB
 ## CPU: 4 core(s) - Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz</code></pre>
 <p>Further information about the Python environment:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">import</span> IPython
-<span class="bu">print</span>(IPython.sys_info())
-<span class="co">## {'commit_hash': '033ab93c7',</span>
-<span class="co">##  'commit_source': 'installation',</span>
-<span class="co">##  'default_encoding': 'UTF-8',</span>
-<span class="co">##  'ipython_path': '/home/christophe/miniconda3/envs/sceptre/lib/python3.7/site-packages/IPython',</span>
-<span class="co">##  'ipython_version': '5.8.0',</span>
-<span class="co">##  'os_name': 'posix',</span>
-<span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-debian-buster-sid',</span>
-<span class="co">##  'sys_executable': '/home/christophe/miniconda3/envs/sceptre/bin/python',</span>
-<span class="co">##  'sys_platform': 'linux',</span>
-<span class="co">##  'sys_version': '3.7.9 | packaged by conda-forge | (default, Dec  9 2020, '</span>
-<span class="co">##                 '21:13:23) \n'</span>
-<span class="co">##                 '[GCC 9.3.0]'}</span></code></pre></div>
+<div class="sourceCode" id="cb77"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> IPython</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(IPython.sys_info())</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="co">## {'commit_hash': '033ab93c7',</span></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a><span class="co">##  'commit_source': 'installation',</span></span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a><span class="co">##  'default_encoding': 'UTF-8',</span></span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_path': '/home/christophe/miniconda3/envs/sceptre/lib/python3.7/site-packages/IPython',</span></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_version': '5.8.0',</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a><span class="co">##  'os_name': 'posix',</span></span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a><span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-debian-buster-sid',</span></span>
+<span id="cb77-10"><a href="#cb77-10" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_executable': '/home/christophe/miniconda3/envs/sceptre/bin/python',</span></span>
+<span id="cb77-11"><a href="#cb77-11" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_platform': 'linux',</span></span>
+<span id="cb77-12"><a href="#cb77-12" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_version': '3.7.9 | packaged by conda-forge | (default, Dec  9 2020, '</span></span>
+<span id="cb77-13"><a href="#cb77-13" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '21:13:23) \n'</span></span>
+<span id="cb77-14"><a href="#cb77-14" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '[GCC 9.3.0]'}</span></span></code></pre></div>
 </div>
 <div id="running-the-sceptre-module-in-r" class="section level3">
 <h3 class="hasAnchor">
 <a href="#running-the-sceptre-module-in-r" class="anchor"></a>Running the <code>sceptre</code> module in R</h3>
 <p>In order to rerun this vignette, you will need to create a <code>conda</code> environment containing the required modules to run the SCeptre workflow.</p>
 <p>First, you need to install Python (we used <a href="https://www.python.org/downloads/">Python3</a>) and <a href="https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html">conda</a> (or <a href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>).</p>
-<p>Next, as mentioned in the <a href="https://github.com/bfurtwa/SCeptre#installation-from-github">author's installation instructions</a>, create a new <code>conda</code> environment by running the following in a terminal.</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">conda</span> create -n sceptre python=3.7
-<span class="ex">conda</span> activate sceptre</code></pre></div>
+<p>Next, as mentioned in the <a href="https://github.com/bfurtwa/SCeptre#installation-from-github">author’s installation instructions</a>, create a new <code>conda</code> environment by running the following in a terminal.</p>
+<div class="sourceCode" id="cb78"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create -n sceptre python=3.7</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate sceptre</span></code></pre></div>
 <p>Then you need to install <code>sceptre</code> and its dependencies. To do so, download the <a href="https://github.com/bfurtwa/SCeptre">GitHub repository</a>, and <code>cd</code> to the downloaded <code>SCeptre/</code> folder. Then run in the terminal:</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">pip</span> install .</code></pre></div>
+<div class="sourceCode" id="cb79"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div>
 <p>To make use of sceptre within an R session, simply call (from the R terminal):</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb80"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/rstudio/reticulate">"reticulate"</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/use_python.html">use_condaenv</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span></code></pre></div>
 </div>
@@ -1046,7 +1042,7 @@
 <h3 class="hasAnchor">
 <a href="#timing" class="anchor"></a>Timing</h3>
 <p>The total time required to compile this vignette is:</p>
-<pre><code>## 28.63792 mins</code></pre>
+<pre><code>## 37.66808 mins</code></pre>
 </div>
 <div id="memory" class="section level3">
 <h3 class="hasAnchor">
@@ -1057,7 +1053,7 @@
 <div id="session-info" class="section level3">
 <h3 class="hasAnchor">
 <a href="#session-info" class="anchor"></a>Session info</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb83"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">## R Under development (unstable) (2020-10-12 r79334)</span>
 <span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span>
@@ -1090,7 +1086,7 @@
 <span class="co">## [17] purrr_0.3.4                  readr_2.0.2                 </span>
 <span class="co">## [19] tidyr_1.1.4                  tibble_3.1.4                </span>
 <span class="co">## [21] ggplot2_3.3.5                tidyverse_1.3.1             </span>
-<span class="co">## [23] SCP.replication_0.2.1        scpdata_1.1.0               </span>
+<span class="co">## [23] SCP.replication_0.1.0        scpdata_1.1.0               </span>
 <span class="co">## [25] ExperimentHub_2.1.4          AnnotationHub_3.1.5         </span>
 <span class="co">## [27] BiocFileCache_2.1.1          dbplyr_2.1.1                </span>
 <span class="co">## [29] scp_1.3.3                    QFeatures_1.3.6             </span>
@@ -1199,18 +1195,18 @@
 <div id="reference" class="section level1 unnumbered">
 <h1 class="hasAnchor">
 <a href="#reference" class="anchor"></a>Reference</h1>
-<div id="refs" class="references">
-<div id="ref-Schoof2021-pv">
-<p>Schoof, Erwin M, Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, John E Dick, and Bo T Porse. 2021. “Quantitative Single-Cell Proteomics as a Tool to Characterize Cellular Hierarchies.” <em>Nat. Commun.</em> 12 (1). Springer Science; Business Media LLC: 745679.</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Schoof2021-pv" class="csl-entry">
+Schoof, Erwin M, Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, John E Dick, and Bo T Porse. 2021. <span>“Quantitative Single-Cell Proteomics as a Tool to Characterize Cellular Hierarchies.”</span> <em>Nat. Commun.</em> 12 (1): 745679.
 </div>
-<div id="ref-ijms22052470">
-<p>Trombetti, Silvia, Elena Cesaro, Rosa Catapano, Raffaele Sessa, Alessandra Lo Bianco, Paola Izzo, and Michela Grosso. 2021. “Oxidative Stress and Ros-Mediated Signaling in Leukemia: Novel Promising Perspectives to Eradicate Chemoresistant Cells in Myeloid Leukemia.” <em>International Journal of Molecular Sciences</em> 22 (5). doi:<a href="https://doi.org/10.3390/ijms22052470">10.3390/ijms22052470</a>.</p>
+<div id="ref-ijms22052470" class="csl-entry">
+Trombetti, Silvia, Elena Cesaro, Rosa Catapano, Raffaele Sessa, Alessandra Lo Bianco, Paola Izzo, and Michela Grosso. 2021. <span>“Oxidative Stress and ROS-Mediated Signaling in Leukemia: Novel Promising Perspectives to Eradicate Chemoresistant Cells in Myeloid Leukemia.”</span> <em>International Journal of Molecular Sciences</em> 22 (5). <a href="https://doi.org/10.3390/ijms22052470">https://doi.org/10.3390/ijms22052470</a>.
 </div>
-<div id="ref-reticulate">
-<p>Ushey, Kevin, JJ Allaire, and Yuan Tang. 2021. <em>Reticulate: Interface to ’Python’</em>. <a href="https://CRAN.R-project.org/package=reticulate" class="uri">https://CRAN.R-project.org/package=reticulate</a>.</p>
+<div id="ref-reticulate" class="csl-entry">
+Ushey, Kevin, JJ Allaire, and Yuan Tang. 2021. <em>Reticulate: Interface to ’Python’</em>. <a href="https://CRAN.R-project.org/package=reticulate">https://CRAN.R-project.org/package=reticulate</a>.
 </div>
-<div id="ref-Wickham2019-fz">
-<p>Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy McGowan, Romain François, Garrett Grolemund, et al. 2019. “Welcome to the Tidyverse.” <em>J. Open Source Softw.</em> 4 (43). The Open Journal: 1686.</p>
+<div id="ref-Wickham2019-fz" class="csl-entry">
+Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy McGowan, Romain François, Garrett Grolemund, et al. 2019. <span>“Welcome to the Tidyverse.”</span> <em>J. Open Source Softw.</em> 4 (43): 1686.
 </div>
 </div>
 </div>

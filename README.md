@@ -30,6 +30,7 @@ The currently available reproduction vignettes are listed below.
 See also
 
 - The SCoPE2 [website](https://scope2.slavovlab.net/)
+- The SCoPE2 Github [repository](https://github.com/SlavovLab/SCoPE2)
 
 #### [Exploring the autoPOTS data (Liang et al. 2020)](https://uclouvain-cbio.github.io/SCP.replication/articles/liang2020.html)
 
@@ -47,3 +48,16 @@ See also
 > Barr-Gillespie. 2019. “Single-Cell Proteomics Reveals Changes in
 > Expression During Hair-Cell Development.” [Elife 8
 > (November)](https://elifesciences.org/articles/50777).
+
+#### [Reproduction of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/shoof2021.html)
+
+> Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, 
+Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, 
+John E. Dick, and Bo T. Porse. 2021. “Quantitative Single-Cell 
+Proteomics as a Tool to Characterize Cellular Hierarchies.” Nature 
+Communications 12 (1): 745679.
+
+See also
+
+- The SCeptre Github [repository](https://github.com/bfurtwa/SCeptre)
+
