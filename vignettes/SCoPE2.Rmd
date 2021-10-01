@@ -396,7 +396,8 @@ scp <- computeSCR(scp,
                   i = names(scp),
                   colvar = "SampleType",
                   carrierPattern = "Carrier",
-                  samplePattern = 4:16)
+                  samplePattern = 4:16,
+                  rowDataName = "MeanSCR")
 ```
 
 In this step, we supplied numeric entries as `samplePattern` instead 
@@ -487,7 +488,7 @@ peptideAssays <- paste0("peptides_", names(scp))
 We now have all the required information to aggregate the PSMs in the
 different batches to peptides.
 
-```{r, message = FALSE}
+```{r, message = FALSE, warning=FALSE}
 scp <- aggregateFeaturesOverAssays(scp,
                                    i = names(scp),
                                    fcol = "peptide",
@@ -761,7 +762,7 @@ Similarly to aggregating PSM data to peptide data, we can aggregate
 peptide data to protein data using the `aggregateFeatures` function. 
 Note that we here use the median as a summarizing function.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 scp <- aggregateFeatures(scp,
                          i = "peptides_log",
                          name = "proteins",
@@ -916,11 +917,6 @@ scp <- sweep(scp,
 We named the last assay `proteins_scp`. We will contrast this data
 matrix to `proteins_SCoPE2` later in the next section to assess the
 accuracy of the replication.
-
-```{r echo = FALSE, eval = FALSE, results = "hide"}
-# save.image(file = "../extdata/vignette_final.RData")
-# load("../extdata/vignette_final.RData")
-```
 
 # Benchmarking the replication
 
