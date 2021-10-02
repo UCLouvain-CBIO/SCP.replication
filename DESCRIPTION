@@ -23,6 +23,7 @@ Imports:
    SummarizedExperiment,
    MultiAssayExperiment
 Suggests:
+   renv,
    CellTrails,
    tidyverse,
    patchwork,
