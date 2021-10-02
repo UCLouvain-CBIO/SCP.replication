@@ -28,8 +28,9 @@ Suggests:
    patchwork,
    BiocStyle,
    knitr,
-   benchmarkme,
    rmarkdown,
+   pkgdown,
+   benchmarkme,
    bladderbatch,
    clusterProfiler,
    org.Hs.eg.db,
@@ -43,7 +44,10 @@ Suggests:
    ComplexHeatmap,
    RColorBrewer,
    viridis, 
-   circlize
+   circlize,
+   uwot,
+   Cairo,
+   magick
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8

@@ -49,7 +49,7 @@ See also
 > Expression During Hair-Cell Development.” [Elife 8
 > (November)](https://elifesciences.org/articles/50777).
 
-#### [Reproduction of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/shoof2021.html)
+#### [Reproduction of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/schoof2021.html)
 
 > Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, 
 Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, 
