@@ -18,7 +18,6 @@ Depends:
    scp (>= 1.1.5),
    scpdata
 Imports:
-   sva,
    BiocParallel,
    matrixStats,
    SummarizedExperiment,
