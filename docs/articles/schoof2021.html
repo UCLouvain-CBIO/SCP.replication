@@ -452,7 +452,11 @@
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/rstudio/reticulate">"reticulate"</a></span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/use_python.html">use_condaenv</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span>
-<span class="va">spt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/import.html">import</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span></code></pre></div>
+<span class="va">spt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/reticulate/man/import.html">import</a></span><span class="op">(</span><span class="st">"sceptre"</span><span class="op">)</span>
+<span class="co">## Warning: Python '/home/christophe/miniconda3/envs/sceptre/bin/python' was</span>
+<span class="co">## requested but '/home/christophe/PhD/SCP.replication/inst/renvs/schoof2021/</span>
+<span class="co">## renv/python/virtualenvs/renv-python-3.8/bin/python' was loaded instead (see</span>
+<span class="co">## reticulate::py_config() for more information)</span></code></pre></div>
 <p>Now that we can interface R with Python, we need to convert the <code>SingleCellExperiment</code> object (R) into an <code>AnnData</code> object (Python). This can easily be done using the <code>SCE2AnnData</code> from the <code>zellkonverter</code> package.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/theislab/zellkonverter">"zellkonverter"</a></span><span class="op">)</span>
@@ -512,7 +516,7 @@
     <span class="fu">geom_vline</span><span class="op">(</span>xintercept <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log2</a></span><span class="op">(</span><span class="va">mads</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_hline</span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">700</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">scale_alpha_manual</span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.2</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-29-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-28-1.png" width="700"></p>
 <p>As we already observed previously, the single-cell sample form a compact cloud. The MAD and number of proteins thresholds remove a few outlying cells, but a large majority is retained. You may notice that the first MAD threshold (<span class="math inline">\(log_2(sum) \approx 14\)</span>) filters out all the negative controls that were discussed in a previous section. The channel does not seem to affect the QC, but remember that difference between channels were already corrected during the normalization step.</p>
 </div>
 <div id="filter-cells" class="section level2">
@@ -537,7 +541,7 @@
     <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span> <span class="va">Plate</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">theme</span><span class="op">(</span>panel.grid.major <span class="op">=</span> <span class="fu">element_blank</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">scale_x_discrete</span><span class="op">(</span>drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-31-1.png" width="1440"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-30-1.png" width="1440"></p>
 <p>The position on the plate does not seem to influence the quality of the cells.</p>
 <p>Another QC the authors performed is to check the correlation between FACS parameters (that define the cell type) and the QC metrics. The information is again available from the <code>colData</code>.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
@@ -553,7 +557,7 @@
 <span class="va">p2</span> <span class="op">&lt;-</span> <span class="va">p1</span> <span class="op">+</span> <span class="fu">aes</span><span class="op">(</span>colour <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log2</a></span><span class="op">(</span><span class="va">sum</span><span class="op">)</span><span class="op">)</span>
 <span class="co">## Show plots</span>
 <span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span> <span class="op">+</span> <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html">plot_layout</a></span><span class="op">(</span>ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-32-1.png" width="384"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-31-1.png" width="384"></p>
 <p>FACS signal is correlated neither with the number of detect proteins nor with the summed protein intensities.</p>
 </div>
 </div>
@@ -670,7 +674,7 @@
 <p>The package also provides the <code>plotPCA</code> function to directly plot the PCA from the <code>SingleCellExperiment</code> object.</p>
 <div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotPCA</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-44-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-43-1.png" width="700"></p>
 <p>We can already see the LSC and PROG populations are close together in the latent space whereas the blast are spread over the latent space.</p>
 </div>
 <div id="umap" class="section level3">
@@ -690,7 +694,7 @@
                dimred <span class="op">=</span> <span class="st">"PCA"</span>,
                name <span class="op">=</span> <span class="st">"UMAP"</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-45-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-44-1.png" width="700"></p>
 <p>We can draw the same conclusion for the UMAP results than for the PCA result. LSC and PROG are also close in UMAP space while the BLAST are spread evenly. UMAP is used to visually assess the presence of clusters. In this case, we cannot see clusters but rather an homogeneous cloud. One reason could be that the present SCP data does not provide sufficient resolution (noise is too high) to discriminate between the different cell types. Another explanation is that the proteome between the different cell types is continuously shifting from one cell type to another. It is important to remember that the cell types are defined based on the CD34/CD38 flow-cytometry data using hard thresholds. To investigate whether this transition might be a smooth transition, we plot the score of the first UMAP vector along the FACS data.</p>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span>, UMAP <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html">reducedDim</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"UMAP"</span><span class="op">)</span><span class="op">)</span>
@@ -705,7 +709,7 @@
              label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"BLAST CD38+"</span>, <span class="st">"PROG"</span>, <span class="st">"BLAST CD38-"</span>, <span class="st">"LSC"</span><span class="op">)</span>,
              x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">300</span>, <span class="fl">700</span>, <span class="fl">300</span>, <span class="fl">700</span><span class="op">)</span>, 
              y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">750</span>, <span class="fl">750</span>, <span class="fl">200</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-46-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-45-1.png" width="700"></p>
 <p>This plot indeed indicates a smooth transition between the different cell types and this transition seems to be captured by the first UMAP vector. The higher the combination of the CD34 and or CD38 signal, the higher the UMAP score.</p>
 <p>While reassuring, the first scenario (too much noise to resolve cluster) might still hold as the LSC and PROG that are well separated by the FACS data and display clear phenotypical differences (LSC can self-renew, whereas PROG cannot) cannot be distinguished in UMAP space.</p>
 </div>
@@ -723,7 +727,7 @@
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/reducedDims.html">reducedDim</a></span><span class="op">(</span><span class="va">sce</span>, <span class="st">"DiffusionMap"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://theislab.github.io/destiny/reference/destiny-generics.html">eigenvectors</a></span><span class="op">(</span><span class="va">dm</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotDiffusionMap</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"Population"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-48-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-47-1.png" width="700"></p>
 <p>The first diffusion component recapitulates the expected differentiation hierarchy from the AML model. One of the tips of the diffusion map mainly contains LSC cells. PROG cells then also appear as well as BLAST.</p>
 </div>
 </div>
@@ -745,7 +749,7 @@
 <div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotDiffusionMap</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"dpt"</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"dpt"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-51-1.png" width="672"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-50-1.png" width="672"></p>
 <p>We also map the pseudo-time on the FACS data to highlight the estimated differentation trajectory.</p>
 <div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
@@ -760,7 +764,7 @@
              label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"BLAST CD38+"</span>, <span class="st">"PROG"</span>, <span class="st">"BLAST CD38-"</span>, <span class="st">"LSC"</span><span class="op">)</span>,
              x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">300</span>, <span class="fl">700</span>, <span class="fl">300</span>, <span class="fl">700</span><span class="op">)</span>, 
              y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">750</span>, <span class="fl">750</span>, <span class="fl">200</span>, <span class="fl">200</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-52-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-51-1.png" width="700"></p>
 <p>From this plot, the pseudo-time analysis follows the trajectory from the FACS data as descried in the literature, that is, LSC cells differentiate into PROG cells then into BLAST CD38+ cells and finish as BLAST CD38- cells. Interestingly, this plot also suggests an alternative trajectory going from LSC directly to BLAST CD38-. This was also observed in the <span class="citation">Schoof et al. (2021)</span> paper. This represents a good replication of their work, we were able to successfully replicate their work.</p>
 </div>
 <div id="cell-clustering" class="section level2">
@@ -779,7 +783,7 @@
 <p>We map the clusters on the UMAP plot.</p>
 <div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html">plotUMAP</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"leidenClust"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-55-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-54-1.png" width="700"></p>
 <p>The clusters shown above differ from the clusters shown in the SCeptre notebook. As we will see in a later section the data obtained in this vignette differ slightly from the data obtained in the SCeptre notebook. The discrepancies between the clusters from two slightly different datasets puts into question the reliability of the identified clusters. This observation supports the observation we drew from the UMAP where no grouping structure is found. Furthermore, we know <em>a priori</em> the cell types thanks to the FACS staining and previous work from literature. We can plot the concordance between the identified cluster and the known cell types.</p>
 <div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span>
@@ -796,7 +800,7 @@
         fill <span class="op">=</span> <span class="va">Population</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_histogram</span><span class="op">(</span>stat <span class="op">=</span> <span class="st">"identity"</span><span class="op">)</span>
 <span class="co">## Warning: Ignoring unknown parameters: binwidth, bins, pad</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-56-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-55-1.png" width="700"></p>
 <p>The clustering does not recapitulate the known biological information. All the clusters contain several cell type (except for cluster 2), and all cell types are present in several clusters. So, this dataset, and maybe more generally this biological model, should not be described as a set of discrete clusters.</p>
 </div>
 <div id="find-marker-genes" class="section level2">
@@ -864,7 +868,7 @@
         column_order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/order.html">order</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">Population</span><span class="op">)</span>,
         use_raster <span class="op">=</span> <span class="cn">TRUE</span>,
         heatmap_legend_param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span>at <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="va">trimmin</span>, <span class="fl">0</span>, <span class="va">trimmax</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-65-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-64-1.png" width="700"></p>
 <p>We can see that the more cells differentiate towards BLAST CD38- cells the more they expressed a unique set of genes. We could not find genes that are differentially over-expressed by PROG cells.</p>
 <p>Let’s have a look at the top markers for the different cell populations.</p>
 <div id="top-markers-of-the-blast-cd38--cells" class="section level3">
@@ -893,7 +897,7 @@
         col <span class="op">=</span> <span class="va">Population</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"ARL1 abundance"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-67-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-66-1.png" width="700"></p>
 <p>We can indeed observe a strong correlation between ARL1 expression and the pseudo time. However, the distribution of the point shows an undesired trend, that is that some observations are grouped along stripes. We already observed this for other SCP data and we showed that these stripes are artefacts of data processing (Vanderaa2021-xd).</p>
 </div>
 <div id="top-marker-of-the-blast-cd38-cells" class="section level3">
@@ -921,7 +925,7 @@
         col <span class="op">=</span> <span class="va">Population</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"P4HB abundance"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-69-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-68-1.png" width="700"></p>
 <p>For this marker, the trend between protein abundance and diffusion pseudo-time is bell-shaped. This is expected from the BLAST CD38+ cells since they represent the intermediate step of differentiation.</p>
 <ul>
 <li>Marker of the LSC cells</li>
@@ -944,7 +948,7 @@
         col <span class="op">=</span> <span class="va">Population</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">ggtitle</span><span class="op">(</span><span class="st">"PRDX1 abundance"</span><span class="op">)</span></code></pre></div>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-71-1.png" width="700"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-70-1.png" width="700"></p>
 <p>The relationship between PRDX1 expression and pseudo-time is anti-correlated with a strong expression by LSC at early estimated differentiation time and low expression at later time by BLAST cells.</p>
 </div>
 </div>
@@ -988,7 +992,7 @@
 <p><img src="schoof2021_files/figure-html/benchm_prot_diff-1.png" width="480"></p>
 <p>95 % of the differences are contained within (-0.42, 0.53) with a sharp peak around 0. We compare this difference distribution to the distribution of the protein abundance in the SCeptre dataset.</p>
 <pre><code>## Warning: Removed 246447 rows containing non-finite values (stat_bin).</code></pre>
-<p><img src="schoof2021_files/figure-html/unnamed-chunk-73-1.png" width="480"></p>
+<p><img src="schoof2021_files/figure-html/unnamed-chunk-72-1.png" width="480"></p>
 <p>Compared to the shape of the quantitative data, the differences observed between the two workflows are negligeable. Therefore, the <code>scp</code> workflow accurately replicates the SCeptre workflow.</p>
 </div>
 </div>
@@ -1011,18 +1015,16 @@
 <p>Further information about the Python environment:</p>
 <div class="sourceCode" id="cb78"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> IPython</span>
 <span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(IPython.sys_info())</span>
-<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="co">## {'commit_hash': '033ab93c7',</span></span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="co">## {'commit_hash': 'e76fa004a',</span></span>
 <span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a><span class="co">##  'commit_source': 'installation',</span></span>
-<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a><span class="co">##  'default_encoding': 'UTF-8',</span></span>
-<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_path': '/home/christophe/miniconda3/envs/sceptre/lib/python3.7/site-packages/IPython',</span></span>
-<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_version': '5.8.0',</span></span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a><span class="co">##  'default_encoding': 'utf-8',</span></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_path': '/home/christophe/PhD/SCP.replication/inst/renvs/schoof2021/renv/python/virtualenvs/renv-python-3.8/lib/python3.8/site-packages/IPython',</span></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a><span class="co">##  'ipython_version': '7.28.0',</span></span>
 <span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a><span class="co">##  'os_name': 'posix',</span></span>
-<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a><span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-debian-buster-sid',</span></span>
-<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_executable': '/home/christophe/miniconda3/envs/sceptre/bin/python',</span></span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a><span class="co">##  'platform': 'Linux-4.15.0-158-generic-x86_64-with-glibc2.10',</span></span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_executable': '/home/christophe/PhD/SCP.replication/inst/renvs/schoof2021/renv/python/virtualenvs/renv-python-3.8/bin/python',</span></span>
 <span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_platform': 'linux',</span></span>
-<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_version': '3.7.9 | packaged by conda-forge | (default, Dec  9 2020, '</span></span>
-<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '21:13:23) \n'</span></span>
-<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a><span class="co">##                 '[GCC 9.3.0]'}</span></span></code></pre></div>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a><span class="co">##  'sys_version': '3.8.5 (default, Sep  4 2020, 07:32:50) \n[GCC 7.3.0]'}</span></span></code></pre></div>
 </div>
 <div id="running-the-sceptre-module-in-r" class="section level3">
 <h3 class="hasAnchor">
@@ -1043,7 +1045,7 @@
 <h3 class="hasAnchor">
 <a href="#timing" class="anchor"></a>Timing</h3>
 <p>The total time required to compile this vignette is:</p>
-<pre><code>## 30.60378 mins</code></pre>
+<pre><code>## 28.3318 mins</code></pre>
 </div>
 <div id="memory" class="section level3">
 <h3 class="hasAnchor">
@@ -1085,9 +1087,9 @@
 <span class="co">## [13] patchwork_1.1.1              forcats_0.5.1               </span>
 <span class="co">## [15] stringr_1.4.0                dplyr_1.0.7                 </span>
 <span class="co">## [17] purrr_0.3.4                  readr_2.0.2                 </span>
-<span class="co">## [19] tidyr_1.1.4                  tibble_3.1.4                </span>
+<span class="co">## [19] tidyr_1.1.4                  tibble_3.1.5                </span>
 <span class="co">## [21] ggplot2_3.3.5                tidyverse_1.3.1             </span>
-<span class="co">## [23] SCP.replication_0.1.0        scpdata_1.1.0               </span>
+<span class="co">## [23] SCP.replication_0.2.1        scpdata_1.1.0               </span>
 <span class="co">## [25] ExperimentHub_2.1.4          AnnotationHub_3.1.5         </span>
 <span class="co">## [27] BiocFileCache_2.1.1          dbplyr_2.1.1                </span>
 <span class="co">## [29] scp_1.3.3                    QFeatures_1.3.6             </span>
@@ -1106,91 +1108,90 @@
 <span class="co">##   [9] doParallel_1.0.16             KEGGREST_1.33.0              </span>
 <span class="co">##  [11] RCurl_1.98-1.5                AnnotationFilter_1.17.1      </span>
 <span class="co">##  [13] generics_0.1.0                ScaledMatrix_1.1.0           </span>
-<span class="co">##  [15] cowplot_1.1.1                 RSQLite_2.2.8                </span>
-<span class="co">##  [17] proxy_0.4-26                  bit_4.0.4                    </span>
-<span class="co">##  [19] tzdb_0.1.2                    xml2_1.3.2                   </span>
-<span class="co">##  [21] lubridate_1.7.10              httpuv_1.6.3                 </span>
-<span class="co">##  [23] assertthat_0.2.1              xfun_0.26                    </span>
-<span class="co">##  [25] hms_1.1.1                     jquerylib_0.1.4              </span>
-<span class="co">##  [27] evaluate_0.14                 promises_1.2.0.1             </span>
-<span class="co">##  [29] DEoptimR_1.0-9                fansi_0.5.0                  </span>
-<span class="co">##  [31] readxl_1.3.1                  igraph_1.2.6                 </span>
-<span class="co">##  [33] DBI_1.1.1                     benchmarkmeData_1.0.4        </span>
-<span class="co">##  [35] ellipsis_0.3.2                RSpectra_0.16-0              </span>
-<span class="co">##  [37] backports_1.2.1               bookdown_0.24                </span>
-<span class="co">##  [39] annotate_1.71.0               sparseMatrixStats_1.5.3      </span>
-<span class="co">##  [41] vctrs_0.3.8                   Cairo_1.5-12.2               </span>
-<span class="co">##  [43] TTR_0.24.2                    here_1.0.1                   </span>
-<span class="co">##  [45] abind_1.4-5                   cachem_1.0.6                 </span>
-<span class="co">##  [47] RcppEigen_0.3.3.9.1           withr_2.4.2                  </span>
-<span class="co">##  [49] robustbase_0.93-9             vcd_1.4-8                    </span>
-<span class="co">##  [51] xts_0.12.1                    cluster_2.1.2                </span>
-<span class="co">##  [53] dir.expiry_1.1.0              lazyeval_0.2.2               </span>
-<span class="co">##  [55] laeken_0.5.1                  crayon_1.4.1                 </span>
-<span class="co">##  [57] basilisk.utils_1.5.0          genefilter_1.75.1            </span>
-<span class="co">##  [59] edgeR_3.35.1                  pkgconfig_2.0.3              </span>
-<span class="co">##  [61] labeling_0.4.2                nlme_3.1-153                 </span>
-<span class="co">##  [63] vipor_0.4.5                   ProtGenerics_1.25.1          </span>
-<span class="co">##  [65] nnet_7.3-16                   rlang_0.4.11                 </span>
-<span class="co">##  [67] lifecycle_1.0.1               filelock_1.0.2               </span>
-<span class="co">##  [69] modelr_0.1.8                  rsvd_1.0.5                   </span>
-<span class="co">##  [71] cellranger_1.1.0              rprojroot_2.0.2              </span>
-<span class="co">##  [73] RcppHNSW_0.3.0                lmtest_0.9-38                </span>
-<span class="co">##  [75] Matrix_1.3-4                  carData_3.0-4                </span>
-<span class="co">##  [77] boot_1.3-28                   zoo_1.8-9                    </span>
-<span class="co">##  [79] reprex_2.0.1                  beeswarm_0.4.0               </span>
-<span class="co">##  [81] GlobalOptions_0.1.2           rjson_0.2.20                 </span>
-<span class="co">##  [83] png_0.1-7                     knn.covertree_1.0            </span>
-<span class="co">##  [85] bitops_1.0-7                  Biostrings_2.61.2            </span>
-<span class="co">##  [87] blob_1.2.2                    DelayedMatrixStats_1.15.4    </span>
-<span class="co">##  [89] shape_1.4.6                   beachmat_2.9.1               </span>
-<span class="co">##  [91] scales_1.1.1                  hexbin_1.28.2                </span>
-<span class="co">##  [93] memoise_2.0.0                 magrittr_2.0.1               </span>
-<span class="co">##  [95] zlibbioc_1.39.0               compiler_4.1.0               </span>
-<span class="co">##  [97] dqrng_0.3.0                   pcaMethods_1.85.0            </span>
-<span class="co">##  [99] clue_0.3-59                   cli_3.0.1                    </span>
-<span class="co">## [101] XVector_0.33.0                ggplot.multistats_1.0.0      </span>
-<span class="co">## [103] MASS_7.3-54                   mgcv_1.8-37                  </span>
-<span class="co">## [105] tidyselect_1.1.1              stringi_1.7.4                </span>
-<span class="co">## [107] textshaping_0.3.5             highr_0.9                    </span>
-<span class="co">## [109] yaml_2.2.1                    BiocSingular_1.9.1           </span>
-<span class="co">## [111] locfit_1.5-9.4                ggrepel_0.9.1                </span>
-<span class="co">## [113] sass_0.4.0                    tools_4.1.0                  </span>
-<span class="co">## [115] parallel_4.1.0                rio_0.5.27                   </span>
-<span class="co">## [117] rstudioapi_0.13               MsCoreUtils_1.5.1            </span>
-<span class="co">## [119] foreach_1.5.1                 bluster_1.3.2                </span>
-<span class="co">## [121] foreign_0.8-81                metapod_1.1.0                </span>
-<span class="co">## [123] gridExtra_2.3                 smoother_1.1                 </span>
-<span class="co">## [125] scatterplot3d_0.3-41          farver_2.1.0                 </span>
-<span class="co">## [127] digest_0.6.28                 BiocManager_1.30.16          </span>
-<span class="co">## [129] FNN_1.1.3                     shiny_1.7.0                  </span>
-<span class="co">## [131] Rcpp_1.0.7                    car_3.0-11                   </span>
-<span class="co">## [133] broom_0.7.9                   BiocVersion_3.14.0           </span>
-<span class="co">## [135] later_1.3.0                   httr_1.4.2                   </span>
-<span class="co">## [137] AnnotationDbi_1.55.1          colorspace_2.0-2             </span>
-<span class="co">## [139] rvest_1.0.1                   XML_3.99-0.8                 </span>
-<span class="co">## [141] fs_1.5.0                      ranger_0.13.1                </span>
-<span class="co">## [143] splines_4.1.0                 statmod_1.4.36               </span>
-<span class="co">## [145] uwot_0.1.10                   pkgdown_1.6.1                </span>
-<span class="co">## [147] sp_1.4-5                      basilisk_1.5.0               </span>
-<span class="co">## [149] systemfonts_1.0.2             xtable_1.8-4                 </span>
-<span class="co">## [151] jsonlite_1.7.2                R6_2.5.1                     </span>
-<span class="co">## [153] pillar_1.6.3                  htmltools_0.5.2              </span>
-<span class="co">## [155] mime_0.12                     glue_1.4.2                   </span>
-<span class="co">## [157] fastmap_1.1.0                 VIM_6.1.1                    </span>
-<span class="co">## [159] BiocParallel_1.27.10          BiocNeighbors_1.11.0         </span>
-<span class="co">## [161] class_7.3-19                  interactiveDisplayBase_1.31.2</span>
-<span class="co">## [163] codetools_0.2-18              utf8_1.2.2                   </span>
-<span class="co">## [165] lattice_0.20-45               bslib_0.3.0                  </span>
-<span class="co">## [167] sva_3.41.0                    curl_4.3.2                   </span>
-<span class="co">## [169] ggbeeswarm_0.6.0              magick_2.7.3                 </span>
-<span class="co">## [171] zip_2.2.0                     openxlsx_4.2.4               </span>
-<span class="co">## [173] survival_3.2-13               limma_3.49.4                 </span>
-<span class="co">## [175] rmarkdown_2.11                desc_1.4.0                   </span>
-<span class="co">## [177] munsell_0.5.0                 GetoptLong_1.0.5             </span>
-<span class="co">## [179] e1071_1.7-9                   GenomeInfoDbData_1.2.7       </span>
-<span class="co">## [181] iterators_1.0.13              haven_2.4.3                  </span>
-<span class="co">## [183] gtable_0.3.0</span></code></pre></div>
+<span class="co">##  [15] RSQLite_2.2.8                 proxy_0.4-26                 </span>
+<span class="co">##  [17] bit_4.0.4                     tzdb_0.1.2                   </span>
+<span class="co">##  [19] xml2_1.3.2                    lubridate_1.7.10             </span>
+<span class="co">##  [21] httpuv_1.6.3                  assertthat_0.2.1             </span>
+<span class="co">##  [23] xfun_0.26                     hms_1.1.1                    </span>
+<span class="co">##  [25] jquerylib_0.1.4               evaluate_0.14                </span>
+<span class="co">##  [27] promises_1.2.0.1              DEoptimR_1.0-9               </span>
+<span class="co">##  [29] fansi_0.5.0                   readxl_1.3.1                 </span>
+<span class="co">##  [31] igraph_1.2.6                  DBI_1.1.1                    </span>
+<span class="co">##  [33] benchmarkmeData_1.0.4         ellipsis_0.3.2               </span>
+<span class="co">##  [35] RSpectra_0.16-0               backports_1.2.1              </span>
+<span class="co">##  [37] bookdown_0.24                 annotate_1.71.0              </span>
+<span class="co">##  [39] sparseMatrixStats_1.5.3       vctrs_0.3.8                  </span>
+<span class="co">##  [41] Cairo_1.5-12.2                TTR_0.24.2                   </span>
+<span class="co">##  [43] abind_1.4-5                   cachem_1.0.6                 </span>
+<span class="co">##  [45] RcppEigen_0.3.3.9.1           withr_2.4.2                  </span>
+<span class="co">##  [47] robustbase_0.93-9             vcd_1.4-8                    </span>
+<span class="co">##  [49] xts_0.12.1                    cluster_2.1.2                </span>
+<span class="co">##  [51] dir.expiry_1.1.0              lazyeval_0.2.2               </span>
+<span class="co">##  [53] laeken_0.5.1                  crayon_1.4.1                 </span>
+<span class="co">##  [55] basilisk.utils_1.5.0          genefilter_1.75.1            </span>
+<span class="co">##  [57] edgeR_3.35.1                  pkgconfig_2.0.3              </span>
+<span class="co">##  [59] labeling_0.4.2                nlme_3.1-153                 </span>
+<span class="co">##  [61] vipor_0.4.5                   ProtGenerics_1.25.1          </span>
+<span class="co">##  [63] nnet_7.3-16                   rlang_0.4.11                 </span>
+<span class="co">##  [65] lifecycle_1.0.1               filelock_1.0.2               </span>
+<span class="co">##  [67] modelr_0.1.8                  rsvd_1.0.5                   </span>
+<span class="co">##  [69] cellranger_1.1.0              rprojroot_2.0.2              </span>
+<span class="co">##  [71] RcppHNSW_0.3.0                lmtest_0.9-38                </span>
+<span class="co">##  [73] Matrix_1.3-4                  carData_3.0-4                </span>
+<span class="co">##  [75] boot_1.3-28                   zoo_1.8-9                    </span>
+<span class="co">##  [77] reprex_2.0.1                  beeswarm_0.4.0               </span>
+<span class="co">##  [79] GlobalOptions_0.1.2           rjson_0.2.20                 </span>
+<span class="co">##  [81] png_0.1-7                     knn.covertree_1.0            </span>
+<span class="co">##  [83] bitops_1.0-7                  Biostrings_2.61.2            </span>
+<span class="co">##  [85] blob_1.2.2                    DelayedMatrixStats_1.15.4    </span>
+<span class="co">##  [87] shape_1.4.6                   beachmat_2.9.1               </span>
+<span class="co">##  [89] scales_1.1.1                  memoise_2.0.0                </span>
+<span class="co">##  [91] magrittr_2.0.1                hexbin_1.28.2                </span>
+<span class="co">##  [93] zlibbioc_1.39.0               compiler_4.1.0               </span>
+<span class="co">##  [95] dqrng_0.3.0                   pcaMethods_1.85.0            </span>
+<span class="co">##  [97] clue_0.3-59                   cli_3.0.1                    </span>
+<span class="co">##  [99] XVector_0.33.0                ggplot.multistats_1.0.0      </span>
+<span class="co">## [101] MASS_7.3-54                   mgcv_1.8-37                  </span>
+<span class="co">## [103] tidyselect_1.1.1              stringi_1.7.4                </span>
+<span class="co">## [105] textshaping_0.3.5             highr_0.9                    </span>
+<span class="co">## [107] yaml_2.2.1                    BiocSingular_1.9.1           </span>
+<span class="co">## [109] locfit_1.5-9.4                ggrepel_0.9.1                </span>
+<span class="co">## [111] sass_0.4.0                    tools_4.1.0                  </span>
+<span class="co">## [113] parallel_4.1.0                rio_0.5.27                   </span>
+<span class="co">## [115] rstudioapi_0.13               MsCoreUtils_1.5.0            </span>
+<span class="co">## [117] foreach_1.5.1                 bluster_1.3.2                </span>
+<span class="co">## [119] foreign_0.8-81                metapod_1.1.0                </span>
+<span class="co">## [121] gridExtra_2.3                 smoother_1.1                 </span>
+<span class="co">## [123] scatterplot3d_0.3-41          farver_2.1.0                 </span>
+<span class="co">## [125] digest_0.6.28                 BiocManager_1.30.16          </span>
+<span class="co">## [127] FNN_1.1.3                     shiny_1.7.1                  </span>
+<span class="co">## [129] Rcpp_1.0.7                    car_3.0-11                   </span>
+<span class="co">## [131] broom_0.7.9                   BiocVersion_3.14.0           </span>
+<span class="co">## [133] later_1.3.0                   httr_1.4.2                   </span>
+<span class="co">## [135] AnnotationDbi_1.55.1          colorspace_2.0-2             </span>
+<span class="co">## [137] rvest_1.0.1                   XML_3.99-0.8                 </span>
+<span class="co">## [139] fs_1.5.0                      ranger_0.13.1                </span>
+<span class="co">## [141] splines_4.1.0                 statmod_1.4.36               </span>
+<span class="co">## [143] uwot_0.1.10                   pkgdown_1.6.1                </span>
+<span class="co">## [145] sp_1.4-5                      basilisk_1.5.0               </span>
+<span class="co">## [147] renv_0.14.0                   systemfonts_1.0.2            </span>
+<span class="co">## [149] xtable_1.8-4                  jsonlite_1.7.2               </span>
+<span class="co">## [151] R6_2.5.1                      pillar_1.6.3                 </span>
+<span class="co">## [153] htmltools_0.5.2               mime_0.12                    </span>
+<span class="co">## [155] glue_1.4.2                    fastmap_1.1.0                </span>
+<span class="co">## [157] VIM_6.1.1                     BiocParallel_1.27.12         </span>
+<span class="co">## [159] BiocNeighbors_1.11.0          class_7.3-19                 </span>
+<span class="co">## [161] interactiveDisplayBase_1.31.2 codetools_0.2-18             </span>
+<span class="co">## [163] utf8_1.2.2                    lattice_0.20-45              </span>
+<span class="co">## [165] bslib_0.3.0                   sva_3.41.0                   </span>
+<span class="co">## [167] curl_4.3.2                    ggbeeswarm_0.6.0             </span>
+<span class="co">## [169] magick_2.7.3                  zip_2.2.0                    </span>
+<span class="co">## [171] openxlsx_4.2.4                survival_3.2-13              </span>
+<span class="co">## [173] limma_3.49.4                  rmarkdown_2.11               </span>
+<span class="co">## [175] desc_1.4.0                    munsell_0.5.0                </span>
+<span class="co">## [177] GetoptLong_1.0.5              e1071_1.7-9                  </span>
+<span class="co">## [179] GenomeInfoDbData_1.2.7        iterators_1.0.13             </span>
+<span class="co">## [181] haven_2.4.3                   gtable_0.3.0</span></code></pre></div>
 </div>
 </div>
 <div id="reference" class="section level1 unnumbered">

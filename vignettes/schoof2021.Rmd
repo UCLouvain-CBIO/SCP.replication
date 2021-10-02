@@ -13,12 +13,17 @@ bibliography: ref.bib
 ---
 
 ```{r setup, include = FALSE}
-timeStart <- Sys.time() ## Time the compilation
+## Options for Rmarkdown compilation
 knitr::opts_chunk$set(
     message = FALSE,
     collapse = TRUE,
     crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
 )
+## Initialize the environment using renv
+renv::activate("../inst/renvs/schoof2021/")
+renv::restore()
+## Time the compilation
+timeStart <- Sys.time()
 ```
 
 # Introduction 
@@ -475,7 +480,7 @@ an interface between an R and Python code. We setup the python
 environment that contains the required modules to run `scpetre` (for
 more info, see the *Requirements* section at the end of the vignette).
 
-```{r}
+```{r load_sceptre}
 library("reticulate")
 use_condaenv("sceptre")
 spt <- import("sceptre")
@@ -1433,7 +1438,8 @@ interface.
 The system details of the machine that built the vignette are:
 
 ```{r, echo = FALSE, message = FALSE}
-sd <- benchmarkme::get_sys_details()
+library(benchmarkme)
+sd <- get_sys_details()
 cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
     "R version: R.", sd$r_version$major, ".", sd$r_version$minor,
     " (svn: ", sd$r_version$`svn rev`, ")\n",
