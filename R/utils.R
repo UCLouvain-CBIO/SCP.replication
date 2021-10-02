@@ -52,7 +52,6 @@
 ##' @return data A probe x sample genomic measure matrix, adjusted for batch effects.
 ##'
 ##' @examples
-##' library(sva)
 ##' library(bladderbatch)
 ##' data(bladderdata)
 ##' dat <- bladderEset[1:50,]
@@ -63,13 +62,13 @@
 ##' mod <- model.matrix(~as.factor(cancer), data=pheno)
 ##'
 ##' # parametric adjustment
-##' combat_edata1 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
+##' combat_edata1 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
 ##'
 ##' # non-parametric adjustment, mean-only version
-##' combat_edata2 <- ComBat(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
+##' combat_edata2 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
 ##'
 ##' # reference-batch version, with covariates
-##' combat_edata3 <- ComBat(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
+##' combat_edata3 <- ComBatv3.34(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
 ##'
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL,
