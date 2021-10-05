@@ -19,9 +19,17 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r knitr_params, echo = FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE)
-## Store current time for later record
+```{r setup, echo = FALSE}
+## Options for Rmarkdown compilation
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE,
+                      collapse = TRUE,
+                      crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+)
+## Initialize the environment using renv
+renv::activate("../inst/renvs/liang2020/")
+renv::restore()
+## Time the compilation
 timeStart <- Sys.time()
 ```
 
