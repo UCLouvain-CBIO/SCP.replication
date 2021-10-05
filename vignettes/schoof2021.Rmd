@@ -48,29 +48,31 @@ set provided in @Schoof2021-pv is that the flow cytometry data is also
 available. This allows for a characterization of the cell types before
 starting the data analysis on the SCP data. 
 
-The authors performed the analysis using `python` and made the effort 
-to provide the code needed to reproduce the results of the article. 
+The authors performed the analysis using Python and made the effort
+to provide the code needed to reproduce the results from the article. 
 Furthermore, they developed a library called `SCeptre` that extends 
-the `scanpy` library, a python library to process scRNA-Seq data. This
-vignette replicates this analysis in `R` using our recently developed
-`scp` package. 
+the `scanpy` library, a python library to process scRNA-Seq data. 
 
-Before starting, we load the replication package to make use of some
-helper functions. Those functions are only meant for this reproduction 
-vignette and are not designed for general use. 
-
-```{r, message = FALSE}
-library("SCP.replication")
-```
+In this vignette, we will replicate one of the analysis of the so 
+called `bulk` dataset, but here using the R programming language. The
+`bulk` dataset contains single cells isolated from a bulk cell culture
+without further selection or cell type purification. This is a very 
+interesting dataset since it emulates real-life research applications 
+of SCP. 
 
 ### `scp` workflow and data structure
 
 The data processing workflow we carry out in this vignette is 
-converted or takes the `R` equivalent of the `python` scripts and 
-libraries provided in this [GitHub repository](https://github.com/bfurtwa/SCeptre).
+converted or takes the `R` equivalent of the `Python` scripts and 
+libraries provided in the 
+[SCeptre GitHub repository](https://github.com/bfurtwa/SCeptre). This 
+repository comes with multiple notebooks, but we here reproduce the 
+`bulk.ipynb` notebook. 
 
-To perform SCP data analysis in `R`, we make use of our data framework 
-that combines two existing Bioconductor classes. The `SingleCellExperiment`
+We have recently developed a data framework to perform SCP data 
+analysis in R (@Vanderaa2021-ue) and built the `scp` package from this
+framework. The data framework combines two existing Bioconductor 
+classes. The `SingleCellExperiment`
 class provides an interface to many cutting edge methods for 
 single-cell analysis and the `QFeatures` class facilitates 
 manipulation and processing of MS-based quantitative data. The 
@@ -79,7 +81,21 @@ provides detailed information about the data structure. The `scp`
 package extends the functionality of `QFeatures` for single-cell 
 application.
 
-The required packages for running this workflow are listed below.
+Below is a general overview of the workflow of the `bulk` data 
+analysis.
+
+```{r SCoPE2_workflow, results='markup', fig.cap="Overview of the SCoPE2 workflow.", echo=FALSE, out.width='100%', fig.align='center'}
+knitr::include_graphics("figs/SCeptre-workflow.png", error = FALSE)
+```
+
+We coloured each step depending on the underlying package that 
+performs that step. The blue steps rely on `QFeatures`, the purple 
+steps rely on the `SingleCellExperiment` infrastructure, the green 
+steps rely on Python code from SCeptre (called from R) and the orange 
+step relies on `scp` functionality. As you can see, only few steps are
+specific to SCP (orange and green). 
+
+The required packages for running this vignette are listed below.
 
 ```{r libraries}
 ## Core packages of this workflow
@@ -453,17 +469,17 @@ scp <- subsetByColData(scp, scp$SampleType == "sc")
 scp@assayLinks <- scp@assayLinks[names(scp)]
 ```
 
-# Normalization I
+# Batch correction
 
 The dataset needs to be processed before running downstream analyses. 
 The first step the authors take is normalizing the data. To perform 
 this, they implemented a new normalization method and included it in 
 their `sceptre` Python module. Their normalization method aims to 
-remove channel and MS run biases. This is often also called batch 
-correction. 
+remove channel and MS run biases. In our opinion, this step should be 
+referred to as batch correction rather than normalization. 
 
-We extract the assay to normalize using `getWithColData`. The 
-normalization method in `sceptre` expects that the sample annotation
+We extract the assay to batch correct using `getWithColData`. The 
+batch correction method in `sceptre` expects that the sample annotation
 `File ID` is present. We therefore adapt the corresponding column name
 as requested. 
 
@@ -604,7 +620,6 @@ is contained in the `colData`.
 
 ```{r, fig.height = 9, fig.width = 15}
 df <- data.frame(colData(scp))
-# df$Col <- factor(df$Col, levels = 1:24) ## TODO remove this line when added to scpdata
 ggplot(df) +
     aes(x = Col,
         y = Row, 
@@ -817,7 +832,6 @@ used in the SCeptre notebook.
 
 ```{r}
 set.seed(1234)
-# sce$File.ID <- factor(sce$File.ID, levels = paste0("F", 1:192)) ## TODO Remove when updated in scpdata
 sce <- runUMAP(sce, 
                ncomponents = 2,
                ntop = Inf,
@@ -1170,7 +1184,7 @@ We can indeed observe a strong correlation between ARL1 expression and
 the pseudo time. However, the distribution of the point shows an 
 undesired trend, that is that some observations are grouped along 
 stripes. We already observed this for other SCP data and we showed 
-that these stripes are artefacts of data processing (Vanderaa2021-xd). 
+that these stripes are artefacts of data processing (@Vanderaa2021-ue). 
 
 ### Top marker of the BLAST CD38+ cells
 
