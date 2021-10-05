@@ -63,12 +63,6 @@
       <a href="../articles/schoof2021.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
     </li>
     <li>
-      <a href="../articles/schoof2021_R.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
-    </li>
-    <li>
-      <a href="../articles/schoof2021_python.html">Reproduction of the AML model analysis with python (Schoof et al. 2021)</a>
-    </li>
-    <li>
       <a href="../articles/zhu2019EL.html">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a>
     </li>
   </ul>
@@ -84,14 +78,14 @@
 
       
 
-      </header><div class="row">
+      </header><script src="liang2020_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Exploring the autoPOTS data (Liang et al. 2020)</h1>
+      <h1 data-toc-skip>Exploring the autoPOTS data (Liang et al. 2020)</h1>
                         <h4 class="author">Christophe Vanderaa, Computational Biology, UCLouvain</h4>
                         <h4 class="author">Laurent Gatto, Computational Biology, UCLouvain</h4>
             
-            <h4 class="date">1 Oktober 2021</h4>
+            <h4 class="date">5 Oktober 2021</h4>
       
       
       <div class="hidden name"><code>liang2020.Rmd</code></div>
@@ -100,20 +94,21 @@
 
     
     
+<pre><code>## * The library is already synchronized with the lockfile.</code></pre>
 <div id="introduction" class="section level1">
 <h1 class="hasAnchor">
 <a href="#introduction" class="anchor"></a>Introduction</h1>
 <p>autoPOTS (<span class="citation">Liang et al. (2020)</span>) is an acquisition protocol for label-free mass spectrometry (MS)-based single-cell proteomics (SCP). It relies on commercial material and is meant to be widely adopted and applied. Its development derives from the nanoPOTS technology (<span class="citation">Zhu et al. (2018)</span>) that uses custom-built instruments that are hardly transferable to other laboratories. Therefore, autoPOTS is the first attempt to provide a reproducible label-free SCP acquisition workflow.</p>
 <p>While many efforts are put on a reproducible technology, the authors do not address the reproducibility of the downstream data analysis. We here tackle this issue by showing that the <code>scp</code> package can be used to manipulate and process the data. We improve upon the results shown in the article and demonstrate that <code>scp</code> is a keystone for principled and rigorous data exploration.</p>
 <p>Running this vignette requires the <code>SCP.replication</code> package:</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="st">"SCP.replication"</span><span class="op">)</span></code></pre></div>
 <div id="scp-workflow-and-data-structure" class="section level3">
 <h3 class="hasAnchor">
 <a href="#scp-workflow-and-data-structure" class="anchor"></a><code>scp</code> workflow and data structure</h3>
 <p>The data processing workflow we carry out in this vignette is inferred from the methods section of the paper. Since no reproducible data analysis script was provided, we are not able to accurately evaluate the accuracy of the replication of the results. We will rely on Figure S5 to assess the replication. This vignette will also extend the results to better assess the quality of the provided data.</p>
 <p>To run the vignette you will need the following packages:</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://yulab-smu.top/biomedical-knowledge-mining-book/">clusterProfiler</a></span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">org.Hs.eg.db</span><span class="op">)</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com">patchwork</a></span><span class="op">)</span>
@@ -134,75 +129,75 @@
 <li>Lymphocyte samples containing 10 cells. Peptides and proteins were identified using FragPipe.</li>
 </ol>
 <p>Since no quantification data is available for the FragPipe data sets, we here only use the MaxQuant output. We retrieved the data from the PXD021882 repository. We formatted the data to a <code>QFeatures</code> object following the <code>scp</code> data format (more information can be found in the <a href="https://uclouvain-cbio.github.io/scp/articles/scp.html"><code>scp</code> vignette</a>). This formatted data is available directly from the <code>scpdata</code> package:</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scpdata/man/liang2020_hela.html">liang2020_hela</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 <p>The data contain 17 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature metadata. Each row in an assay represents a <strong>feature</strong> that can either be a PSM, a peptide or a protein depending on the assay. Each column in an assay represents a <strong>sample</strong>. Below, we show the overview of the <code>autoPOTS</code> dataset.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">autoPOTS</span></code></pre></div>
-<pre><code>## An instance of class QFeatures containing 17 assays:
-##  [1] HeLa_0cell_B16: SingleCellExperiment with 1153 rows and 1 columns 
-##  [2] HeLa_0cell_B18: SingleCellExperiment with 1214 rows and 1 columns 
-##  [3] HeLa_0cell_B4: SingleCellExperiment with 1366 rows and 1 columns 
-##  ...
-##  [15] HeLa_500cell_K8: SingleCellExperiment with 35054 rows and 1 columns 
-##  [16] peptides: SingleCellExperiment with 48705 rows and 15 columns 
-##  [17] proteins: SingleCellExperiment with 3970 rows and 15 columns</code></pre>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="va">autoPOTS</span>
+<span class="co">## An instance of class QFeatures containing 17 assays:</span>
+<span class="co">##  [1] HeLa_0cell_B16: SingleCellExperiment with 1153 rows and 1 columns </span>
+<span class="co">##  [2] HeLa_0cell_B18: SingleCellExperiment with 1214 rows and 1 columns </span>
+<span class="co">##  [3] HeLa_0cell_B4: SingleCellExperiment with 1366 rows and 1 columns </span>
+<span class="co">##  ...</span>
+<span class="co">##  [15] HeLa_500cell_K8: SingleCellExperiment with 35054 rows and 1 columns </span>
+<span class="co">##  [16] peptides: SingleCellExperiment with 48705 rows and 15 columns </span>
+<span class="co">##  [17] proteins: SingleCellExperiment with 3970 rows and 15 columns</span></code></pre></div>
 <p>15 out of the 17 assays are PSM data, each assay corresponding to a separate MS run. Since LFQ acquisitions contain a single sample per MS run, those 15 assays contain a single column. The dataset also contains a <code>peptides</code> assay and a <code>proteins</code> assay that hold peptide and protein level information,respectively. Those assays were produced by the authors after running MaxQuant.</p>
 <p>The data set also contains samples annotations that can be retrieved from the <code>colData</code> of the <code>QFeatures</code> object. The annotation contains the exact number of HeLa cells in each sample, but also additional information about cell type, sample preparation method, or MS2 settings.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span></code></pre></div>
-<pre><code>## DataFrame with 15 rows and 9 columns
-##                              Raw.file   nbCells  SampleType IsolationMethod
-##                           &lt;character&gt; &lt;integer&gt; &lt;character&gt;     &lt;character&gt;
-## HeLa_0cell_B16_sample   HeLa_0cell...         0        HeLa      micromanip
-## HeLa_0cell_B18_sample   HeLa_0cell...         0        HeLa      micromanip
-## HeLa_0cell_B4_sample    HeLa_0cell...         0        HeLa      micromanip
-## HeLa_10cell_G4_sample   HeLa_10cel...        10        HeLa      micromanip
-## HeLa_10cell_G8_sample   HeLa_10cel...        10        HeLa      micromanip
-## ...                               ...       ...         ...             ...
-## HeLa_1cell_E14_sample   HeLa_1cell...         1        HeLa      micromanip
-## HeLa_1cell_F8_sample    HeLa_1cell...         1        HeLa      micromanip
-## HeLa_500cell_J5_sample  HeLa_500ce...       466        HeLa        dilution
-## HeLa_500cell_K16_sample HeLa_500ce...       520        HeLa        dilution
-## HeLa_500cell_K8_sample  HeLa_500ce...       540        HeLa        dilution
-##                         MS2exclusionTime_s MS2accumulationTime_ms MS2resolution
-##                                  &lt;integer&gt;              &lt;integer&gt;     &lt;integer&gt;
-## HeLa_0cell_B16_sample                   90                    500         60000
-## HeLa_0cell_B18_sample                   90                    500         60000
-## HeLa_0cell_B4_sample                    90                    500         60000
-## HeLa_10cell_G4_sample                   90                    250         60000
-## HeLa_10cell_G8_sample                   90                    250         60000
-## ...                                    ...                    ...           ...
-## HeLa_1cell_E14_sample                   90                    500         60000
-## HeLa_1cell_F8_sample                    90                    500         60000
-## HeLa_500cell_J5_sample                  60                     50         30000
-## HeLa_500cell_K16_sample                 60                     50         30000
-## HeLa_500cell_K8_sample                  60                     50         30000
-##                            MS2AGC QuantificationColumn
-##                         &lt;integer&gt;          &lt;character&gt;
-## HeLa_0cell_B16_sample        5000            Intensity
-## HeLa_0cell_B18_sample        5000            Intensity
-## HeLa_0cell_B4_sample         5000            Intensity
-## HeLa_10cell_G4_sample       10000            Intensity
-## HeLa_10cell_G8_sample       10000            Intensity
-## ...                           ...                  ...
-## HeLa_1cell_E14_sample        5000            Intensity
-## HeLa_1cell_F8_sample         5000            Intensity
-## HeLa_500cell_J5_sample      10000            Intensity
-## HeLa_500cell_K16_sample     10000            Intensity
-## HeLa_500cell_K8_sample      10000            Intensity</code></pre>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span>
+<span class="co">## DataFrame with 15 rows and 9 columns</span>
+<span class="co">##                              Raw.file   nbCells  SampleType IsolationMethod</span>
+<span class="co">##                           &lt;character&gt; &lt;integer&gt; &lt;character&gt;     &lt;character&gt;</span>
+<span class="co">## HeLa_0cell_B16_sample   HeLa_0cell...         0        HeLa      micromanip</span>
+<span class="co">## HeLa_0cell_B18_sample   HeLa_0cell...         0        HeLa      micromanip</span>
+<span class="co">## HeLa_0cell_B4_sample    HeLa_0cell...         0        HeLa      micromanip</span>
+<span class="co">## HeLa_10cell_G4_sample   HeLa_10cel...        10        HeLa      micromanip</span>
+<span class="co">## HeLa_10cell_G8_sample   HeLa_10cel...        10        HeLa      micromanip</span>
+<span class="co">## ...                               ...       ...         ...             ...</span>
+<span class="co">## HeLa_1cell_E14_sample   HeLa_1cell...         1        HeLa      micromanip</span>
+<span class="co">## HeLa_1cell_F8_sample    HeLa_1cell...         1        HeLa      micromanip</span>
+<span class="co">## HeLa_500cell_J5_sample  HeLa_500ce...       466        HeLa        dilution</span>
+<span class="co">## HeLa_500cell_K16_sample HeLa_500ce...       520        HeLa        dilution</span>
+<span class="co">## HeLa_500cell_K8_sample  HeLa_500ce...       540        HeLa        dilution</span>
+<span class="co">##                         MS2exclusionTime_s MS2accumulationTime_ms MS2resolution</span>
+<span class="co">##                                  &lt;integer&gt;              &lt;integer&gt;     &lt;integer&gt;</span>
+<span class="co">## HeLa_0cell_B16_sample                   90                    500         60000</span>
+<span class="co">## HeLa_0cell_B18_sample                   90                    500         60000</span>
+<span class="co">## HeLa_0cell_B4_sample                    90                    500         60000</span>
+<span class="co">## HeLa_10cell_G4_sample                   90                    250         60000</span>
+<span class="co">## HeLa_10cell_G8_sample                   90                    250         60000</span>
+<span class="co">## ...                                    ...                    ...           ...</span>
+<span class="co">## HeLa_1cell_E14_sample                   90                    500         60000</span>
+<span class="co">## HeLa_1cell_F8_sample                    90                    500         60000</span>
+<span class="co">## HeLa_500cell_J5_sample                  60                     50         30000</span>
+<span class="co">## HeLa_500cell_K16_sample                 60                     50         30000</span>
+<span class="co">## HeLa_500cell_K8_sample                  60                     50         30000</span>
+<span class="co">##                            MS2AGC QuantificationColumn</span>
+<span class="co">##                         &lt;integer&gt;          &lt;character&gt;</span>
+<span class="co">## HeLa_0cell_B16_sample        5000            Intensity</span>
+<span class="co">## HeLa_0cell_B18_sample        5000            Intensity</span>
+<span class="co">## HeLa_0cell_B4_sample         5000            Intensity</span>
+<span class="co">## HeLa_10cell_G4_sample       10000            Intensity</span>
+<span class="co">## HeLa_10cell_G8_sample       10000            Intensity</span>
+<span class="co">## ...                           ...                  ...</span>
+<span class="co">## HeLa_1cell_E14_sample        5000            Intensity</span>
+<span class="co">## HeLa_1cell_F8_sample         5000            Intensity</span>
+<span class="co">## HeLa_500cell_J5_sample      10000            Intensity</span>
+<span class="co">## HeLa_500cell_K16_sample     10000            Intensity</span>
+<span class="co">## HeLa_500cell_K8_sample      10000            Intensity</span></code></pre></div>
 <p>To facilitate later analysis, we will group the cell numbers in bins of 0, 1, 10, 150 and 500 cells. Therefore, we add a new variable in the <code>colData</code> containing this grouping.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">nbCells</span>
 <span class="va">group</span><span class="op">[</span><span class="va">group</span> <span class="op">&gt;</span> <span class="fl">130</span> <span class="op">&amp;</span> <span class="va">group</span> <span class="op">&lt;</span> <span class="fl">170</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">150</span>
 <span class="va">group</span><span class="op">[</span><span class="va">group</span> <span class="op">&gt;</span> <span class="fl">450</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">500</span>
 <span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span><span class="op">)</span></code></pre></div>
-<pre><code>## 
-##   0   1  10 150 500 
-##   3   3   3   3   3</code></pre>
+<span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span><span class="op">)</span>
+<span class="co">## </span>
+<span class="co">##   0   1  10 150 500 </span>
+<span class="co">##   3   3   3   3   3</span></code></pre></div>
 <p>We remove the <code>peptides</code> and <code>proteins</code> to keep only the PSM data. We can subset a <code>QFeatures</code> object using the simple bracket operation. The desired elements/assays can be selected following the <code>[row, col, assay]</code> syntax.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="va">autoPOTS</span><span class="op">[</span>, , <span class="fl">1</span><span class="op">:</span><span class="fl">15</span><span class="op">]</span></code></pre></div>
 </div>
 </div>
@@ -214,65 +209,65 @@
 <h2 class="hasAnchor">
 <a href="#autopots" class="anchor"></a>autoPOTS</h2>
 <p>We start by filtering out undesired PSMs. Each PSM assay contains feature meta-information that are stored in the <code>rowData</code> of the assay. The <code>QFeatures</code> package allows to quickly filter the rows of an assay by using these information. The available variables in the <code>rowData</code> are listed below for each assay.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rowDataNames</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span></code></pre></div>
-<pre><code>## CharacterList of length 15
-## [["HeLa_0cell_B16"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_0cell_B18"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_0cell_B4"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_10cell_G4"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_10cell_G8"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_10cell_H2"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_150cell_I12"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_150cell_I16"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_150cell_I18"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## [["HeLa_1cell_E12"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs
-## ...
-## &lt;5 more elements&gt;</code></pre>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rowDataNames</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span>
+<span class="co">## CharacterList of length 15</span>
+<span class="co">## [["HeLa_0cell_B16"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_0cell_B18"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_0cell_B4"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_10cell_G4"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_10cell_G8"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_10cell_H2"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_150cell_I12"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_150cell_I16"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_150cell_I18"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## [["HeLa_1cell_E12"]] Sequence Length ... Best.MS.MS Oxidation..M..site.IDs</span>
+<span class="co">## ...</span>
+<span class="co">## &lt;5 more elements&gt;</span></code></pre></div>
 <p>Among those feature variable are <code>Reverse</code>, <code>Potential.contaminant</code> and <code>Modifications</code> that allow to filter for peptides that are not matched to a reversed sequence, that are not matched to a contaminant peptide and that are unmodified, respectively. We can perform this on the <code>QFeatures</code> object by using the <code>filterFeatures</code> function. The filters can be directly applied to the <code>rowData</code> variables of each assay.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">autoPOTS</span>, 
                            <span class="op">~</span> <span class="va">Reverse</span> <span class="op">!=</span> <span class="st">"+"</span> <span class="op">&amp;</span> 
                                <span class="va">Potential.contaminant</span> <span class="op">!=</span> <span class="st">"+"</span> <span class="op">&amp;</span>
                                <span class="va">Modifications</span> <span class="op">==</span> <span class="st">"Unmodified"</span><span class="op">)</span></code></pre></div>
 <p>Then, we replace zero values by <code>NA</code> to explicitly encode the missing data. This is performed using the <code>zeroisNA</code> function.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html">zeroIsNA</a></span><span class="op">(</span><span class="va">autoPOTS</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 </div>
 <div id="nanopots" class="section level2">
 <h2 class="hasAnchor">
 <a href="#nanopots" class="anchor"></a>nanoPOTS</h2>
 <p>In the article, the authors compare their recent results to the nanoPOTS results published in 2018 (<span class="citation">Zhu et al. (2018)</span>). This data is readily available in <code>scpdata</code>. The data set contains several types of samples: blanks, HeLa lysates, HeLa cells, MCF7 cells and THP1 cells. We will only keep the HeLa cells and the blanks.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">nanoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scpdata/man/zhu2018NC_hela.html">zhu2018NC_hela</a></span><span class="op">(</span><span class="op">)</span>
 <span class="va">nanoPOTS</span> <span class="op">&lt;-</span> <span class="va">nanoPOTS</span><span class="op">[</span>, <span class="va">nanoPOTS</span><span class="op">$</span><span class="va">SampleType</span> <span class="op">%in%</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"Hela"</span>, <span class="st">"Blank"</span><span class="op">)</span>, <span class="op">]</span>
-<span class="va">nanoPOTS</span></code></pre></div>
-<pre><code>## An instance of class QFeatures containing 2 assays:
-##  [1] peptides: SingleCellExperiment with 37795 rows and 12 columns 
-##  [2] proteins: SingleCellExperiment with 3984 rows and 12 columns</code></pre>
+<span class="va">nanoPOTS</span>
+<span class="co">## An instance of class QFeatures containing 2 assays:</span>
+<span class="co">##  [1] peptides: SingleCellExperiment with 37795 rows and 12 columns </span>
+<span class="co">##  [2] proteins: SingleCellExperiment with 3984 rows and 12 columns</span></code></pre></div>
 <p>Note that the PSM quantification data is not available for the <code>autoPOTS</code>, but this is not an issue since we will mainly focus on peptide or protein information. We perform the same data cleaning as for autoPOTS.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">nanoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html">filterFeatures</a></span><span class="op">(</span><span class="va">nanoPOTS</span>, 
                            <span class="op">~</span> <span class="va">Reverse</span> <span class="op">!=</span> <span class="st">"+"</span> <span class="op">&amp;</span> 
                                <span class="va">Potential.contaminant</span> <span class="op">!=</span> <span class="st">"+"</span><span class="op">)</span>
 <span class="va">nanoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html">zeroIsNA</a></span><span class="op">(</span><span class="va">nanoPOTS</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>To further make the two data sets comparable, we remove observations that were identified using match between run, because this option was disabled for autoPOTS.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">matchTypeCols</span> <span class="op">&lt;-</span> 
     <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"Identification.type.Hela"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html">colnames</a></span><span class="op">(</span><span class="fu">rowData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">isMBR</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">as.matrix</a></span><span class="op">(</span><span class="fu">rowData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span>, <span class="va">matchTypeCols</span><span class="op">]</span><span class="op">)</span> <span class="op">==</span> <span class="st">"By matching"</span>
 <span class="fu">assay</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span><span class="va">isMBR</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></code></pre></div>
 <p>Finally, just like for the autoPOTS dataset, we bin the cell numbers into groups.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu">colData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">nbCells</span>
 <span class="va">group</span><span class="op">[</span><span class="va">group</span> <span class="op">&gt;</span> <span class="fl">130</span> <span class="op">&amp;</span> <span class="va">group</span> <span class="op">&lt;</span> <span class="fl">145</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">140</span>
 <span class="va">group</span><span class="op">[</span><span class="va">group</span> <span class="op">&gt;</span> <span class="fl">30</span> <span class="op">&amp;</span> <span class="va">group</span> <span class="op">&lt;</span> <span class="fl">50</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">40</span>
 <span class="va">group</span><span class="op">[</span><span class="va">group</span> <span class="op">&gt;</span> <span class="fl">9</span> <span class="op">&amp;</span> <span class="va">group</span> <span class="op">&lt;</span> <span class="fl">15</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">10</span>
 <span class="fu">colData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">as.factor</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span><span class="op">)</span></code></pre></div>
-<pre><code>## 
-##   0  10  40 140 
-##   3   3   3   3</code></pre>
+<span class="fu"><a href="https://rdrr.io/r/base/table.html">table</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">)</span><span class="op">$</span><span class="va">group</span><span class="op">)</span>
+<span class="co">## </span>
+<span class="co">##   0  10  40 140 </span>
+<span class="co">##   3   3   3   3</span></code></pre></div>
 <p>Unfortunately, no true single-cell is available from this dataset, but sample still contain very low amounts of cells.</p>
 </div>
 </div>
@@ -282,11 +277,11 @@
 <p>The feature counts are the only results that are shown for the HeLa data set. Since we are using the quantifications generated by MaxQuant, we can relate to Figure S5.</p>
 <div class="figure" style="text-align: center">
 <img src="figs/liang2020-figureS5.png" alt="Figure S5 from Liang et al. 2020." width="70%"><p class="caption">
-Figure S5 from Liang et al. 2020.
+Figure S5 from Liang et al. 2020.
 </p>
 </div>
 <p>We count the unique number of peptides and proteins for each data set using the <code>countUniqueFeatures</code> from the <code>Qfeatures</code> package. To perform this, we need to supply the grouping variables. Peptides are identified by <code>Sequence</code> (<em>i.e</em> the peptide sequence) and proteins are identified by <code>Leading.razor.protein</code>. Note that the features are counted from the PSM data for the autoPOTS dataset, we therefore supply all the assay names to the function.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co">## Count peptides</span>
 <span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/countUniqueFeatures.html">countUniqueFeatures</a></span><span class="op">(</span><span class="va">autoPOTS</span>, 
                                 i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span>, 
@@ -310,7 +305,7 @@ Figure S5 from Liang et al. 2020.
 <h1 class="hasAnchor">
 <a href="#compare-autopots-and-nanopots" class="anchor"></a>Compare autoPOTs and nanoPOTS</h1>
 <p>We combine the sample data (<code>colData</code>) from the two data sets. We then use <code>ggplot2</code> to plot the peptides and protein counts for each data set.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span> <span class="op">%&gt;%</span> 
                 <span class="va">data.frame</span> <span class="op">%&gt;%</span> 
                 <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html">select</a></span><span class="op">(</span><span class="va">Protein_counts</span>, <span class="va">Peptide_counts</span>, 
@@ -336,8 +331,8 @@ Figure S5 from Liang et al. 2020.
                   label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html">round</a></span><span class="op">(</span><span class="va">mean</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">facet_wrap</span><span class="op">(</span><span class="va">name</span> <span class="op">~</span> <span class="va">dataset</span>, scales <span class="op">=</span> <span class="st">"free"</span><span class="op">)</span></code></pre></div>
 <p><img src="liang2020_files/figure-html/unnamed-chunk-6-1.png" width="700"></p>
-<p><strong>Watch out</strong>: this plot as well as the figure in the paper give the false impression of a linear increase. This is because the number of cells is treated as a factor and all categories are separated using an equal width. Let's redo the bottom right plot, but using the cell as a numeric variable, hence using a numeric scale.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<p><strong>Watch out</strong>: this plot as well as the figure in the paper give the false impression of a linear increase. This is because the number of cells is treated as a factor and all categories are separated using an equal width. Let’s redo the bottom right plot, but using the cell as a numeric variable, hence using a numeric scale.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">df</span> <span class="op">%&gt;%</span> 
     <span class="va">data.frame</span> <span class="op">%&gt;%</span> 
     <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
@@ -358,13 +353,13 @@ Figure S5 from Liang et al. 2020.
 <a href="#in-the-autopots-data-set" class="anchor"></a>In the autoPOTS data set</h2>
 <p>In Figure S5, the authors use a Venn diagram to show the overlap between the sets of proteins identified at different cell concentrations. While very intuitive, we dig a little bit deeper by providing an upset plot. Although upset plots are harder to read, they contain more information and make comparison between sets much easier.</p>
 <p>First, we format the <code>QFeatures</code> object to a long <code>DataFrame</code> using the <code>longFormat</code> function. This will take the quantifications matrix and turn it in a single vector, and add the desired feature and sample metadata. We also add a dataset identifier for later use.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lfauto</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">longFormat</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">[</span>, ,<span class="fu"><a href="https://rdrr.io/r/base/grep.html">grepl</a></span><span class="op">(</span><span class="st">"HeLa"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>,
                      colvars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"nbCells"</span>, <span class="st">"group"</span><span class="op">)</span>,
                      rowvars <span class="op">=</span> <span class="st">"Leading.razor.protein"</span><span class="op">)</span>
 <span class="va">lfauto</span><span class="op">$</span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="st">"autoPOTS"</span></code></pre></div>
 <p>We then build the upset plot using the functionality from <code>upsetR</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/fromList.html">fromList</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">$</span><span class="va">Leading.razor.protein</span>, 
                      <span class="fu"><a href="https://rdrr.io/r/base/paste.html">paste</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">$</span><span class="va">group</span>, <span class="st">"cells - autoPOTS"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/upset.html">upset</a></span><span class="op">(</span><span class="va">lt</span>, 
@@ -387,20 +382,20 @@ Figure S5 from Liang et al. 2020.
 <h2 class="hasAnchor">
 <a href="#autopots-against-nanopots" class="anchor"></a>autoPOTS against nanoPOTS</h2>
 <p>We will now compare to what extend the results obtained using the autoPOTS technology are consistent with the previous data acquired using the nanoPOTS technology. Similarly to the <code>autoPOTS</code> data set, we format the <code>nanoPOTS</code> in a long table.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lfnano</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">longFormat</a></span><span class="op">(</span><span class="va">nanoPOTS</span><span class="op">[</span>, ,<span class="st">"peptides"</span><span class="op">]</span>,
                      colvars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">"nbCells"</span>, <span class="st">"group"</span><span class="op">)</span>,
                      rowvars <span class="op">=</span> <span class="st">"Leading.razor.protein"</span><span class="op">)</span>
 <span class="va">lfnano</span><span class="op">$</span><span class="va">dataset</span> <span class="op">&lt;-</span> <span class="st">"nanoPOTS"</span></code></pre></div>
 <p>We combine the long tables for the two data sets in a single table.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/cbind.html">rbind</a></span><span class="op">(</span><span class="va">lfnano</span>, <span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="va">data.frame</span> <span class="op">%&gt;%</span> 
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="va">DataFrame</span> <span class="op">-&gt;</span>
     <span class="va">lf</span></code></pre></div>
 <p>In order to compare the coverage between the two datasets, we keep only samples between 10 and 150 cells (common in both experimental designs). We then create the upset plot.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lfsub</span> <span class="op">&lt;-</span> <span class="va">lf</span><span class="op">[</span><span class="va">lf</span><span class="op">$</span><span class="va">nbCells</span> <span class="op">&gt;=</span> <span class="fl">1</span> <span class="op">&amp;</span> <span class="va">lf</span><span class="op">$</span><span class="va">nbCells</span> <span class="op">&lt;=</span> <span class="fl">150</span>, <span class="op">]</span>
 <span class="va">lt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/fromList.html">fromList</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">lfsub</span><span class="op">$</span><span class="va">Leading.razor.protein</span>, <span class="va">lfsub</span><span class="op">$</span><span class="va">dataset</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/upset.html">upset</a></span><span class="op">(</span><span class="va">lt</span>, 
@@ -420,7 +415,7 @@ Figure S5 from Liang et al. 2020.
 <h3 class="hasAnchor">
 <a href="#in-500-cell-samples" class="anchor"></a>In 500-cell samples</h3>
 <p>We take again the autoPOTS data formatted as a long table, and subset only data points that were acquired in 500-cell samples. We make the upset plot to assess the consistency of the protein identification across those samples.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lt</span> <span class="op">&lt;-</span> <span class="va">lfauto</span><span class="op">[</span><span class="va">lfauto</span><span class="op">$</span><span class="va">nbCells</span> <span class="op">%in%</span> <span class="fl">450</span><span class="op">:</span><span class="fl">550</span>, <span class="op">]</span>
 <span class="va">lt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/fromList.html">fromList</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">lt</span><span class="op">$</span><span class="va">Leading.razor.protein</span>, <span class="va">lt</span><span class="op">$</span><span class="va">colname</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/upset.html">upset</a></span><span class="op">(</span><span class="va">lt</span>, 
@@ -438,7 +433,7 @@ Figure S5 from Liang et al. 2020.
 <h3 class="hasAnchor">
 <a href="#in-single-cells" class="anchor"></a>In single-cells</h3>
 <p>We apply the same procedure for single-cell samples.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lt</span> <span class="op">&lt;-</span> <span class="va">lfauto</span><span class="op">[</span><span class="va">lfauto</span><span class="op">$</span><span class="va">nbCells</span> <span class="op">==</span> <span class="fl">1</span>, <span class="op">]</span>
 <span class="va">lt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/fromList.html">fromList</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">lt</span><span class="op">$</span><span class="va">Leading.razor.protein</span>, <span class="va">lt</span><span class="op">$</span><span class="va">colname</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/upset.html">upset</a></span><span class="op">(</span><span class="va">lt</span>, 
@@ -452,7 +447,7 @@ Figure S5 from Liang et al. 2020.
 <p><img src="liang2020_files/figure-html/unnamed-chunk-14-1.png" width="700"></p>
 <p>The results for single-cell samples are very different from the results shown above for 500-cell samples. For each single-cell sample, about 50 % of the identified proteins were also found in the two other samples. However, about a third of the proteins are only found in one of the single-cell samples, indicating a high variability in detection rates between single-cell samples. There are two possible explanations:</p>
 <ul>
-<li>Technical missingness: protein concentrations are too low in single-cell samples so that only a part of the most expressed proteins are detectable. This is subjected to stochastic effects (MS selection, heterogeneity of expression,...) that lead to different sets of identified proteins.</li>
+<li>Technical missingness: protein concentrations are too low in single-cell samples so that only a part of the most expressed proteins are detectable. This is subjected to stochastic effects (MS selection, heterogeneity of expression,…) that lead to different sets of identified proteins.</li>
 <li>Biological missingness: the inherent heterogeneity in single cells leads to the expression of different, but biologically meaningful, sets of proteins. The more cells are contained in a sample, the more diluted this heterogeneity is.</li>
 </ul>
 <p>The most probable scenario is that there is a combination of the two types of missingness. However, it is not trivial to decouple technical and biological missingness. Synthetic samples are required to better assess which component of the missingness are more prominent.</p>
@@ -461,7 +456,7 @@ Figure S5 from Liang et al. 2020.
 <h3 class="hasAnchor">
 <a href="#in-blanks" class="anchor"></a>In blanks</h3>
 <p>Applying the same exploration to blank samples allows to assess the background detection. Be it either due to technical contamination, computational artefacts (during peptide identification) or contamination from the culture environment.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">lt</span> <span class="op">&lt;-</span> <span class="va">lfauto</span><span class="op">[</span><span class="va">lfauto</span><span class="op">$</span><span class="va">nbCells</span> <span class="op">==</span> <span class="fl">0</span>, <span class="op">]</span>
 <span class="va">lt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/fromList.html">fromList</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html">split</a></span><span class="op">(</span><span class="va">lt</span><span class="op">$</span><span class="va">Leading.razor.protein</span>, <span class="va">lt</span><span class="op">$</span><span class="va">colname</span><span class="op">)</span><span class="op">)</span>
 <span class="fu"><a href="https://rdrr.io/pkg/UpSetR/man/upset.html">upset</a></span><span class="op">(</span><span class="va">lt</span>, 
@@ -483,7 +478,7 @@ Figure S5 from Liang et al. 2020.
 <div id="intensity-distribution" class="section level2">
 <h2 class="hasAnchor">
 <a href="#intensity-distribution" class="anchor"></a>Intensity distribution</h2>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html">log10</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
@@ -497,7 +492,7 @@ Figure S5 from Liang et al. 2020.
 <a href="#intensity-dependent-identification" class="anchor"></a>Intensity dependent identification</h2>
 <p>We expect that proteins that are expressed in all single-cells should be more expressed than proteins found in only in one or two cells or not found in single-cells. To assess this, we <strong>assume</strong> that the 500-cell samples approximate the population protein expression. We look at the median protein expression in those concentrated samples but separate the proteins based on the number of single-cells it was found in.</p>
 <p>To plot this, we first need a table containing proteins found in single-cell samples and the number of single-cell samples in which each protein was found.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span>
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span>,
            <span class="va">nbCells</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span> <span class="op">%&gt;%</span> 
@@ -505,13 +500,13 @@ Figure S5 from Liang et al. 2020.
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarise</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">colname</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">-&gt;</span>
     <span class="va">scProts</span></code></pre></div>
 <p>Another interesting information to plot is whether a protein is also found in a blank sample. We therefore create a table containing only information about blank samples.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span>,
            <span class="va">nbCells</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">-&gt;</span>
     <span class="va">blankProts</span></code></pre></div>
 <p>Finally we create a table containing only information about the 500-cell samples, that we consider as bulk samples. We compute the median expression for each proteins across all 500-cell samples. We then join the single-cell table to include the number single-cell samples in which each protein was found. Finally, we also include the information about whether each protein was found in a blank samples or not.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span>,
            <span class="va">nbCells</span> <span class="op">%in%</span> <span class="fl">450</span><span class="op">:</span><span class="fl">550</span><span class="op">)</span> <span class="op">%&gt;%</span> 
@@ -522,7 +517,7 @@ Figure S5 from Liang et al. 2020.
            foundInBlank <span class="op">=</span> <span class="va">Leading.razor.protein</span> <span class="op">%in%</span> <span class="va">blankProts</span><span class="op">$</span><span class="va">Leading.razor.protein</span><span class="op">)</span> <span class="op">-&gt;</span>
     <span class="va">df</span></code></pre></div>
 <p>After this advanced data wrangling, we can plot the relationship between the median protein intensity in bulk samples and the number of single-cell samples that a protein is found in.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">ggplot</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span>
     <span class="fu">aes</span><span class="op">(</span>y <span class="op">=</span> <span class="va">value</span>,
         x <span class="op">=</span> <span class="va">n</span><span class="op">)</span> <span class="op">+</span>
@@ -546,7 +541,7 @@ Figure S5 from Liang et al. 2020.
 <h2 class="hasAnchor">
 <a href="#number-of-peptides-per-proteins" class="anchor"></a>Number of peptides per proteins</h2>
 <p>First, we have a look at the distribution of the number of peptides that are associated to a protein and assess the impact of the amount of sample material.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span><span class="op">(</span><span class="va">lfauto</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">colname</span>, <span class="va">Leading.razor.protein</span>, <span class="va">group</span><span class="op">)</span> <span class="op">%&gt;%</span> 
@@ -564,14 +559,14 @@ Figure S5 from Liang et al. 2020.
 <h2 class="hasAnchor">
 <a href="#median-cvs" class="anchor"></a>Median CVs</h2>
 <p>The coefficient of variation (CV) is a measure of the variability of the peptide quantification for a protein. Using the <code>medianCVperCell</code> function, we can compute this for all proteins in all samples. The median CV in each sample is computed and added to the <code>colData</code>, here we name the new varaible <code>medianCV</code>. We only assess CVs for proteins with at least 5 peptides. Note that this means that the CV is computed for only for a few proteins for blank and single-cell proteins (see plot above).</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">autoPOTS</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/medianCVperCell.html">medianCVperCell</a></span><span class="op">(</span><span class="va">autoPOTS</span>, 
                             i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"HeLa"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span>,
                             groupBy <span class="op">=</span> <span class="st">"Leading.razor.protein"</span>,
                             nobs <span class="op">=</span> <span class="fl">5</span>, 
                             colDataName <span class="op">=</span> <span class="st">"MedianCV"</span><span class="op">)</span></code></pre></div>
 <p>We plot the computed median CVs per sample against the number of cells per sample. The required data are immediately available in the <code>colData</code>.</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span> <span class="op">%&gt;%</span> 
     <span class="va">data.frame</span> <span class="op">%&gt;%</span>  
     <span class="fu">ggplot</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
@@ -587,7 +582,7 @@ Figure S5 from Liang et al. 2020.
 <a href="#assess-the-nature-of-the-proteins" class="anchor"></a>Assess the nature of the proteins</h1>
 <p><strong>Sections below are work in progress</strong></p>
 <p>Up to now, we saw that single-cells and</p>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">universe</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">autoPOTS</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"HeLa"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">universe</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">universe</span><span class="op">$</span><span class="va">Leading.razor.protein</span><span class="op">)</span></code></pre></div>
 <div id="in-many-cells-samples" class="section level2">
@@ -596,7 +591,7 @@ Figure S5 from Liang et al. 2020.
 <div id="biological-process" class="section level3">
 <h3 class="hasAnchor">
 <a href="#biological-process" class="anchor"></a>Biological process</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">common500</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">autoPOTS</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"500"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">common500</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">common500</span><span class="op">$</span><span class="va">Leading.razor.protein</span><span class="op">)</span>
 <span class="va">go_500</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enrichGO.html">enrichGO</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="va">common500</span>,
@@ -616,7 +611,7 @@ Figure S5 from Liang et al. 2020.
 <div id="cellular-compartment" class="section level3">
 <h3 class="hasAnchor">
 <a href="#cellular-compartment" class="anchor"></a>Cellular compartment</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">go_blank_CC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enrichGO.html">enrichGO</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="va">common500</span>,
                         OrgDb <span class="op">=</span> <span class="va">org.Hs.eg.db</span>,
                         keyType <span class="op">=</span> <span class="st">"UNIPROT"</span>,
@@ -640,7 +635,7 @@ Figure S5 from Liang et al. 2020.
 <div id="biological-process-1" class="section level3">
 <h3 class="hasAnchor">
 <a href="#biological-process-1" class="anchor"></a>Biological process</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">common0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">autoPOTS</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"_0cell"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">common0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">common0</span><span class="op">$</span><span class="va">Leading.razor.protein</span><span class="op">)</span>
 <span class="va">go_blank</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enrichGO.html">enrichGO</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="va">common0</span>,
@@ -660,7 +655,7 @@ Figure S5 from Liang et al. 2020.
 <div id="cellular-component" class="section level3">
 <h3 class="hasAnchor">
 <a href="#cellular-component" class="anchor"></a>Cellular component</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">go_blank_CC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enrichGO.html">enrichGO</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="va">common0</span>,
                         OrgDb <span class="op">=</span> <span class="va">org.Hs.eg.db</span>,
                         keyType <span class="op">=</span> <span class="st">"UNIPROT"</span>,
@@ -680,7 +675,7 @@ Figure S5 from Liang et al. 2020.
 <div id="in-single-cells-1" class="section level2">
 <h2 class="hasAnchor">
 <a href="#in-single-cells-1" class="anchor"></a>In single-cells</h2>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">commonSC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html">rbindRowData</a></span><span class="op">(</span><span class="va">autoPOTS</span>, i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html">grep</a></span><span class="op">(</span><span class="st">"_1cell"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html">names</a></span><span class="op">(</span><span class="va">autoPOTS</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
 <span class="va">commonSC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html">unique</a></span><span class="op">(</span><span class="va">commonSC</span><span class="op">$</span><span class="va">Leading.razor.protein</span><span class="op">)</span>
 <span class="va">go_sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/clusterProfiler/man/enrichGO.html">enrichGO</a></span><span class="op">(</span>gene <span class="op">=</span> <span class="va">commonSC</span>,
@@ -727,19 +722,19 @@ Figure S5 from Liang et al. 2020.
 <div id="session-info" class="section level3">
 <h3 class="hasAnchor">
 <a href="#session-info" class="anchor"></a>Session info</h3>
-<div class="sourceCode"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></code></pre></div>
 </div>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1 class="hasAnchor">
 <a href="#references" class="anchor"></a>References</h1>
-<div id="refs" class="references">
-<div id="ref-Liang2020-cr">
-<p>Liang, Yiran, Hayden Acor, Michaela A McCown, Andikan J Nwosu, Hannah Boekweg, Nathaniel B Axtell, Thy Truong, Yongzheng Cong, Samuel H Payne, and Ryan T Kelly. 2020. “Fully Automated Sample Processing and Analysis Workflow for Low-Input Proteome Profiling.” <em>Anal. Chem.</em>, December.</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Liang2020-cr" class="csl-entry">
+Liang, Yiran, Hayden Acor, Michaela A McCown, Andikan J Nwosu, Hannah Boekweg, Nathaniel B Axtell, Thy Truong, Yongzheng Cong, Samuel H Payne, and Ryan T Kelly. 2020. <span>“Fully Automated Sample Processing and Analysis Workflow for <span>Low-Input</span> Proteome Profiling.”</span> <em>Anal. Chem.</em>, December.
 </div>
-<div id="ref-Zhu2018-bf">
-<p>Zhu, Ying, Paul D Piehowski, Rui Zhao, Jing Chen, Yufeng Shen, Ronald J Moore, Anil K Shukla, et al. 2018. “Nanodroplet Processing Platform for Deep and Quantitative Proteome Profiling of 10-100 Mammalian Cells.” <em>Nat. Commun.</em> 9 (1): 882.</p>
+<div id="ref-Zhu2018-bf" class="csl-entry">
+Zhu, Ying, Paul D Piehowski, Rui Zhao, Jing Chen, Yufeng Shen, Ronald J Moore, Anil K Shukla, et al. 2018. <span>“Nanodroplet Processing Platform for Deep and Quantitative Proteome Profiling of 10-100 Mammalian Cells.”</span> <em>Nat. Commun.</em> 9 (1): 882.
 </div>
 </div>
 </div>
