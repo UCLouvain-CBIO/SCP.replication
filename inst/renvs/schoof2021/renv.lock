@@ -1559,9 +1559,15 @@
     },
     "scpdata": {
       "Package": "scpdata",
-      "Version": "1.1.0",
-      "Source": "Bioconductor",
-      "Hash": "c85ccd2c3aeaf4cbd505ca9b54ddcc1a"
+      "Version": "1.1.2",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "UCLouvain-CBIO",
+      "RemoteRepo": "scpdata",
+      "RemoteRef": "master",
+      "RemoteSha": "1093ac2597ba7022bb12820a85b618c7aa8e0a4a",
+      "Hash": "33272136fa898491cce27cf08fbeb783"
     },
     "scran": {
       "Package": "scran",
