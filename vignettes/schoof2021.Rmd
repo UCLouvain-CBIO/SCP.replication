@@ -789,7 +789,6 @@ on which we will perform the downstream analysis.
 
 ```{r}
 sce <- getWithColData(scp, "proteins_scaled")
-# load("~/Desktop/SCE_temp.RData")
 ```
 
 ## Dimension reduction 
