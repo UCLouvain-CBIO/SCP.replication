@@ -15,12 +15,13 @@ The replication package can be installed with R >= 4.1 by running:
 BiocManager::install("UCLouvain/SCP.replication")
 ```
 
-
 ## Reproduction of SCP data analyses
 
 The currently available reproduction vignettes are listed below.
 
 #### [Reproduction of the SCoPE2 analysis (Specht et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/SCoPE2.html)
+
+Project tag: `SCoPE2`
 
 > Specht H, Emmott E, Petelski AA, Huffman RG, Perlman DH, Serra M, et
 > al. Single-cell proteomic and transcriptomic analysis of macrophage
@@ -34,6 +35,8 @@ See also
 
 #### [Exploring the autoPOTS data (Liang et al. 2020)](https://uclouvain-cbio.github.io/SCP.replication/articles/liang2020.html)
 
+Project tag: `liang2020`
+
 > Liang, Yiran, Hayden Acor, Michaela A McCown, Andikan J Nwosu,
 > Hannah Boekweg, Nathaniel B Axtell, Thy Truong, Yongzheng Cong,
 > Samuel H Payne, and Ryan T Kelly. 2020. “Fully Automated Sample
@@ -43,6 +46,8 @@ See also
 
 #### [Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)](https://uclouvain-cbio.github.io/SCP.replication/articles/zhu2019EL.html)
 
+Project tag: `zhu2019EL`
+
 > Zhu, Ying, Mirko Scheibinger, Daniel Christian Ellwanger, Jocelyn F
 > Krey, Dongseok Choi, Ryan T Kelly, Stefan Heller, and Peter G
 > Barr-Gillespie. 2019. “Single-Cell Proteomics Reveals Changes in
@@ -50,6 +55,8 @@ See also
 > (November)](https://elifesciences.org/articles/50777).
 
 #### [Reproduction of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/schoof2021.html)
+
+Project tag: `schoof2021`
 
 > Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, 
 Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, 
@@ -61,3 +68,24 @@ See also
 
 - The SCeptre Github [repository](https://github.com/bfurtwa/SCeptre)
 
+## Replicate the analyses locally
+
+You can reproduce the analysis vignettes on your local machine.
+First, clone this repository and `cd` into it. The Rmarkdown files 
+that created the articles are available in the `vignettes` directory. 
+Then, you need to activate and restore the corresponding `renv` 
+project (see tags above). To do so, run the following command: 
+
+```r
+install.packages("renv")
+renv::activate("inst/renvs/PROJECT_TAG")
+renv::restore()
+```
+
+Make sure that `renv::restore` completes successfully. This procedure 
+installs all the required packages (in R) and modules (in Python) that
+are required to run the vignettes. **Warning**: `renv` makes sure to
+restore the correct dependency versions, but it does not consider the
+R or Python software version. You may run into trouble if your R 
+and/or Python versions do not match with the versions indicated at the
+end of each analysis (section *Requirements*). 
