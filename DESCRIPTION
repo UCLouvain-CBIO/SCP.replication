@@ -39,6 +39,7 @@ Suggests:
    scuttle,
    scran,
    scater,
+   sva,
    reticulate,
    zellkonverter,
    destiny,
