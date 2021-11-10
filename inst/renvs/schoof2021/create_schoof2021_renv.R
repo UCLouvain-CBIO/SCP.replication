@@ -28,6 +28,8 @@ renv::install(c("knitr", "rmarkdown", "BiocStyle"))
 ## Install SCP.replication from Github
 renv::install("remotes")
 renv::install("UCLouvain-CBIO/SCP.replication")
+## Install latest version of scpdata from Github
+renv::install("UCLouvain-CBIO/scpdata")
 
 ## Install other packages
 renv::install(c("tidyverse", "patchwork", "scuttle", "reticulate", 
