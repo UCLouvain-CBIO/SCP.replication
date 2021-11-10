@@ -28,8 +28,8 @@ knitr::opts_chunk$set(warning = FALSE,
                       crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
 )
 ## Initialize the environment using renv
-# renv::activate("../inst/renvs/zhu2019EL//")
-# renv::restore()
+renv::activate("../inst/renvs/zhu2019EL/")
+renv::restore()
 ## Time the compilation
 timeStart <- Sys.time()
 ```
@@ -128,9 +128,7 @@ The formatted data can be retrieved from the `scpdata` package using
 the `zhu2019EL()` function.
 
 ```{r load_data}
-# scp <- zhu2019EL()
-load("~/PhD/.localdata/scpdata/zhu2019EL.Rda")
-scp <- zhu2019EL
+scp <- zhu2019EL()
 ```
 
 The data contain 63 different `SingleCellExperiment` objects that we
