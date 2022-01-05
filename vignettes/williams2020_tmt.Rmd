@@ -1,0 +1,380 @@
+---
+title: "Reproducing the multiplexed SCP analysis by Williams et al. 2020)"
+author:
+    - Christophe Vanderaa, Computational Biology, UCLouvain
+    - Laurent Gatto, Computational Biology, UCLouvain
+output:
+    BiocStyle::html_document:
+    self_contained: yes
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    code_folding: show
+bibliography: ref.bib
+date: "`r BiocStyle::doc_date()`"
+package: "`r BiocStyle::pkg_ver('SCP.replication')`"
+vignette: >
+    %\VignetteIndexEntry{williams2020_TMT}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+## Options for Rmarkdown compilation
+knitr::opts_chunk$set(fig.width = 7,
+                      fig.height = 5,
+                      fig.align = "center",
+                      out.width = "70%",
+                      message = FALSE,
+                      collapse = TRUE,
+                      crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+)
+## Time the compilation
+timeStart <- Sys.time()
+```
+
+# Introduction
+
+Williams et al. present an auto-sampling device to interface between
+the nanoPOTS processing workflow and the LC-MS/MS. This allows for 
+increased automation of the technology that is critical for advancing
+the field to real single-cell proteomics applications.
+
+The authors did not provided the code required to fully reproduce 
+their analysis. We therefore based our replication solely on the 
+experimental section. The authors mention: 
+
+>For TMT-based quantification, corrected reporter ion intensities 
+were extracted. Reporter ion intensities from single cells were
+normalized to the reference channel containing 0.2 ng of apeptide 
+mixture from the three AML cell lines at PSM level using MaxQuant 
+(v. 1.6.12.0). To minimize the batch effect from multiple TMT 
+experiments, the relative abundances from 19 TMT plexes were 
+log2-transformed and the data matrices from all of the TMT experiments
+were combined after sequentially centering the column and row values 
+to their median values. A criterion of >70% valid values and at least
+two identified peptides per protein were required to generate the 
+"quantifiable' protein list. The data matrix was further analyzed by
+Perseus for statistical analysis including princip[al] component 
+analysis (PCA) and heatmap analysis.
+
+Furthermore, the processed data by the authors 
+is not provided, so we will benchmark the replication based on the 
+figures in the article.
+
+The authors however distribute the MaxQuant output that we have already
+converted to the `scp` data framework (@Vanderaa2021-ue). See the 
+[`scp` vignette](http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html) 
+for more information about the framework. The `QFeatures` object 
+containing the data sets from Williams et al. is available from the 
+`scpdata` package. Let's load the required packages before starting the
+replication.
+
+```{r}
+library(scpdata)
+library(scp)
+```
+
+# Load the data
+
+We can now load the multiplexed (TMT) SCP data set from Williams et al.
+This is performed by calling the `williams2020_tmt()` function from 
+`scpdata`. 
+
+```{r}
+(williams <- williams2020_tmt())
+```
+
+The data contain 4 different `SingleCellExperiment` objects that we
+refer to as **assays**. Each assay contains expression data along with
+feature metadata. Each row in an assay represents a **feature** that 
+is either a peptide (assay 1-2) or a protein (assay 3-4). The protein
+and peptide data are split in two assays, containing either the summed
+peptide/protein intensities, or the corrected (reference normalization)
+quantifications. We also store the relationships between features of 
+different assays. For instance, `peptides_intensity` are linked to 
+`proteins_intensity`. We can plot these relationships and get an 
+overveiew of the data set.
+
+```{r}
+plot(williams)
+```
+
+
+Each column (n = 209) in an assay represents a **sample**. We can 
+easily retrieve the sample annotations from the `colData`.
+
+```{r}
+colData(williams)
+table(williams$SampleType)
+```
+
+Most of the samples are single cells, either CMK, K562 or MOLM-14. The
+remaining assays are either booster channels (`Boost`) with 10ng of 
+protein lysate used to enhance peptide identification, reference 
+channels (`Reference') with 0.2ng of protein lysate used for 
+reference normalization by MaxQuant, and empty channels ('Empty`) with
+no material but containing spillover signal from the booster channel. 
+
+# Feature quality control
+
+The first step of the workflow is to remove reverse hits and 
+contaminants. Before performing this step, we subsest the data to only
+single-cell samples. This subset is performed on the `Amount` variable
+from the `colData`, so we use `subsetByColData()`.
+
+```{r}
+(williams <- subsetByColData(williams, williams$Amount == "1cell"))
+```
+
+We are left with a data set containing 152 single-cells. We can now 
+filter out the reverse hits and contaminants. The required information 
+is contained in the `rowData` of each assay (`Reverse` and 
+`Potential.contaminant`, respectively). We use `filterFeatures()` to 
+filter on the `rowData`. 
+
+```{r}
+(williams <- filterFeatures(williams, ~ Reverse != "+" & Potential.contaminant != "+"))
+```
+
+We are left with 17,735 peptides and 2,583 proteins that pass the 
+quality control. 
+
+# Log-transformation
+
+The authors next mention they log2-transformed the protein data. They 
+however do not mention how they deal with 0 values that will become
+infinite after any logarithmic transformation. In this replication 
+study, we replace 0's with missing values using `zeroIsNA()`.
+
+```{r}
+williams <- zeroIsNA(williams, i = "proteins_corrected")
+```
+
+We then apply `logTransform()` on the `proteins_corrected` assay 
+containing the protein data normalized by MaxQuant.
+
+```{r}
+(williams <- logTransform(williams, base = 2,
+                          i = "proteins_corrected", name = "proteins_log"))
+```
+
+We stored the results in a new assay called `proteins_log`.
+
+# Normalization
+
+The authors then further normalize the data by *sequentially centering*
+*the column and row values to their median values*. Centering columns
+to the median is readily available in `normalizeSCP()`.
+
+```{r}
+williams <- normalizeSCP(williams, method = "center.median",
+                         i = "proteins_log", name = "proteins_norm")
+```
+
+However, this is not the case for the row centering. The author mention
+they perform the row centering for each batch separately. We need to
+implement this custom normalization. First, we extract the assay of 
+interest with the associated `colData` using `getWithColData()`.
+
+```{r}
+sceNorm <- getWithColData(williams, "proteins_norm")
+```
+
+Then, we build a for loop that iterates through each batch and 
+centers the rows based on the median within each batch. 
+
+```{r}
+for (batch in sceNorm$Batch) {
+    ind <- which(sceNorm$Batch == batch) 
+    rowMeds <- rowMedians(assay(sceNorm[, ind]), na.rm = TRUE)
+    assay(sceNorm[, ind]) <- sweep(assay(sceNorm[, ind]), FUN = "-", 
+                                   STATS = rowMeds, MARGIN = 1)
+}
+```
+
+Finally, we add the row-normalized assay back in the data set and add
+the relationships from the previous assay to this new assay.
+
+```{r}
+williams <- addAssay(williams, sceNorm, name = "proteins_norm2")
+williams <- addAssayLinkOneToOne(williams, from = "proteins_norm", 
+                                 to = "proteins_norm2")
+```
+
+# Handle missing data
+
+The authors remove proteins that have more than 30 \% missing data. 
+We use `filterNA()` and provide the threshold of maximum 30\% missing values. 
+
+```{r}
+williams <- filterNA(williams, pNA = 0.3,  i = "proteins_norm2")
+```
+
+# Keep confident proteins
+
+The authors next keep only proteins that are identified with at least
+2 peptides. We can retrieve which proteins are made of several peptides
+from the `rowData` of the `peptides_corrected` assay. The peptides were
+mapped to the protein data thanks to the `Leading.razor.protein`. All
+proteins that are present at least 2 are kept. 
+
+```{r}
+## Get `Leading.razor.protein` from the peptide `rowData`
+prots <- rowData(williams[["peptides_corrected"]])$Leading.razor.protein
+## Get all proteins that are present at least twice
+prots <- unique(prots[duplicated(prots)])
+## Keep only proteins that were kept after missing data filtering
+prots <- prots[prots %in% rownames(williams)[["proteins_norm2"]]]
+head(prots)
+```
+We generated a vector with the proteins identified at least twice. We
+can now use it to subset the data set. Note that a `QFeatures` object
+can be seen as a three-order array: $features \times samples \times assay$.
+Hence, `QFeatures` supports three-order subsetting `x[rows, columns, assays]`.
+The great advantage of this subsetting is that all peptides linked to
+these desired proteins are also retrieved thanks to the relationships
+stored between proteins and peptides. 
+
+```{r}
+(williams <- williams[prots, , ])
+```
+
+This step concludes the quantitative data processing. We update the 
+`QFeatures` plot that provides an overview of the processing.
+
+```{r}
+plot(williams)
+```
+
+# Downstream analysis
+
+The authors used the processed data to perform two types of downstream
+analysis: single-cell correlation analysis and principal component
+analysis. We here provide the published figure that we aim to reproduce
+in this vignette. 
+
+```{r, results='markup', fig.cap="Figure 6 from Williams et al. 2020", echo=FALSE, out.width='50%', fig.align='center'}
+knitr::include_graphics("figs/williams2020-figure6.png", error = FALSE)
+```
+
+To run the downstream analysis, we only need the last assay generated
+during the quantitative data processing. We extract the assay as well
+as the associated sample annotations using `getWithColData()`.
+
+```{r}
+sce <- getWithColData(williams, "proteins_norm2")
+```
+
+## Correlation analysis
+
+We first compute the correlation matrix. We use pairwise 
+
+```{r}
+m <- assay(sce)
+corMat <- cor(m, method = "pearson", use = "pairwise.complete.obs")
+```
+
+We use the `ComplexHeatmap` package to plot the heatmap. This package
+allows easy annotation of the plot, namely labeling each sample with 
+its sample type and channel. 
+
+```{r}
+library(ComplexHeatmap)
+cols <- c(CMK = "green4", `K562` = "dodgerblue", `MOLM-14` = "red3")
+colAnnot <- columnAnnotation(Population = sce$SampleType,
+                             Channel = sce$Channel,
+                             col = list(Population = cols))
+```
+
+We can plot the heatmap. We disable the row and column clustering to
+keep the cell type ordering. 
+
+```{r}
+Heatmap(corMat, name = "Pearson correlation",
+        show_row_names = FALSE, show_column_names = FALSE,
+        top_annotation = colAnnot)
+```
+
+Like in the figure from the article, we observe a positive correlation
+between samples from the same cell type. We also observe with sample 
+type clusters. While this is not shown in the original figure, we can
+clearly link this effect to TMT channel bias. This should be corrected
+for, but a the poor experimental design causes sample type and TMT
+channel to be confounded, and hence entangling the TMT effects with 
+bioligical effects. 
+
+## PCA
+
+PCA can directly be computed from a `SingleCellExperiment` object thanks
+to the `scater` package. We therefore use `runPCA()`. Note that we also
+impute the missing values with zeros as PCA does not support missing 
+value. 
+
+```{r}
+library(scater)
+sce <- runPCA(impute(sce, method = "zero"), exprs_values = 1)
+```
+
+We generate the PCA plots using `plotPCA()`, and use different colouring
+schemes to highlight different samples annotations.
+
+```{r}
+plotPCA(sce, colour_by = "SampleType")
+```
+
+The sample types can be differentiated on the PCA plot, although the
+CMK and MOLM-14 slightly overlap what is not observed in the published
+work. Another small difference is that the first to PC explaine 15 \%
+of the variance while the authors report 22 \% explained variance. 
+
+# Conclusion
+
+We were able to reproduce the general results from the analysis by 
+@Williams2020-ty. However, we notice small discrepancies indicating 
+small differences between workflows. Without a script or the 
+intermediate results from the authors, we are unable to pinpoint which
+steps differ.
+
+# Requirements
+
+### Hardware and software
+
+The system details of the machine that built the vignette are:
+
+```{r, echo = FALSE, message = FALSE}
+library(benchmarkme)
+sd <- get_sys_details()
+cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
+    "R version: R.", sd$r_version$major, ".", sd$r_version$minor,
+    " (svn: ", sd$r_version$`svn rev`, ")\n",
+    "RAM: ", round(sd$ram / 1E9, 1), " GB\n",
+    "CPU: ", sd$cpu$no_of_cores, " core(s) - ", sd$cpu$model_name, "\n",
+    sep = "")
+```
+
+### Timing
+
+The total time required to compile this vignette is:
+
+```{r, echo = FALSE}
+timing <- Sys.time() - timeStart
+cat(timing[[1]], attr(timing, "units"))
+```
+
+### Memory
+
+The final `williams` memory size is:
+
+```{r, echo = FALSE}
+format(object.size(williams), units = "GB")
+```
+
+### Session info
+
+```{r}
+sessionInfo()
+```
+
+# Reference
+
