@@ -1,10 +1,11 @@
-pandoc: 2.11.2
-pkgdown: 1.6.1
+pandoc: 2.14.0.3
+pkgdown: 2.0.1
 pkgdown_sha: ~
 articles:
   SCoPE2: SCoPE2.html
   liang2020: liang2020.html
   schoof2021: schoof2021.html
+  williams2020_tmt: williams2020_tmt.html
   zhu2019EL: zhu2019EL.html
-last_built: 2021-10-01T11:48Z
+last_built: 2022-01-05T17:40Z
 
