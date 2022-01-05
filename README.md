@@ -68,6 +68,16 @@ See also
 
 - The SCeptre Github [repository](https://github.com/bfurtwa/SCeptre)
 
+#### [Reproducing the multiplexed SCP analysis by Williams et al. 2020](https://uclouvain-cbio.github.io/SCP.replication/articles/williams2020_tmt.html)
+
+Project tag: `williams2020_tmt`
+
+> Williams, Sarah M., Andrey V. Liyu, Chia-Feng Tsai, Ronald J. Moore, 
+Daniel J. Orton, William B. Chrisler, Matthew J. Gaffrey, et al. 2020.
+“Automated Coupling of Nanodroplet Sample Preparation with Liquid 
+Chromatography-Mass Spectrometry for High-Throughput Single-Cell
+Proteomics.” Analytical Chemistry 92 (15): 10588–96.
+
 ## Replicate the analyses locally
 
 You can reproduce the analysis vignettes on your local machine.

@@ -1,5 +1,5 @@
 ---
-title: "Reproducing the multiplexed SCP analysis by Williams et al. 2020)"
+title: "Reproducing the multiplexed SCP analysis by Williams et al. 2020"
 author:
     - Christophe Vanderaa, Computational Biology, UCLouvain
     - Laurent Gatto, Computational Biology, UCLouvain
@@ -287,8 +287,7 @@ colAnnot <- columnAnnotation(Population = sce$SampleType,
                              col = list(Population = cols))
 ```
 
-We can plot the heatmap. We disable the row and column clustering to
-keep the cell type ordering. 
+We can now plot the heatmap.
 
 ```{r}
 Heatmap(corMat, name = "Pearson correlation",
