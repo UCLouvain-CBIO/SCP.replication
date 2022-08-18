@@ -541,7 +541,6 @@ pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
 ##' 
 ##' @import OrgMassSpecR
 ##' @import reticulate
-##' @import scpdata
 ##' 
 ##' @export
 correctIsotopicCarryover <- function (x) {
@@ -651,7 +650,7 @@ correctIsotopicCarryover <- function (x) {
 ##' @return An instance of class QFeatures. The expression data of 
 ##'     each acquisition run is stored in a separate assay as a 
 ##'     SingleCellExperiment object.
-##'     
+##' 
 ##' @export
 ##' 
 readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,

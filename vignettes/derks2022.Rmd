@@ -35,13 +35,12 @@ timeStart <- Sys.time()
 
 # Introduction
 
-plexDIA ([Derks et al. 2022](http://dx.doi.org/10.1038/s41587-022-01389-w))
-enables the profiling of the proteome of single cells using a 
+plexDIA (@Derks2022-yn) enables the profiling of the proteome of 
+single cells using a 
 multiplexed DIA data acquisition strategy. The pipeline includes the 
-nPOP sample processing protocole ([Leduc et al. 2022](http://dx.doi.org/10.1101/2021.04.24.441211)),
+nPOP sample processing protocole (@Leduc2022-cc),
 with mTRAQ labeling of the samples. The authors used the DIA-NN 
-software ([Demichev et al. 2022](http://dx.doi.org/10.1038/s41592-019-0638-x))
-to identify and quantify the MS data. 
+software (@Demichev2020-rb) to identify and quantify the MS data. 
 
 Let's first load the replication package to make use of some helper
 functions. Those functions are only meant for this replication 
@@ -51,7 +50,7 @@ vignette and are not designed for general use.
 library("SCP.replication")
 ```
 
-### `scp` and the plexDIA data analysis workflow
+## `scp` and the plexDIA data analysis workflow
 
 The code provided along with the article can be retrieved from
 [this GitHub repository](https://github.com/SlavovLab/plexDIA).
@@ -60,13 +59,12 @@ while providing standardized, easy-to-read, and well documented code.
 Therefore, our first contribution is to formalize the data processing
 into a conceptual flow chart.
 
-```{r, results='markup', fig.cap="Overview of the processing workflow by Derks et al.", echo=FALSE, out.width='100%', fig.align='center'}
+```{r, results='markup', fig.cap="Overview of the processing workflow by Derks et al.", echo=FALSE, out.width='30%', fig.align='center'}
 knitr::include_graphics("figs/derks2022-workflow.png")
 ```
 
 This replication vignette relies on a data framework dedicated to SCP
-data analysis that combines two Bioconductor classes 
-([Vanderaa et al. 2021](http://dx.doi.org/10.1080/14789450.2021.1988571)):
+data analysis that combines two Bioconductor classes (@Vanderaa2021-ue):
 
 - The `SingleCellExperiment` class provides an interface to many 
 cutting edge methods for single-cell analysis 
@@ -91,12 +89,11 @@ library("sva")
 library("tidyverse")
 library("ggbeeswarm")
 library("ggrepel")
-library("reshape2")
 library("patchwork")
 library("ggpointdensity")
 ```
 
-### `scpdata` and the `leduc2022` dataset
+## `scpdata` and the `leduc2022` dataset
 
 We also implemented a data package called `scpdata`. It distributes
 published SCP datasets, such as the `derks2022` dataset. The datasets
@@ -129,13 +126,15 @@ authors have made to publicly share all the data generated in their
 project, from raw files to final expression tables (see the Slavov Lab 
 [website](https://scp.slavovlab.net/Derks_et_al_2022)).
 
-### To include in `scpdata`
+## To include in `scpdata`
 
 Actually, `derks2022()` is still in development and is not yet 
 available from `scpdata`. The code below will soon be published in
 `scpdata`. We here include it so that we can still run the vignette. 
 
 ```{r}
+## All data files were retrieved from this Google Drive repository:
+## https://drive.google.com/drive/folders/1pUC2zgXKtKYn22mlor0lmUDK0frgwL_-
 datadir <- "~/PhD/.localdata/SCP/derks2022/"
 
 ## Sample annotations
@@ -323,17 +322,19 @@ for (i in c("bulk", "qe", "tims")) {
 
 # Precursor FDR control
 
-**!discussion** this is too complicated. Refactoring of 
-filterFeatures in QFeatures would make this much easier.
+**!discussion** this is too complicated. Could we refactor 
+filterFeatures in QFeatures to make this easier?
 
 **!discussion** There was a copy-paste issue in the original code: 
-they used the scQE dataset instead of the bulkQE dataset... 
+the authors used the scQE dataset instead of the bulkQE dataset... 
 
 `PGs_0.01FDR <- SC[which(SC$Lib.PG.Q.Value<0.01),] %>% distinct(Protein.Group)`
 
 Should have been
 
 `PGs_0.01FDR <- B[which(B$Lib.PG.Q.Value<0.01),] %>% distinct(Protein.Group)`
+
+In this vignette, we use the correct set of filtered proteins. 
 
 ```{r}
 for (i in c("bulk", "qe", "tims")) {
@@ -361,9 +362,10 @@ package.
 
 ## Consensus mapping of precursors to proteins
 
-We need to account for an issue in the data. `joinAssays()` will only
-keep the metadata variables that have the same value between matching
-rows. However, some precursors map to one protein group in one run
+We need to account for a limitation when combining the data. 
+`joinAssays()` will only keep the metadata variables that have the 
+same value between matching rows. However, some precursors map to one
+protein group in one run
 and to another protein group in another run. Hence, the protein group is
 not constant for all precursors and is removed during joining. It is
 important we keep the protein group information in the `rowData` since
@@ -415,10 +417,9 @@ derks$pNA <- colMeans(assay(derks[["prec_corrected"]]) == 0, na.rm = TRUE)
 
 **!discussion**: I do not agree with how the missing data is computed. Missing
 data is defined by the authors as the the number of zero values and
-ignore the presence of NA's in the data... I don't understand why
-ignoring the NA's, it dramatically underestimates the missingness.
-Instead, I would have done as depicted in the chunk below although it 
-considers the union of all proteins found in all 3 datasets and will . 
+ignore the presence of NA's in the data. In my opinion, ignoring the
+NA's underestimates the data missingness. Here is what I suggest (not
+run):
 
 ```{r, eval=FALSE}
 derks <- zeroIsNA(derks, "prec_corrected")
@@ -438,7 +439,7 @@ data.frame(colData(derks)) %>%
 ```
 
 Most samples comply to the threshold. We remove the few single-cells 
-with too many missing data using `subsetByColdata()` since we have
+with too many missing data using `subsetByColdata()` because we have
 stored `pNA` in the `colData`. 
 
 ```{r}
@@ -447,13 +448,9 @@ derks <- subsetByColData(derks, derks$pNA < 0.6)
 
 # Clean missing data
 
-Log-transformation has generated infinite values because zeros were 
-present in the data. We clean these infinite values and residual zero
-by replacing them with NA's using `infIsNA()` and `zeroIsNA()`, 
-respectively. 
+We replace the zero values by NA's using `zeroIsNA()`. 
 
 ```{r}
-derks <- infIsNA(derks, "prec_corrected")
 derks <- zeroIsNA(derks, "prec_corrected")
 ```
 
@@ -523,18 +520,18 @@ derks <- sweep(derks, i = "prec_sampnorm", name = "prec_featnorm",
 
 # Protein aggregation
 
-Up to now, the data was processed at the precursor level. Several
-precursors belong to the same protein. One protein group is represented
-by over 150 precursors.
+Up to now, the data was processed at the precursor level. One protein
+group can be represented by several precursors. For instance, there 
+is one protein group that is represented by over 150 precursors.
 
 ```{r}
 hist(table(rowData(derks[["prec_featnorm"]])$Protein.Group),
      xlab = "Number precursors per protein group", main = "")
 ```
 
-We aggregate all precursors belonging to the same proteins. Median 
-aggregation is performed using `aggregateFeatures()` and providing 
-`fun = colMedians`. 
+We aggregate all precursors belonging to the same protein group using
+`aggregateFeatures()`. In this case, `fun = colMedians` will assign a
+protein group abundance as the median precursor abundance.
 
 ```{r}
 derks <- aggregateFeatures(derks, i = "prec_featnorm", name = "prot",
@@ -585,9 +582,8 @@ derks <- logTransform(derks, i = "prot_featnorm", name = "prot_log",
 # Clean missing data
 
 Log-transformation has generated infinite values because zeros were 
-present in the data. We clean these infinite values and residual zero
-by replacing them with NA's using `infIsNA()` and `zeroIsNA()`, 
-respectively. 
+present in the data. We replace these infinite values and zeros
+by NA's using `infIsNA()` and `zeroIsNA()`, respectively. 
 
 ```{r}
 derks <- infIsNA(derks, "prot_log")
@@ -620,7 +616,7 @@ derks <- subsetByColData(derks, derks$pNA < 0.95)
 ```
 
 **!discussion**: it would be nice to have a `byRow = TRUE` argument in
-filterNA to filter based on row or columns. 
+filterNA to filter based on rows or columns. 
 
 # Imputation
 
@@ -678,9 +674,14 @@ This last normalization step leads to the final data as processed by
 Derks et al. We will now compare our results with the results published
 by the authors. 
 
-# Benchmark final data
+# Benchmark the replication
 
-Let's first compare the filtered cells. 
+## Compare with the authors's processed data 
+
+We first compare the data generated by the authors's orginal script 
+and the data generated by this vignette. 
+
+Let's first compare the cells that were retained after processing. 
 
 ```{r}
 allElements <- union(colnames(proteins_derks), 
@@ -692,7 +693,7 @@ There is a good agreement between the set of filtered cells after the
 data processing by the authors and the data processing in this 
 vignette. 
 
-Let's now compare the filtered protein groups. 
+Let's now compare the protein groups retained after processing. 
 
 ```{r}
 allElements <- union(rownames(proteins_derks), 
@@ -702,7 +703,7 @@ table(derks2022 = allElements %in% rownames(proteins_derks),
 ```
 
 Most protein groups are found in both data processing workflows, but
-the agreement is weak. 
+the agreement is low. 
 
 Let's now compare the quantitative data between the two matrices. To
 do so, we need to intersect the column names and the rownames. 
@@ -725,17 +726,41 @@ data.frame(difference = as.vector(err[!is.na(err)])) %>%
 
 There are very large differences between the two workflows. Note that
 the differences are computed on a log2 scale. However, the mode of the 
-distribution peaks around 0.
+distribution peaks around 0. These differences may arise because we 
+had to change some implementations and constraints to use our `scp`
+framework. For instance, we had to re-implement the isotopic carryover
+correction using matrix operations instead of working with `data.frame`s.
+Furthermore, as mentioned when combining the datasets, we had to 
+perform a consensus vote when mapping precursors to protein groups 
+across different datasets. These decisions taken at the beginning may
+have led to small deviations from the original workflow and may have 
+propagated to larger deviations throughout the data processing steps. 
 
-# Number precursors per cell
+## Number precursors per cell
 
-```{r, eval=FALSE, echo=FALSE, fig.height=6, fig.width=8}
+We here attempt to replicate figures 6b, 6c, 6h and 6i where the authors
+show the number of precursors and protein groups that were found for 
+each cell type in each dataset. We first compute the number of non 
+missing precursors per sample using `countUniqueFeatures()` on the 
+joined precursor assay, `prec_corrected`. The counts are directly 
+stored in the `colData` under `nprecs`. Next, we do the same for the 
+protein groups. `countUniqueFeatures()` allows to group the features
+by a variable of the `rowData`. In this case, we set 
+`groupBy = "Protein.Groups"`. Note that we would get the same results
+if we applied `countUniqueFeatures` on the `prot` assay, or any protein
+level assay before imputation. 
+
+```{r, fig.height=6, fig.width=8}
 derks <- countUniqueFeatures(derks, i = "prec_corrected", colDataName = "nprecs")
-derks <- countUniqueFeatures(derks, i = "prec_corrected", groupBy = "Protein.Ids",
+derks <- countUniqueFeatures(derks, i = "prec_corrected", groupBy = "Protein.Group",
                              colDataName = "nprots")
 ```
 
-```{r, eval=FALSE, echo=FALSE, fig.height=6, fig.width=8}
+We next retrieve the counts from the `colData' and create the plot. We
+perform some faceting to display precursor and protein counts for all
+datasets in a single panel. 
+
+```{r, fig.height=6, fig.width=8}
 df <- data.frame(colData(derks))
 ggplot(df) +
     aes(x = Celltype, y = nprecs, fill = Celltype) +
@@ -746,17 +771,28 @@ ggplot(df) +
     facet_wrap(~ dataset, scales = "free") +
     labs(y = "Protein groups per cell") +
     plot_layout(guides = "collect", ncol = 1) &
-    geom_boxplot(alpha = 0.8) &
-    geom_beeswarm(show.legend = FALSE, alpha = 0.7) &
+    geom_boxplot() &
+    geom_beeswarm(alpha = 0.7) &
     xlab("") &
     theme_classic() &
     theme(legend.position = "none")
 ```
 
-# Bulk vs single-cell
+The plot is in line with the article's figure. 
+
+## Bulk vs single-cell
+
+We here attempt to replicate figures 6f and 6l where the authors show
+the correlation between the PDAC vs monocyte log fold change computed
+from single-cell samples and from bulk samples. Although the authors
+devoted a separate data processing to create the plot, we here decide
+to keep compare single-cells and bulk using the same processing steps.
+We extract the processed assay, compute the fold changes between PDAC
+and monoyctes for the three datasets and compute the correlations 
+between the single-cell and bulk log fold changes. 
 
 ```{r}
-sce <- getWithColData(derks, "prot_imp")
+sce <- getWithColData(derks, "prot_bc_featnorm")
 m <- assay(sce)
 logFC <- data.frame(PvsU_tims = rowMeans(m[, sce$Celltype == "PDAC_t"], na.rm = TRUE) - 
                         rowMeans(m[, sce$Celltype == "U-937_t"], na.rm = TRUE),
@@ -768,32 +804,27 @@ logFC <- data.frame(PvsU_tims = rowMeans(m[, sce$Celltype == "PDAC_t"], na.rm = 
 logFC <- left_join(logFC, data.frame(Protein.Group = c("P17096;P17096-3", "P07437", "P08729"),
                                      Protein.Name = c("HMGA1", "TUBB", "KRT7")), 
                    by = c("Protein.Group"))
+corQE <- round(cor(logFC$PvsU_qe, logFC$PvsU_bulk, 
+                   use = "pairwise.complete.obs", method = "spearman"), 2)
+corTims <- round(cor(logFC$PvsU_tims, logFC$PvsU_bulk, 
+                     use = "pairwise.complete.obs", method = "spearman"), 2)
 ```
 
+We then plot the results as performed in the article. 
 
 ```{r}
 ggplot(logFC) +
     aes(x = PvsU_bulk, 
         y = PvsU_qe) +
-    ggtitle("Q-Exactive vs Bulk",
-            subtitle = paste0("rho = ", round(cor(logFC$PvsU_qe, 
-                                                  logFC$PvsU_bulk, 
-                                                  use = "pairwise.complete.obs",
-                                                  method = "spearman"), 2))) +
-    labs(x = expression(paste(Log["2"],", PDAC/U-937 100 cells")), 
-         y = expression(paste(Log["2"],", PDAC/U-937 1 cell (Q-Exactive)"))) +
+    ggtitle("Q-Exactive vs Bulk", subtitle = paste0("rho = ", corQE)) +
     ggplot(logFC) +
     aes(x = PvsU_bulk, 
         y = PvsU_tims) +
-    ggtitle("timsTOF-SCP vs Bulk",
-            subtitle = paste0("rho = ", round(cor(logFC$PvsU_tims, 
-                                                  logFC$PvsU_bulk, 
-                                                  use = "pairwise.complete.obs",
-                                                  method = "spearman"), 2))) +
-    labs(x = expression(paste(Log["2"],", PDAC/U-937 100 cells")), 
-         y = expression(paste(Log["2"],", PDAC/U-937 1 cell (timTOF-SCP)"))) +
+    ggtitle("timsTOF-SCP vs Bulk", subtitle = paste0("rho = ", corTims)) +
     plot_layout() &
     geom_pointdensity() &
+    labs(x = "Log2 PDAC/U-937 100 cells", 
+         y = "Log2 PDAC/U-937 1 cell") &
     scale_color_continuous(type = "viridis") &
     theme_classic() &
     theme(legend.position = "none") &
@@ -803,12 +834,13 @@ ggplot(logFC) +
                      size = 2.75) 
 ```
 
-# PCA
+We generated a similar figure as in the article. 
 
-We here plot the PCA to reproduce Figure 6p from the author's paper. 
-Although the we could not accurately reproduce the data provided by the
-authors, we can clearly see the same global pattern as in the original
-work.
+## PCA
+
+We now plot the PCA to reproduce Figure 6p from the author's paper. We
+use the `pcaSCoPE2()` function that implements the weighted PCA as 
+suggested in @Specht2021-jm.
 
 ```{r}
 m <- assay(derks[["prot_bc_featnorm"]])
@@ -819,15 +851,19 @@ percent_var<- pca_var/sum(pca_var)*100
 ## PCA scores data
 pcaDf <- data.frame(PC = pcaRes$vectors[, 1:2],
                     colData(derks))
-pcaDf$Type <- pcaDf$Celltype
-pcaDf$Type[grepl("DB", pcaDf$Celltype)] <- "Bulk"
-pcaDf$Type[grepl("t$", pcaDf$Celltype)] <- "timsTOF-SCP"
-pcaDf$Type[!grepl("[_]", pcaDf$Celltype)] <- "Q-Exactive"
+## Format the sample annotations
 pcaDf$Celltype[grepl("PDAC", pcaDf$Celltype)] <- "PDAC"
 pcaDf$Celltype[grepl("Mel", pcaDf$Celltype)] <- "Melanoma"
 pcaDf$Celltype[grepl("^U", pcaDf$Celltype)] <- "Monocyte"
 pcaDf$Label <- paste0("mTRAQ", pcaDf$Label)
-## Plot    
+```
+
+We then plot the PCA results, colouring the cells either depending on
+the mTRAQ label used to identify tag-specific effects and depending on 
+the cell type to illustrate the ability of the technology to capture
+biological variability. 
+
+```{r}
 ggplot(pcaDf) +
     aes(color = Label) + 
     scale_color_manual(values = c("orange2","purple","turquoise")) +
@@ -835,21 +871,24 @@ ggplot(pcaDf) +
     aes(color = Celltype) + 
     scale_color_manual(values = c("#52B788","#457B9D","#E07A5F")) +
     plot_annotation(title = "PCA of the processed data using 'scp'",
-                    subtitle = paste0(sum(pcaDf$Type != "Bulk"), " cells\n",
+                    subtitle = paste0(sum(pcaDf$dataset != "Bulk"), " cells\n",
                                       nrow(m), " protein groups")) +
     plot_layout(guides = "collect") &
-    
     aes(x = PC.1, 
         y = PC.2, 
-        size = Type,
-        shape = Type, 
-        alpha = Type) &
+        size = dataset,
+        shape = dataset, 
+        alpha = dataset) &
     geom_point(alpha = 0.66) &
     labs(x = paste0("PC1 (", round(percent_var[1],0),"%)"), 
          y = paste0("PC2 (", round(percent_var[2],0),"%)")) &
     scale_size_manual(values = c(5, 2, 2)) &
     theme_classic()
 ```
+
+Although the we could not accurately replicate the data provided by the
+authors, we can clearly see the same global pattern as in the original
+work.
 
 # Requirements
 

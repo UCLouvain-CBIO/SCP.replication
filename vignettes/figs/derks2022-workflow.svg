@@ -600,9 +600,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.49497475"
-     inkscape:cx="32.588774"
-     inkscape:cy="725.7598"
+     inkscape:zoom="1.979899"
+     inkscape:cx="261.55719"
+     inkscape:cy="97.687041"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -631,7 +631,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -899,7 +899,7 @@
            x="41.748371"
            y="299.07507"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;stroke-width:0.26458332"
-           id="tspan2866-1-4-9">align precursor means</tspan></text>
+           id="tspan2866-1-4-9">align protein means</tspan></text>
       <g
          id="g1497-7-2" />
     </g>
@@ -1302,7 +1302,7 @@
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;text-align:center;text-anchor:middle;stroke-width:0.26458332"
            y="299.07507"
            x="41.748371"
-           sodipodi:role="line">align precursor means</tspan></text>
+           sodipodi:role="line">align protein means</tspan></text>
       <g
          id="g1497-7" />
     </g>

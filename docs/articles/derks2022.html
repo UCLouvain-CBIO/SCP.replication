@@ -56,6 +56,9 @@
       <a href="../articles/derks2022.html">Replication of the plexDIA analysis (Derks et al. 2022)</a>
     </li>
     <li>
+      <a href="../articles/leduc2022.html">Replication of the nPOP analysis (Leduc et al. 2022)</a>
+    </li>
+    <li>
       <a href="../articles/liang2020.html">Exploring the autoPOTS data (Liang et al. 2020)</a>
     </li>
     <li>
@@ -99,21 +102,21 @@
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>plexDIA (<a href="http://dx.doi.org/10.1038/s41587-022-01389-w" class="external-link">Derks et al. 2022</a>) enables the profiling of the proteome of single cells using a multiplexed DIA data acquisition strategy. The pipeline includes the nPOP sample processing protocole (<a href="http://dx.doi.org/10.1101/2021.04.24.441211" class="external-link">Leduc et al. 2022</a>), with mTRAQ labeling of the samples. The authors used the DIA-NN software (<a href="http://dx.doi.org/10.1038/s41592-019-0638-x" class="external-link">Demichev et al. 2022</a>) to identify and quantify the MS data.</p>
+<p>plexDIA (<span class="citation">@Derks2022-yn</span>) enables the profiling of the proteome of single cells using a multiplexed DIA data acquisition strategy. The pipeline includes the nPOP sample processing protocole (<span class="citation">@Leduc2022-cc</span>), with mTRAQ labeling of the samples. The authors used the DIA-NN software (<span class="citation">@Demichev2020-rb</span>) to identify and quantify the MS data.</p>
 <p>Let’s first load the replication package to make use of some helper functions. Those functions are only meant for this replication vignette and are not designed for general use.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st">"SCP.replication"</span><span class="op">)</span></span></code></pre></div>
-<div class="section level4">
-<h4 id="scp-and-the-plexdia-data-analysis-workflow">
+<div class="section level3">
+<h3 id="scp-and-the-plexdia-data-analysis-workflow">
 <code>scp</code> and the plexDIA data analysis workflow<a class="anchor" aria-label="anchor" href="#scp-and-the-plexdia-data-analysis-workflow"></a>
-</h4>
+</h3>
 <p>The code provided along with the article can be retrieved from <a href="https://github.com/SlavovLab/plexDIA" class="external-link">this GitHub repository</a>. The objective of this vignette is to replicate the analysis script while providing standardized, easy-to-read, and well documented code. Therefore, our first contribution is to formalize the data processing into a conceptual flow chart.</p>
 <div class="figure" style="text-align: center">
-<img src="figs/derks2022-workflow.png" alt="Overview of the processing workflow by Derks et al." width="100%"><p class="caption">
+<img src="figs/derks2022-workflow.png" alt="Overview of the processing workflow by Derks et al." width="30%"><p class="caption">
 Overview of the processing workflow by Derks et al.
 </p>
 </div>
-<p>This replication vignette relies on a data framework dedicated to SCP data analysis that combines two Bioconductor classes (<a href="http://dx.doi.org/10.1080/14789450.2021.1988571" class="external-link">Vanderaa et al. 2021</a>):</p>
+<p>This replication vignette relies on a data framework dedicated to SCP data analysis that combines two Bioconductor classes (<span class="citation">@Vanderaa2021-ue</span>):</p>
 <ul>
 <li>The <code>SingleCellExperiment</code> class provides an interface to many cutting edge methods for single-cell analysis</li>
 <li>The <code>QFeatures</code> class facilitates manipulation and processing of MS-based quantitative data.</li>
@@ -130,14 +133,13 @@ Overview of the processing workflow by Derks et al.
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://tidyverse.tidyverse.org" class="external-link">"tidyverse"</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/eclarke/ggbeeswarm" class="external-link">"ggbeeswarm"</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/slowkow/ggrepel" class="external-link">"ggrepel"</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/hadley/reshape" class="external-link">"reshape2"</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://patchwork.data-imaginist.com" class="external-link">"patchwork"</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="st"><a href="https://github.com/LKremer/ggpointdensity" class="external-link">"ggpointdensity"</a></span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level4">
-<h4 id="scpdata-and-the-leduc2022-dataset">
+<div class="section level3">
+<h3 id="scpdata-and-the-leduc2022-dataset">
 <code>scpdata</code> and the <code>leduc2022</code> dataset<a class="anchor" aria-label="anchor" href="#scpdata-and-the-leduc2022-dataset"></a>
-</h4>
+</h3>
 <p>We also implemented a data package called <code>scpdata</code>. It distributes published SCP datasets, such as the <code>derks2022</code> dataset. The datasets were downloaded from the data source provided in the publication and formatted to a <code>QFeatures</code> object so that it is compatible with our software. The underlying data storage is based on the <code>ExperimentHub</code> package that provides a cloud-based storage infrastructure.</p>
 <p>The <code>derks2022</code> dataset is provided at different levels of processing:</p>
 <ul>
@@ -148,12 +150,14 @@ Overview of the processing workflow by Derks et al.
 </ul>
 <p>The workflow starts with precursor tables and will generate the processed protein data. The authors provided the DIA-NN output tables and the sample annotation table through a <a href="https://drive.google.com/drive/folders/1pUC2zgXKtKYn22mlor0lmUDK0frgwL_-?usp=sharing" class="external-link">Google Drive repo</a>. Protein data are shared a TXT files. We highly value the effort the authors have made to publicly share all the data generated in their project, from raw files to final expression tables (see the Slavov Lab <a href="https://scp.slavovlab.net/Derks_et_al_2022" class="external-link">website</a>).</p>
 </div>
-<div class="section level4">
-<h4 id="to-include-in-scpdata">To include in <code>scpdata</code><a class="anchor" aria-label="anchor" href="#to-include-in-scpdata"></a>
-</h4>
+<div class="section level3">
+<h3 id="to-include-in-scpdata">To include in <code>scpdata</code><a class="anchor" aria-label="anchor" href="#to-include-in-scpdata"></a>
+</h3>
 <p>Actually, <code>derks2022()</code> is still in development and is not yet available from <code>scpdata</code>. The code below will soon be published in <code>scpdata</code>. We here include it so that we can still run the vignette.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">datadir</span> <span class="op">&lt;-</span> <span class="st">"~/PhD/.localdata/SCP/derks2022/"</span></span>
+<code class="sourceCode R"><span><span class="co">## All data files were retrieved from this Google Drive repository:</span></span>
+<span><span class="co">## https://drive.google.com/drive/folders/1pUC2zgXKtKYn22mlor0lmUDK0frgwL_-</span></span>
+<span><span class="va">datadir</span> <span class="op">&lt;-</span> <span class="st">"~/PhD/.localdata/SCP/derks2022/"</span></span>
 <span></span>
 <span><span class="co">## Sample annotations</span></span>
 <span></span>
@@ -315,11 +319,12 @@ Overview of the processing workflow by Derks et al.
 <div class="section level2">
 <h2 id="precursor-fdr-control">Precursor FDR control<a class="anchor" aria-label="anchor" href="#precursor-fdr-control"></a>
 </h2>
-<p><strong>!discussion</strong> this is too complicated. Refactoring of filterFeatures in QFeatures would make this much easier.</p>
-<p><strong>!discussion</strong> There was a copy-paste issue in the original code: they used the scQE dataset instead of the bulkQE dataset…</p>
+<p><strong>!discussion</strong> this is too complicated. Could we refactor filterFeatures in QFeatures to make this easier?</p>
+<p><strong>!discussion</strong> There was a copy-paste issue in the original code: the authors used the scQE dataset instead of the bulkQE dataset…</p>
 <p><code>PGs_0.01FDR &lt;- SC[which(SC$Lib.PG.Q.Value&lt;0.01),] %&gt;% distinct(Protein.Group)</code></p>
 <p>Should have been</p>
 <p><code>PGs_0.01FDR &lt;- B[which(B$Lib.PG.Q.Value&lt;0.01),] %&gt;% distinct(Protein.Group)</code></p>
+<p>In this vignette, we use the correct set of filtered proteins.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bulk"</span>, <span class="st">"qe"</span>, <span class="st">"tims"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">repAssays</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html" class="external-link">assayLink</a></span><span class="op">(</span><span class="va">derks</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="va">i</span> ,<span class="st">"_prec_extracted"</span><span class="op">)</span><span class="op">)</span><span class="op">@</span><span class="va">from</span></span>
@@ -348,7 +353,7 @@ Overview of the processing workflow by Derks et al.
 <div class="section level3">
 <h3 id="consensus-mapping-of-precursors-to-proteins">Consensus mapping of precursors to proteins<a class="anchor" aria-label="anchor" href="#consensus-mapping-of-precursors-to-proteins"></a>
 </h3>
-<p>We need to account for an issue in the data. <code><a href="https://rdrr.io/pkg/QFeatures/man/joinAssays.html" class="external-link">joinAssays()</a></code> will only keep the metadata variables that have the same value between matching rows. However, some precursors map to one protein group in one run and to another protein group in another run. Hence, the protein group is not constant for all precursors and is removed during joining. It is important we keep the protein group information in the <code>rowData</code> since we will later need it to aggregate precursors to proteins. To avoid this issue, we replace the problematic precursor to protein group mappings through a majority vote.</p>
+<p>We need to account for a limitation when combining the data. <code><a href="https://rdrr.io/pkg/QFeatures/man/joinAssays.html" class="external-link">joinAssays()</a></code> will only keep the metadata variables that have the same value between matching rows. However, some precursors map to one protein group in one run and to another protein group in another run. Hence, the protein group is not constant for all precursors and is removed during joining. It is important we keep the protein group information in the <code>rowData</code> since we will later need it to aggregate precursors to proteins. To avoid this issue, we replace the problematic precursor to protein group mappings through a majority vote.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## Generate a list of DataFrames with the information to modify</span></span>
 <span><span class="va">precAssays</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"corrected$"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">derks</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -391,7 +396,7 @@ Overview of the processing workflow by Derks et al.
 <p>Next, the authors require less than 60% missing data per cell. We compute the percent missing data for each column. We store it in the <code>colData</code> using <code>derks$ &lt;-</code> for later use.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span><span class="op">$</span><span class="va">pNA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prec_corrected"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><strong>!discussion</strong>: I do not agree with how the missing data is computed. Missing data is defined by the authors as the the number of zero values and ignore the presence of NA’s in the data… I don’t understand why ignoring the NA’s, it dramatically underestimates the missingness. Instead, I would have done as depicted in the chunk below although it considers the union of all proteins found in all 3 datasets and will .</p>
+<p><strong>!discussion</strong>: I do not agree with how the missing data is computed. Missing data is defined by the authors as the the number of zero values and ignore the presence of NA’s in the data. In my opinion, ignoring the NA’s underestimates the data missingness. Here is what I suggest (not run):</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prec_corrected"</span><span class="op">)</span></span>
 <span><span class="va">derks</span><span class="op">$</span><span class="va">pNA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">nNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prec_corrected"</span><span class="op">)</span><span class="op">$</span><span class="va">nNAcols</span><span class="op">$</span><span class="va">pNA</span></span></code></pre></div>
@@ -405,17 +410,16 @@ Overview of the processing workflow by Derks et al.
 <span>    <span class="fu"><a href="https://rdrr.io/pkg/ggbeeswarm/man/geom_beeswarm.html" class="external-link">geom_beeswarm</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_size_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">0.8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="derks2022_files/figure-html/unnamed-chunk-14-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>Most samples comply to the threshold. We remove the few single-cells with too many missing data using <code>subsetByColdata()</code> since we have stored <code>pNA</code> in the <code>colData</code>.</p>
+<p>Most samples comply to the threshold. We remove the few single-cells with too many missing data using <code>subsetByColdata()</code> because we have stored <code>pNA</code> in the <code>colData</code>.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">derks</span>, <span class="va">derks</span><span class="op">$</span><span class="va">pNA</span> <span class="op">&lt;</span> <span class="fl">0.6</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="clean-missing-data">Clean missing data<a class="anchor" aria-label="anchor" href="#clean-missing-data"></a>
 </h2>
-<p>Log-transformation has generated infinite values because zeros were present in the data. We clean these infinite values and residual zero by replacing them with NA’s using <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">infIsNA()</a></code> and <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>, respectively.</p>
+<p>We replace the zero values by NA’s using <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">infIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prec_corrected"</span><span class="op">)</span></span>
-<span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prec_corrected"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prec_corrected"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="batch-correction">Batch correction<a class="anchor" aria-label="anchor" href="#batch-correction"></a>
@@ -464,12 +468,12 @@ Overview of the processing workflow by Derks et al.
 <div class="section level2">
 <h2 id="protein-aggregation">Protein aggregation<a class="anchor" aria-label="anchor" href="#protein-aggregation"></a>
 </h2>
-<p>Up to now, the data was processed at the precursor level. Several precursors belong to the same protein. One protein group is represented by over 150 precursors.</p>
+<p>Up to now, the data was processed at the precursor level. One protein group can be represented by several precursors. For instance, there is one protein group that is represented by over 150 precursors.</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu">rowData</span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prec_featnorm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">Protein.Group</span><span class="op">)</span>,</span>
 <span>     xlab <span class="op">=</span> <span class="st">"Number precursors per protein group"</span>, main <span class="op">=</span> <span class="st">""</span><span class="op">)</span></span></code></pre></div>
 <p><img src="derks2022_files/figure-html/unnamed-chunk-22-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>We aggregate all precursors belonging to the same proteins. Median aggregation is performed using <code><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">aggregateFeatures()</a></code> and providing <code>fun = colMedians</code>.</p>
+<p>We aggregate all precursors belonging to the same protein group using <code><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">aggregateFeatures()</a></code>. In this case, <code>fun = colMedians</code> will assign a protein group abundance as the median precursor abundance.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">aggregateFeatures</a></span><span class="op">(</span><span class="va">derks</span>, i <span class="op">=</span> <span class="st">"prec_featnorm"</span>, name <span class="op">=</span> <span class="st">"prot"</span>,</span>
 <span>                           fcol <span class="op">=</span> <span class="st">"Protein.Group"</span>, fun <span class="op">=</span> <span class="va">colMedians</span>, </span>
@@ -514,7 +518,7 @@ Overview of the processing workflow by Derks et al.
 <div class="section level2">
 <h2 id="clean-missing-data-1">Clean missing data<a class="anchor" aria-label="anchor" href="#clean-missing-data-1"></a>
 </h2>
-<p>Log-transformation has generated infinite values because zeros were present in the data. We clean these infinite values and residual zero by replacing them with NA’s using <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">infIsNA()</a></code> and <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>, respectively.</p>
+<p>Log-transformation has generated infinite values because zeros were present in the data. We replace these infinite values and zeros by NA’s using <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">infIsNA()</a></code> and <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>, respectively.</p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">infIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prot_log"</span><span class="op">)</span></span>
 <span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prot_log"</span><span class="op">)</span></span></code></pre></div>
@@ -537,7 +541,7 @@ Overview of the processing workflow by Derks et al.
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">derks</span><span class="op">$</span><span class="va">pNA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colMeans</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prot_log"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">derks</span>, <span class="va">derks</span><span class="op">$</span><span class="va">pNA</span> <span class="op">&lt;</span> <span class="fl">0.95</span><span class="op">)</span></span></code></pre></div>
-<p><strong>!discussion</strong>: it would be nice to have a <code>byRow = TRUE</code> argument in filterNA to filter based on row or columns.</p>
+<p><strong>!discussion</strong>: it would be nice to have a <code>byRow = TRUE</code> argument in filterNA to filter based on rows or columns.</p>
 </div>
 </div>
 <div class="section level2">
@@ -582,9 +586,13 @@ Overview of the processing workflow by Derks et al.
 <p>This last normalization step leads to the final data as processed by Derks et al. We will now compare our results with the results published by the authors.</p>
 </div>
 <div class="section level2">
-<h2 id="benchmark-final-data">Benchmark final data<a class="anchor" aria-label="anchor" href="#benchmark-final-data"></a>
+<h2 id="benchmark-the-replication">Benchmark the replication<a class="anchor" aria-label="anchor" href="#benchmark-the-replication"></a>
 </h2>
-<p>Let’s first compare the filtered cells.</p>
+<div class="section level3">
+<h3 id="compare-with-the-authorss-processed-data">Compare with the authors’s processed data<a class="anchor" aria-label="anchor" href="#compare-with-the-authorss-processed-data"></a>
+</h3>
+<p>We first compare the data generated by the authors’s orginal script and the data generated by this vignette.</p>
+<p>Let’s first compare the cells that were retained after processing.</p>
 <div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">allElements</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">union</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">proteins_derks</span><span class="op">)</span>, </span>
 <span>                     <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prot_bc_featnorm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -595,7 +603,7 @@ Overview of the processing workflow by Derks et al.
 <span><span class="co">##     FALSE     0    7</span></span>
 <span><span class="co">##     TRUE      7  157</span></span></code></pre></div>
 <p>There is a good agreement between the set of filtered cells after the data processing by the authors and the data processing in this vignette.</p>
-<p>Let’s now compare the filtered protein groups.</p>
+<p>Let’s now compare the protein groups retained after processing.</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">allElements</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">union</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">proteins_derks</span><span class="op">)</span>, </span>
 <span>                     <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prot_bc_featnorm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -605,7 +613,7 @@ Overview of the processing workflow by Derks et al.
 <span><span class="co">## derks2022 FALSE TRUE</span></span>
 <span><span class="co">##     FALSE     0  561</span></span>
 <span><span class="co">##     TRUE    124 1351</span></span></code></pre></div>
-<p>Most protein groups are found in both data processing workflows, but the agreement is weak.</p>
+<p>Most protein groups are found in both data processing workflows, but the agreement is low.</p>
 <p>Let’s now compare the quantitative data between the two matrices. To do so, we need to intersect the column names and the rownames.</p>
 <div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">proteins_derks</span><span class="op">)</span>,</span>
@@ -622,17 +630,42 @@ Overview of the processing workflow by Derks et al.
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>labels <span class="op">=</span> <span class="fu">scales</span><span class="fu">::</span><span class="va"><a href="https://scales.r-lib.org/reference/scientific_format.html" class="external-link">scientific</a></span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="derks2022_files/figure-html/unnamed-chunk-36-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>There are very large differences between the two workflows. Note that the differences are computed on a log2 scale. However, the mode of the distribution peaks around 0.</p>
+<p>There are very large differences between the two workflows. Note that the differences are computed on a log2 scale. However, the mode of the distribution peaks around 0. These differences may arise because we had to change some implementations and constraints to use our <code>scp</code> framework. For instance, we had to re-implement the isotopic carryover correction using matrix operations instead of working with <code>data.frame</code>s. Furthermore, as mentioned when combining the datasets, we had to perform a consensus vote when mapping precursors to protein groups across different datasets. These decisions taken at the beginning may have led to small deviations from the original workflow and may have propagated to larger deviations throughout the data processing steps.</p>
 </div>
-<div class="section level2">
-<h2 id="number-precursors-per-cell">Number precursors per cell<a class="anchor" aria-label="anchor" href="#number-precursors-per-cell"></a>
-</h2>
-</div>
-<div class="section level2">
-<h2 id="bulk-vs-single-cell">Bulk vs single-cell<a class="anchor" aria-label="anchor" href="#bulk-vs-single-cell"></a>
-</h2>
+<div class="section level3">
+<h3 id="number-precursors-per-cell">Number precursors per cell<a class="anchor" aria-label="anchor" href="#number-precursors-per-cell"></a>
+</h3>
+<p>We here attempt to replicate figures 6b, 6c, 6h and 6i where the authors show the number of precursors and protein groups that were found for each cell type in each dataset. We first compute the number of non missing precursors per sample using <code><a href="https://rdrr.io/pkg/QFeatures/man/countUniqueFeatures.html" class="external-link">countUniqueFeatures()</a></code> on the joined precursor assay, <code>prec_corrected</code>. The counts are directly stored in the <code>colData</code> under <code>nprecs</code>. Next, we do the same for the protein groups. <code><a href="https://rdrr.io/pkg/QFeatures/man/countUniqueFeatures.html" class="external-link">countUniqueFeatures()</a></code> allows to group the features by a variable of the <code>rowData</code>. In this case, we set <code>groupBy = "Protein.Groups"</code>. Note that we would get the same results if we applied <code>countUniqueFeatures</code> on the <code>prot</code> assay, or any protein level assay before imputation.</p>
 <div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prot_imp"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/countUniqueFeatures.html" class="external-link">countUniqueFeatures</a></span><span class="op">(</span><span class="va">derks</span>, i <span class="op">=</span> <span class="st">"prec_corrected"</span>, colDataName <span class="op">=</span> <span class="st">"nprecs"</span><span class="op">)</span></span>
+<span><span class="va">derks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/countUniqueFeatures.html" class="external-link">countUniqueFeatures</a></span><span class="op">(</span><span class="va">derks</span>, i <span class="op">=</span> <span class="st">"prec_corrected"</span>, groupBy <span class="op">=</span> <span class="st">"Protein.Group"</span>,</span>
+<span>                             colDataName <span class="op">=</span> <span class="st">"nprots"</span><span class="op">)</span></span></code></pre></div>
+<p>We next retrieve the counts from the `colData’ and create the plot. We perform some faceting to display precursor and protein counts for all datasets in a single panel.</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="fu">colData</span><span class="op">(</span><span class="va">derks</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">Celltype</span>, y <span class="op">=</span> <span class="va">nprecs</span>, fill <span class="op">=</span> <span class="va">Celltype</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">dataset</span>, scales <span class="op">=</span> <span class="st">"free"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Precursors per cell"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">Celltype</span>, y <span class="op">=</span> <span class="va">nprots</span>, fill <span class="op">=</span> <span class="va">Celltype</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">dataset</span>, scales <span class="op">=</span> <span class="st">"free"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Protein groups per cell"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>guides <span class="op">=</span> <span class="st">"collect"</span>, ncol <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_boxplot.html" class="external-link">geom_boxplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/ggbeeswarm/man/geom_beeswarm.html" class="external-link">geom_beeswarm</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">xlab</a></span><span class="op">(</span><span class="st">""</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_classic</a></span><span class="op">(</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="derks2022_files/figure-html/unnamed-chunk-38-1.png" width="70%" style="display: block; margin: auto;"></p>
+<p>The plot is in line with the article’s figure.</p>
+</div>
+<div class="section level3">
+<h3 id="bulk-vs-single-cell">Bulk vs single-cell<a class="anchor" aria-label="anchor" href="#bulk-vs-single-cell"></a>
+</h3>
+<p>We here attempt to replicate figures 6f and 6l where the authors show the correlation between the PDAC vs monocyte log fold change computed from single-cell samples and from bulk samples. Although the authors devoted a separate data processing to create the plot, we here decide to keep compare single-cells and bulk using the same processing steps. We extract the processed assay, compute the fold changes between PDAC and monoyctes for the three datasets and compute the correlations between the single-cell and bulk log fold changes.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">derks</span>, <span class="st">"prot_bc_featnorm"</span><span class="op">)</span></span>
 <span><span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></span>
 <span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></span>
 <span><span class="va">logFC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>PvsU_tims <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans</a></span><span class="op">(</span><span class="va">m</span><span class="op">[</span>, <span class="va">sce</span><span class="op">$</span><span class="va">Celltype</span> <span class="op">==</span> <span class="st">"PDAC_t"</span><span class="op">]</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">-</span> </span>
@@ -644,30 +677,25 @@ Overview of the processing workflow by Derks et al.
 <span>                    Protein.Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">logFC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">logFC</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Protein.Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"P17096;P17096-3"</span>, <span class="st">"P07437"</span>, <span class="st">"P08729"</span><span class="op">)</span>,</span>
 <span>                                     Protein.Name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"HMGA1"</span>, <span class="st">"TUBB"</span>, <span class="st">"KRT7"</span><span class="op">)</span><span class="op">)</span>, </span>
-<span>                   by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Protein.Group"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<span>                   by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Protein.Group"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">corQE</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_qe</span>, <span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_bulk</span>, </span>
+<span>                   use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>, method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="va">corTims</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_tims</span>, <span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_bulk</span>, </span>
+<span>                     use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>, method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p>We then plot the results as performed in the article.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PvsU_bulk</span>, </span>
 <span>        y <span class="op">=</span> <span class="va">PvsU_qe</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Q-Exactive vs Bulk"</span>,</span>
-<span>            subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rho = "</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_qe</span>, </span>
-<span>                                                  <span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_bulk</span>, </span>
-<span>                                                  use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
-<span>                                                  method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">Log</span><span class="op">[</span><span class="st">"2"</span><span class="op">]</span>,<span class="st">", PDAC/U-937 100 cells"</span><span class="op">)</span><span class="op">)</span>, </span>
-<span>         y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">Log</span><span class="op">[</span><span class="st">"2"</span><span class="op">]</span>,<span class="st">", PDAC/U-937 1 cell (Q-Exactive)"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"Q-Exactive vs Bulk"</span>, subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rho = "</span>, <span class="va">corQE</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PvsU_bulk</span>, </span>
 <span>        y <span class="op">=</span> <span class="va">PvsU_tims</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"timsTOF-SCP vs Bulk"</span>,</span>
-<span>            subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rho = "</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_tims</span>, </span>
-<span>                                                  <span class="va">logFC</span><span class="op">$</span><span class="va">PvsU_bulk</span>, </span>
-<span>                                                  use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span>,</span>
-<span>                                                  method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">Log</span><span class="op">[</span><span class="st">"2"</span><span class="op">]</span>,<span class="st">", PDAC/U-937 100 cells"</span><span class="op">)</span><span class="op">)</span>, </span>
-<span>         y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">Log</span><span class="op">[</span><span class="st">"2"</span><span class="op">]</span>,<span class="st">", PDAC/U-937 1 cell (timTOF-SCP)"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">ggtitle</a></span><span class="op">(</span><span class="st">"timsTOF-SCP vs Bulk"</span>, subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"rho = "</span>, <span class="va">corTims</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/pkg/ggpointdensity/man/geom_pointdensity.html" class="external-link">geom_pointdensity</a></span><span class="op">(</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Log2 PDAC/U-937 100 cells"</span>, </span>
+<span>         y <span class="op">=</span> <span class="st">"Log2 PDAC/U-937 1 cell"</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_colour_continuous.html" class="external-link">scale_color_continuous</a></span><span class="op">(</span>type <span class="op">=</span> <span class="st">"viridis"</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_classic</a></span><span class="op">(</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">&amp;</span></span>
@@ -678,12 +706,13 @@ Overview of the processing workflow by Derks et al.
 <span><span class="co">## Warning: Removed 1909 rows containing missing values (geom_label_repel).</span></span>
 <span><span class="co">## Removed 1909 rows containing missing values (geom_label_repel).</span></span></code></pre></div>
 <p><img src="derks2022_files/figure-html/unnamed-chunk-40-1.png" width="70%" style="display: block; margin: auto;"></p>
+<p>We generated a similar figure as in the article.</p>
 </div>
-<div class="section level2">
-<h2 id="pca">PCA<a class="anchor" aria-label="anchor" href="#pca"></a>
-</h2>
-<p>We here plot the PCA to reproduce Figure 6p from the author’s paper. Although the we could not accurately reproduce the data provided by the authors, we can clearly see the same global pattern as in the original work.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="section level3">
+<h3 id="pca">PCA<a class="anchor" aria-label="anchor" href="#pca"></a>
+</h3>
+<p>We now plot the PCA to reproduce Figure 6p from the author’s paper. We use the <code><a href="../reference/pcaSCoPE2.html">pcaSCoPE2()</a></code> function that implements the weighted PCA as suggested in <span class="citation">@Specht2021-jm</span>.</p>
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">assay</span><span class="op">(</span><span class="va">derks</span><span class="op">[[</span><span class="st">"prot_bc_featnorm"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="va">pcaRes</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pcaSCoPE2.html">pcaSCoPE2</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span></span>
 <span><span class="co">## Percent of variance explained by each principle component</span></span>
@@ -692,37 +721,36 @@ Overview of the processing workflow by Derks et al.
 <span><span class="co">## PCA scores data</span></span>
 <span><span class="va">pcaDf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>PC <span class="op">=</span> <span class="va">pcaRes</span><span class="op">$</span><span class="va">vectors</span><span class="op">[</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">2</span><span class="op">]</span>,</span>
 <span>                    <span class="fu">colData</span><span class="op">(</span><span class="va">derks</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Type</span> <span class="op">&lt;-</span> <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span></span>
-<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Type</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"DB"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Bulk"</span></span>
-<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Type</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"t$"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"timsTOF-SCP"</span></span>
-<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Type</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"[_]"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Q-Exactive"</span></span>
+<span><span class="co">## Format the sample annotations</span></span>
 <span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"PDAC"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"PDAC"</span></span>
 <span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Mel"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Melanoma"</span></span>
 <span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^U"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Celltype</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Monocyte"</span></span>
-<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Label</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"mTRAQ"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Label</span><span class="op">)</span></span>
-<span><span class="co">## Plot    </span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pcaDf</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Label</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"mTRAQ"</span>, <span class="va">pcaDf</span><span class="op">$</span><span class="va">Label</span><span class="op">)</span></span></code></pre></div>
+<p>We then plot the PCA results, colouring the cells either depending on the mTRAQ label used to identify tag-specific effects and depending on the cell type to illustrate the ability of the technology to capture biological variability.</p>
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pcaDf</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color <span class="op">=</span> <span class="va">Label</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_color_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"orange2"</span>,<span class="st">"purple"</span>,<span class="st">"turquoise"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">pcaDf</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color <span class="op">=</span> <span class="va">Celltype</span><span class="op">)</span> <span class="op">+</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_color_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#52B788"</span>,<span class="st">"#457B9D"</span>,<span class="st">"#E07A5F"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_annotation.html" class="external-link">plot_annotation</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"PCA of the processed data using 'scp'"</span>,</span>
-<span>                    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">pcaDf</span><span class="op">$</span><span class="va">Type</span> <span class="op">!=</span> <span class="st">"Bulk"</span><span class="op">)</span>, <span class="st">" cells\n"</span>,</span>
+<span>                    subtitle <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">pcaDf</span><span class="op">$</span><span class="va">dataset</span> <span class="op">!=</span> <span class="st">"Bulk"</span><span class="op">)</span>, <span class="st">" cells\n"</span>,</span>
 <span>                                      <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">m</span><span class="op">)</span>, <span class="st">" protein groups"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>guides <span class="op">=</span> <span class="st">"collect"</span><span class="op">)</span> <span class="op">&amp;</span></span>
-<span>    </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">PC.1</span>, </span>
 <span>        y <span class="op">=</span> <span class="va">PC.2</span>, </span>
-<span>        size <span class="op">=</span> <span class="va">Type</span>,</span>
-<span>        shape <span class="op">=</span> <span class="va">Type</span>, </span>
-<span>        alpha <span class="op">=</span> <span class="va">Type</span><span class="op">)</span> <span class="op">&amp;</span></span>
+<span>        size <span class="op">=</span> <span class="va">dataset</span>,</span>
+<span>        shape <span class="op">=</span> <span class="va">dataset</span>, </span>
+<span>        alpha <span class="op">=</span> <span class="va">dataset</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>alpha <span class="op">=</span> <span class="fl">0.66</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PC1 ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">percent_var</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,<span class="fl">0</span><span class="op">)</span>,<span class="st">"%)"</span><span class="op">)</span>, </span>
 <span>         y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"PC2 ("</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">percent_var</span><span class="op">[</span><span class="fl">2</span><span class="op">]</span>,<span class="fl">0</span><span class="op">)</span>,<span class="st">"%)"</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_manual.html" class="external-link">scale_size_manual</a></span><span class="op">(</span>values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_classic</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="derks2022_files/figure-html/unnamed-chunk-41-1.png" width="70%" style="display: block; margin: auto;"></p>
+<p><img src="derks2022_files/figure-html/unnamed-chunk-42-1.png" width="70%" style="display: block; margin: auto;"></p>
+<p>Although the we could not accurately replicate the data provided by the authors, we can clearly see the same global pattern as in the original work.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
@@ -740,7 +768,7 @@ Overview of the processing workflow by Derks et al.
 <h4 id="timing">Timing<a class="anchor" aria-label="anchor" href="#timing"></a>
 </h4>
 <p>The total time required to compile this vignette is:</p>
-<pre><code><span><span class="co">## 4.933047 mins</span></span></code></pre>
+<pre><code><span><span class="co">## 4.957523 mins</span></span></code></pre>
 </div>
 <div class="section level4">
 <h4 id="memory">Memory<a class="anchor" aria-label="anchor" href="#memory"></a>
@@ -751,7 +779,7 @@ Overview of the processing workflow by Derks et al.
 <div class="section level4">
 <h4 id="session-info">Session info<a class="anchor" aria-label="anchor" href="#session-info"></a>
 </h4>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">## R Under development (unstable) (2021-11-02 r81131)</span></span>
 <span><span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
@@ -775,89 +803,89 @@ Overview of the processing workflow by Derks et al.
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
 <span><span class="co">##  [1] benchmarkme_1.0.8           ggpointdensity_0.1.0       </span></span>
-<span><span class="co">##  [3] patchwork_1.1.1             reshape2_1.4.4             </span></span>
-<span><span class="co">##  [5] ggrepel_0.9.1               ggbeeswarm_0.6.0           </span></span>
-<span><span class="co">##  [7] forcats_0.5.1               stringr_1.4.0              </span></span>
-<span><span class="co">##  [9] dplyr_1.0.9                 purrr_0.3.4                </span></span>
-<span><span class="co">## [11] readr_2.1.2                 tidyr_1.2.0                </span></span>
-<span><span class="co">## [13] tibble_3.1.8                ggplot2_3.3.6              </span></span>
-<span><span class="co">## [15] tidyverse_1.3.2             sva_3.45.0                 </span></span>
-<span><span class="co">## [17] BiocParallel_1.31.12        genefilter_1.79.0          </span></span>
-<span><span class="co">## [19] mgcv_1.8-40                 nlme_3.1-158               </span></span>
-<span><span class="co">## [21] SCP.replication_0.2.1       scpdata_1.5.0              </span></span>
-<span><span class="co">## [23] ExperimentHub_2.5.0         AnnotationHub_3.5.0        </span></span>
-<span><span class="co">## [25] BiocFileCache_2.5.0         dbplyr_2.2.1               </span></span>
-<span><span class="co">## [27] scp_1.7.1                   QFeatures_1.7.1            </span></span>
-<span><span class="co">## [29] MultiAssayExperiment_1.23.5 SingleCellExperiment_1.19.0</span></span>
-<span><span class="co">## [31] SummarizedExperiment_1.27.1 Biobase_2.57.1             </span></span>
-<span><span class="co">## [33] GenomicRanges_1.49.0        GenomeInfoDb_1.33.3        </span></span>
-<span><span class="co">## [35] IRanges_2.31.0              S4Vectors_0.35.1           </span></span>
-<span><span class="co">## [37] BiocGenerics_0.43.1         MatrixGenerics_1.9.1       </span></span>
-<span><span class="co">## [39] matrixStats_0.62.0          BiocStyle_2.25.0           </span></span>
+<span><span class="co">##  [3] patchwork_1.1.1             ggrepel_0.9.1              </span></span>
+<span><span class="co">##  [5] ggbeeswarm_0.6.0            forcats_0.5.1              </span></span>
+<span><span class="co">##  [7] stringr_1.4.0               dplyr_1.0.9                </span></span>
+<span><span class="co">##  [9] purrr_0.3.4                 readr_2.1.2                </span></span>
+<span><span class="co">## [11] tidyr_1.2.0                 tibble_3.1.8               </span></span>
+<span><span class="co">## [13] ggplot2_3.3.6               tidyverse_1.3.2            </span></span>
+<span><span class="co">## [15] sva_3.45.0                  BiocParallel_1.31.12       </span></span>
+<span><span class="co">## [17] genefilter_1.79.0           mgcv_1.8-40                </span></span>
+<span><span class="co">## [19] nlme_3.1-158                SCP.replication_0.2.1      </span></span>
+<span><span class="co">## [21] scpdata_1.5.0               ExperimentHub_2.5.0        </span></span>
+<span><span class="co">## [23] AnnotationHub_3.5.0         BiocFileCache_2.5.0        </span></span>
+<span><span class="co">## [25] dbplyr_2.2.1                scp_1.7.1                  </span></span>
+<span><span class="co">## [27] QFeatures_1.7.1             MultiAssayExperiment_1.23.5</span></span>
+<span><span class="co">## [29] SingleCellExperiment_1.19.0 SummarizedExperiment_1.27.1</span></span>
+<span><span class="co">## [31] Biobase_2.57.1              GenomicRanges_1.49.0       </span></span>
+<span><span class="co">## [33] GenomeInfoDb_1.33.3         IRanges_2.31.0             </span></span>
+<span><span class="co">## [35] S4Vectors_0.35.1            BiocGenerics_0.43.1        </span></span>
+<span><span class="co">## [37] MatrixGenerics_1.9.1        matrixStats_0.62.0         </span></span>
+<span><span class="co">## [39] BiocStyle_2.25.0           </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
 <span><span class="co">##   [1] readxl_1.4.0                  backports_1.4.1              </span></span>
-<span><span class="co">##   [3] systemfonts_1.0.4             plyr_1.8.7                   </span></span>
-<span><span class="co">##   [5] igraph_1.3.4                  lazyeval_0.2.2               </span></span>
-<span><span class="co">##   [7] splines_4.2.0                 digest_0.6.29                </span></span>
-<span><span class="co">##   [9] foreach_1.5.2                 htmltools_0.5.3              </span></span>
-<span><span class="co">##  [11] fansi_1.0.3                   magrittr_2.0.3               </span></span>
-<span><span class="co">##  [13] memoise_2.0.1                 doParallel_1.0.17            </span></span>
-<span><span class="co">##  [15] googlesheets4_1.0.0           cluster_2.1.3                </span></span>
-<span><span class="co">##  [17] tzdb_0.3.0                    limma_3.53.5                 </span></span>
-<span><span class="co">##  [19] Biostrings_2.65.1             annotate_1.75.0              </span></span>
-<span><span class="co">##  [21] modelr_0.1.8                  pkgdown_2.0.6                </span></span>
-<span><span class="co">##  [23] colorspace_2.0-3              rvest_1.0.2                  </span></span>
-<span><span class="co">##  [25] blob_1.2.3                    rappdirs_0.3.3               </span></span>
-<span><span class="co">##  [27] textshaping_0.3.6             haven_2.5.0                  </span></span>
-<span><span class="co">##  [29] xfun_0.31                     crayon_1.5.1                 </span></span>
-<span><span class="co">##  [31] RCurl_1.98-1.8                jsonlite_1.8.0               </span></span>
-<span><span class="co">##  [33] iterators_1.0.14              survival_3.3-1               </span></span>
-<span><span class="co">##  [35] glue_1.6.2                    gtable_0.3.0                 </span></span>
-<span><span class="co">##  [37] gargle_1.2.0                  zlibbioc_1.43.0              </span></span>
-<span><span class="co">##  [39] XVector_0.37.0                OrgMassSpecR_0.5-3           </span></span>
-<span><span class="co">##  [41] DelayedArray_0.23.1           scales_1.2.0                 </span></span>
-<span><span class="co">##  [43] DBI_1.1.3                     edgeR_3.39.4                 </span></span>
-<span><span class="co">##  [45] Rcpp_1.0.9                    viridisLite_0.4.0            </span></span>
-<span><span class="co">##  [47] xtable_1.8-4                  clue_0.3-61                  </span></span>
-<span><span class="co">##  [49] reticulate_1.25               bit_4.0.4                    </span></span>
-<span><span class="co">##  [51] MsCoreUtils_1.9.1             httr_1.4.3                   </span></span>
-<span><span class="co">##  [53] ellipsis_0.3.2                farver_2.1.1                 </span></span>
-<span><span class="co">##  [55] pkgconfig_2.0.3               XML_3.99-0.10                </span></span>
-<span><span class="co">##  [57] sass_0.4.2                    locfit_1.5-9.6               </span></span>
-<span><span class="co">##  [59] utf8_1.2.2                    labeling_0.4.2               </span></span>
-<span><span class="co">##  [61] tidyselect_1.1.2              rlang_1.0.4                  </span></span>
-<span><span class="co">##  [63] later_1.3.0                   AnnotationDbi_1.59.1         </span></span>
-<span><span class="co">##  [65] munsell_0.5.0                 BiocVersion_3.16.0           </span></span>
-<span><span class="co">##  [67] cellranger_1.1.0              tools_4.2.0                  </span></span>
-<span><span class="co">##  [69] cachem_1.0.6                  cli_3.3.0                    </span></span>
-<span><span class="co">##  [71] generics_0.1.3                RSQLite_2.2.15               </span></span>
-<span><span class="co">##  [73] broom_1.0.0                   evaluate_0.15                </span></span>
-<span><span class="co">##  [75] fastmap_1.1.0                 yaml_2.3.5                   </span></span>
-<span><span class="co">##  [77] ragg_1.2.2                    knitr_1.39                   </span></span>
-<span><span class="co">##  [79] bit64_4.0.5                   fs_1.5.2                     </span></span>
-<span><span class="co">##  [81] KEGGREST_1.37.3               AnnotationFilter_1.21.0      </span></span>
-<span><span class="co">##  [83] mime_0.12                     xml2_1.3.3                   </span></span>
-<span><span class="co">##  [85] compiler_4.2.0                rstudioapi_0.13              </span></span>
-<span><span class="co">##  [87] beeswarm_0.4.0                filelock_1.0.2               </span></span>
-<span><span class="co">##  [89] curl_4.3.2                    png_0.1-7                    </span></span>
-<span><span class="co">##  [91] interactiveDisplayBase_1.35.0 reprex_2.0.1                 </span></span>
-<span><span class="co">##  [93] bslib_0.4.0                   stringi_1.7.8                </span></span>
-<span><span class="co">##  [95] highr_0.9                     desc_1.4.1                   </span></span>
-<span><span class="co">##  [97] lattice_0.20-45               ProtGenerics_1.29.0          </span></span>
-<span><span class="co">##  [99] Matrix_1.4-1                  vctrs_0.4.1                  </span></span>
-<span><span class="co">## [101] pillar_1.8.0                  lifecycle_1.0.1              </span></span>
-<span><span class="co">## [103] BiocManager_1.30.18           jquerylib_0.1.4              </span></span>
-<span><span class="co">## [105] bitops_1.0-7                  httpuv_1.6.5                 </span></span>
-<span><span class="co">## [107] R6_2.5.1                      bookdown_0.27                </span></span>
-<span><span class="co">## [109] promises_1.2.0.1              vipor_0.4.5                  </span></span>
-<span><span class="co">## [111] codetools_0.2-18              benchmarkmeData_1.0.4        </span></span>
-<span><span class="co">## [113] MASS_7.3-58.1                 assertthat_0.2.1             </span></span>
-<span><span class="co">## [115] rprojroot_2.0.3               withr_2.5.0                  </span></span>
-<span><span class="co">## [117] GenomeInfoDbData_1.2.8        parallel_4.2.0               </span></span>
-<span><span class="co">## [119] hms_1.1.1                     grid_4.2.0                   </span></span>
-<span><span class="co">## [121] rmarkdown_2.14                googledrive_2.0.0            </span></span>
-<span><span class="co">## [123] lubridate_1.8.0               shiny_1.7.2</span></span></code></pre></div>
+<span><span class="co">##   [3] systemfonts_1.0.4             igraph_1.3.4                 </span></span>
+<span><span class="co">##   [5] lazyeval_0.2.2                splines_4.2.0                </span></span>
+<span><span class="co">##   [7] digest_0.6.29                 foreach_1.5.2                </span></span>
+<span><span class="co">##   [9] htmltools_0.5.3               fansi_1.0.3                  </span></span>
+<span><span class="co">##  [11] magrittr_2.0.3                memoise_2.0.1                </span></span>
+<span><span class="co">##  [13] doParallel_1.0.17             googlesheets4_1.0.0          </span></span>
+<span><span class="co">##  [15] cluster_2.1.3                 tzdb_0.3.0                   </span></span>
+<span><span class="co">##  [17] limma_3.53.5                  Biostrings_2.65.1            </span></span>
+<span><span class="co">##  [19] annotate_1.75.0               modelr_0.1.8                 </span></span>
+<span><span class="co">##  [21] pkgdown_2.0.6                 colorspace_2.0-3             </span></span>
+<span><span class="co">##  [23] rvest_1.0.2                   blob_1.2.3                   </span></span>
+<span><span class="co">##  [25] rappdirs_0.3.3                textshaping_0.3.6            </span></span>
+<span><span class="co">##  [27] haven_2.5.0                   xfun_0.31                    </span></span>
+<span><span class="co">##  [29] crayon_1.5.1                  RCurl_1.98-1.8               </span></span>
+<span><span class="co">##  [31] jsonlite_1.8.0                iterators_1.0.14             </span></span>
+<span><span class="co">##  [33] survival_3.3-1                glue_1.6.2                   </span></span>
+<span><span class="co">##  [35] gtable_0.3.0                  gargle_1.2.0                 </span></span>
+<span><span class="co">##  [37] zlibbioc_1.43.0               XVector_0.37.0               </span></span>
+<span><span class="co">##  [39] OrgMassSpecR_0.5-3            DelayedArray_0.23.1          </span></span>
+<span><span class="co">##  [41] scales_1.2.0                  DBI_1.1.3                    </span></span>
+<span><span class="co">##  [43] edgeR_3.39.4                  Rcpp_1.0.9                   </span></span>
+<span><span class="co">##  [45] viridisLite_0.4.0             xtable_1.8-4                 </span></span>
+<span><span class="co">##  [47] clue_0.3-61                   reticulate_1.25              </span></span>
+<span><span class="co">##  [49] bit_4.0.4                     MsCoreUtils_1.9.1            </span></span>
+<span><span class="co">##  [51] httr_1.4.3                    ellipsis_0.3.2               </span></span>
+<span><span class="co">##  [53] farver_2.1.1                  pkgconfig_2.0.3              </span></span>
+<span><span class="co">##  [55] XML_3.99-0.10                 sass_0.4.2                   </span></span>
+<span><span class="co">##  [57] locfit_1.5-9.6                utf8_1.2.2                   </span></span>
+<span><span class="co">##  [59] labeling_0.4.2                tidyselect_1.1.2             </span></span>
+<span><span class="co">##  [61] rlang_1.0.4                   later_1.3.0                  </span></span>
+<span><span class="co">##  [63] AnnotationDbi_1.59.1          munsell_0.5.0                </span></span>
+<span><span class="co">##  [65] BiocVersion_3.16.0            cellranger_1.1.0             </span></span>
+<span><span class="co">##  [67] tools_4.2.0                   cachem_1.0.6                 </span></span>
+<span><span class="co">##  [69] cli_3.3.0                     generics_0.1.3               </span></span>
+<span><span class="co">##  [71] RSQLite_2.2.15                broom_1.0.0                  </span></span>
+<span><span class="co">##  [73] evaluate_0.15                 fastmap_1.1.0                </span></span>
+<span><span class="co">##  [75] yaml_2.3.5                    ragg_1.2.2                   </span></span>
+<span><span class="co">##  [77] knitr_1.39                    bit64_4.0.5                  </span></span>
+<span><span class="co">##  [79] fs_1.5.2                      KEGGREST_1.37.3              </span></span>
+<span><span class="co">##  [81] AnnotationFilter_1.21.0       mime_0.12                    </span></span>
+<span><span class="co">##  [83] xml2_1.3.3                    compiler_4.2.0               </span></span>
+<span><span class="co">##  [85] rstudioapi_0.13               beeswarm_0.4.0               </span></span>
+<span><span class="co">##  [87] filelock_1.0.2                curl_4.3.2                   </span></span>
+<span><span class="co">##  [89] png_0.1-7                     interactiveDisplayBase_1.35.0</span></span>
+<span><span class="co">##  [91] reprex_2.0.1                  bslib_0.4.0                  </span></span>
+<span><span class="co">##  [93] stringi_1.7.8                 highr_0.9                    </span></span>
+<span><span class="co">##  [95] desc_1.4.1                    lattice_0.20-45              </span></span>
+<span><span class="co">##  [97] ProtGenerics_1.29.0           Matrix_1.4-1                 </span></span>
+<span><span class="co">##  [99] vctrs_0.4.1                   pillar_1.8.0                 </span></span>
+<span><span class="co">## [101] lifecycle_1.0.1               BiocManager_1.30.18          </span></span>
+<span><span class="co">## [103] jquerylib_0.1.4               bitops_1.0-7                 </span></span>
+<span><span class="co">## [105] httpuv_1.6.5                  R6_2.5.1                     </span></span>
+<span><span class="co">## [107] bookdown_0.27                 promises_1.2.0.1             </span></span>
+<span><span class="co">## [109] vipor_0.4.5                   codetools_0.2-18             </span></span>
+<span><span class="co">## [111] benchmarkmeData_1.0.4         MASS_7.3-58.1                </span></span>
+<span><span class="co">## [113] assertthat_0.2.1              rprojroot_2.0.3              </span></span>
+<span><span class="co">## [115] withr_2.5.0                   GenomeInfoDbData_1.2.8       </span></span>
+<span><span class="co">## [117] parallel_4.2.0                hms_1.1.1                    </span></span>
+<span><span class="co">## [119] grid_4.2.0                    rmarkdown_2.14               </span></span>
+<span><span class="co">## [121] googledrive_2.0.0             lubridate_1.8.0              </span></span>
+<span><span class="co">## [123] shiny_1.7.2</span></span></code></pre></div>
 </div>
 </div>
 <div class="footnotes">

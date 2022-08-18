@@ -21,7 +21,9 @@ Imports:
    BiocParallel,
    matrixStats,
    SummarizedExperiment,
-   MultiAssayExperiment
+   MultiAssayExperiment,
+   OrgMassSpecR,
+   reticulate
 Suggests:
    renv,
    CellTrails,
@@ -50,8 +52,9 @@ Suggests:
    uwot,
    Cairo,
    magick,
-   OrgMassSpecR,
-   reticulate
+   ggbeeswarm,
+   ggrepel,
+   ggpointdensity
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8
