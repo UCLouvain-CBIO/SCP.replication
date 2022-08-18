@@ -28,8 +28,8 @@ knitr::opts_chunk$set(warning = FALSE,
                       crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
 )
 ## Initialize the environment using renv
-renv::activate("../inst/renvs/zhu2019EL/")
-renv::restore()
+# renv::activate("../inst/renvs/zhu2019EL/")
+# renv::restore()
 ## Time the compilation
 timeStart <- Sys.time()
 ```
@@ -1104,7 +1104,11 @@ We plot the output trajectory.
 plotMap(sce,
         color_by = "phenoName",
         name = "FM1.43.signal") +
-    scale_fill_manual(values = c("green3",  "grey40"))
+    scale_fill_manual(values = c("green3",  "grey40")) +
+    plotMap(sce,
+        color_by = "phenoName",
+        name = "order",
+        type = "raw") 
 ```
 
 This trajectory is trivial because only a simple line can be drawn

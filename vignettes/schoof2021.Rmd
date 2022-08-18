@@ -12,7 +12,7 @@ output:
 bibliography: ref.bib
 ---
 
-```{r setup, include = FALSE}
+```{r setup, include = FALSE, eval = FALSE}
 ## Options for Rmarkdown compilation
 knitr::opts_chunk$set(
     message = FALSE,
@@ -497,7 +497,6 @@ more info, see the *Requirements* section at the end of the vignette).
 
 ```{r load_sceptre}
 library("reticulate")
-use_condaenv("sceptre")
 spt <- import("sceptre")
 ```
 
@@ -687,7 +686,8 @@ assays thanks to the `QFeatures` data structure.
 
 ```{r}
 sel <- qc[qc$ncells >= 3, ]
-scp <- scp[rownames(sel), , ]
+# scp <- scp[rownames(sel), , ]
+scp <- filterFeatures(scp, ~ ncells >= 3)
 ```
 
 # Normalization II
@@ -1046,8 +1046,8 @@ and will rather showcase how to identify marker gene between the
 different cell types from a `SingleCellExperiment` object. The 
 functionality to perform this is provided in the `scran` package.
 
-We use the `findMarkers function that generates a list of tables, where
-each table provide the result of the differential expression analysis 
+We use the `findMarkers` function that generates a list of tables, where
+each table provides the result of the differential expression analysis 
 for one cell type against the others. We here use the t-test as the 
 statistical method and decide to report p-values based one the one 
 cluster vs all framework (see `?findMarkers` for more info). We also 
