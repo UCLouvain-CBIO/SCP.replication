@@ -8,5 +8,6 @@ article. The code was retrieved from
 - `functions_parameters.R` contains the functions and the parameters
   necessary to run the analysis script
 - `SCoPE2_analysis.R` contains the code that performs the data 
-  processing and generated the figures of the article
-  
+  processing and generated the figures of the SCoPE2 article
+- `python_functions.py` contains a few python functions required by 
+  some function in the package.

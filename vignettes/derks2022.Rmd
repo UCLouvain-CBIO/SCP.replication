@@ -4,12 +4,13 @@ author:
     - Christophe Vanderaa^[christophe.vanderaa@uclouvain.be], Computational Biology, UCLouvain
     - Laurent Gatto, Computational Biology, UCLouvain
 output:
-    BiocStyle::html_document:
+  BiocStyle::html_document:
     self_contained: yes
-toc: true
-toc_float: true
-toc_depth: 2
-code_folding: show
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    code_folding: show
+bibliography: ref.bib
 date: "`r BiocStyle::doc_date()`"
 package: "`r BiocStyle::pkg_ver('SCP.replication')`"
 vignette: >
@@ -892,7 +893,7 @@ work.
 
 # Requirements
 
-### Hardware and software
+## Hardware and software
 
 The system details of the machine that built the vignette are:
 
@@ -906,7 +907,7 @@ cat("Machine: ", sd$sys_info$sysname, " (", sd$sys_info$release, ")\n",
     sep = "")
 ```
 
-### Timing
+## Timing
 
 The total time required to compile this vignette is:
 
@@ -915,7 +916,7 @@ timing <- Sys.time() - timeStart
 cat(timing[[1]], attr(timing, "units"))
 ```
 
-### Memory
+## Memory
 
 The final `leduc` object size is:
 
@@ -923,11 +924,11 @@ The final `leduc` object size is:
 format(object.size(derks), units = "GB")
 ```
 
-### Session info
+## Session info
 
 ```{r}
 sessionInfo()
 ```
 
-
+# References
 
