@@ -13,48 +13,47 @@ Authors@R:
 Description: Repository of vignettes about the replication of
     single-cell analyses.
 Depends:
-   SingleCellExperiment,
    QFeatures (>= 1.3.3),
    scp (>= 1.1.5),
-   scpdata
+   scpdata,
+   SingleCellExperiment
 Imports:
    BiocParallel,
    matrixStats,
-   SummarizedExperiment,
-   MultiAssayExperiment,
    OrgMassSpecR,
-   reticulate
-Suggests:
-   renv,
-   CellTrails,
-   tidyverse,
-   patchwork,
-   BiocStyle,
-   knitr,
-   rmarkdown,
-   pkgdown,
-   benchmarkme,
-   bladderbatch,
-   clusterProfiler,
-   org.Hs.eg.db,
-   UpSetR,
-   scuttle,
-   scran,
-   scater,
-   sva,
    reticulate,
-   zellkonverter,
-   destiny,
-   ComplexHeatmap,
-   RColorBrewer,
-   viridis, 
-   circlize,
-   uwot,
+   SummarizedExperiment,
+   sva
+Suggests:
+   benchmarkme,
+   biomaRt,
+   BiocStyle,
+   bladderbatch,
    Cairo,
-   magick,
+   CellTrails,
+   circlize,
+   clusterProfiler,
+   ComplexHeatmap,
+   destiny,
    ggbeeswarm,
+   ggpointdensityknitr,
    ggrepel,
-   ggpointdensity
+   magick,
+   org.Hs.eg.db,
+   patchwork,
+   pkgdown,
+   RColorBrewer,
+   renv,
+   rmarkdown,
+   scater,
+   scran,
+   scuttle,
+   splines,
+   tidyverse,
+   UpSetR,
+   uwot,
+   viridis, 
+   zellkonverter
 VignetteBuilder: knitr
 License: GPL (>= 3)
 Encoding: UTF-8
