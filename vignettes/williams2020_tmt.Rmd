@@ -73,6 +73,8 @@ replication.
 ```{r}
 library(scpdata)
 library(scp)
+library(ComplexHeatmap)
+library(scater)
 ```
 
 # Load the data
@@ -280,7 +282,6 @@ allows easy annotation of the plot, namely labeling each sample with
 its sample type and channel. 
 
 ```{r}
-library(ComplexHeatmap)
 cols <- c(CMK = "green4", `K562` = "dodgerblue", `MOLM-14` = "red3")
 colAnnot <- columnAnnotation(Population = sce$SampleType,
                              Channel = sce$Channel,
@@ -311,7 +312,6 @@ impute the missing values with zeros as PCA does not support missing
 value. 
 
 ```{r}
-library(scater)
 sce <- runPCA(impute(sce, method = "zero"), exprs_values = 1)
 ```
 

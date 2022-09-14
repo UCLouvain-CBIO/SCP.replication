@@ -30,9 +30,7 @@ knitr::opts_chunk$set(fig.width = 7,
                       collapse = TRUE,
                       crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
 )
-## Initialize the environment using renv
-# renv::activate("../inst/renvs/SCoPE2/")
-# renv::restore()
+
 ## Time the compilation
 timeStart <- Sys.time()
 ```
@@ -649,26 +647,12 @@ A threshold of 0.365 best separates single-cells from empty channels.
 
 We keep the cells that pass the median CV threshold. Furthermore, we
 keep macrophages and monocytes as those represent the samples of
-interest. We can extract the sample names that pass the CV and sample
-type filters using `tidyverse` manipulations. 
-
-```{r}
-colData(scp) %>%
-    data.frame %>%
-    rownames_to_column("cells") %>%
-    filter(MedianCV < 0.365,
-           SampleType %in% c("Macrophage", "Monocyte")) %>%
-    pull(cells) ->
-    keep
-head(keep)
-```
-
-We have already demonstrated how to remove assays from the dataset,
-but we can apply a similar subsetting for the samples. Recall that the
-second entry in the `[` method is for subsetting sample names.
+interest. Since this information is available from the `colData`, we can apply
+this filter using `subsetByColData()` from the `MultiAssayExperiment` package.
 
 ```{r, subsetting_cells}
-scp <- scp[, keep, ]
+scp <- subsetByColData(scp, scp$MedianCV < 0.365 & 
+                       scp$SampleType %in% c("Macrophage", "Monocyte"))
 scp
 ```
 

@@ -159,6 +159,7 @@ sampleAnnot$File.Name <- ifelse(sampleAnnot$Instrument == "timsTOFSCP",
 # These are read and combined in a `QFeatures`object. 
 extractedDataBulk <- read.delim(paste0(datadir, "qe_bulk/Report.pr_matrix_channels_ms1_extracted.tsv"))
 reportDataBulk <- read.delim(paste0(datadir, "qe_bulk/Report.tsv"))
+reportDataBulk$File.Name <- make.names(reportDataBulk$File.Name)
 bulk <- readSCPfromDIANN(colData = sampleAnnot, 
                          reportData = reportDataBulk,
                          extractedData = extractedDataBulk,
@@ -172,6 +173,7 @@ names(bulk)[length(bulk)] <- "bulk_prec_extracted"
 # These are read and combined in a `QFeatures`object. 
 extractedDataTims <- read.delim(paste0(datadir, "tims_sc/Report.pr_matrix_channels_ms1_extracted.tsv"))
 reportDataTims <- read.delim(paste0(datadir, "tims_sc/Report.tsv"))
+reportDataTims$File.Name <- make.names(reportDataTims$File.Name)
 # We modify the `Run` variable to match the `Run` variables in the other tables
 reportDataTims$Run <- make.names(reportDataTims$Run)
 tims <- readSCPfromDIANN(colData = sampleAnnot, 
@@ -186,6 +188,7 @@ names(tims)[length(tims)] <- "tims_prec_extracted"
 # These are read and combined in a `QFeatures`object. 
 extractedDataQE <- read.delim(paste0(datadir, "qe_sc/Report.pr_matrix_channels_ms1_extracted.tsv"))
 reportDataQE <- read.delim(paste0(datadir, "qe_sc/Report.tsv"))
+reportDataQE$File.Name <- make.names(reportDataQE$File.Name)
 qe <- readSCPfromDIANN(colData = sampleAnnot, 
                        reportData = reportDataQE,
                        extractedData = extractedDataQE,
@@ -207,7 +210,7 @@ derks2022 <- QFeatures(experiments = c(experiments(bulk), experiments(tims),
                        colData = rbind(colData(bulk), colData(tims), colData(qe)),
                        assayLinks = Reduce(append, list(bulk@assayLinks, tims@assayLinks, 
                                                         qe@assayLinks)))
-derks2022 <- addAssay(derks2022, prots, name = "proteins", dropColData = TRUE)
+derks2022 <- addAssay(derks2022, prots, name = "proteins")
 derks2022 <- addAssayLink(derks2022, 
                           from = grep("extracted$", names(derks2022)),
                           to = "proteins",

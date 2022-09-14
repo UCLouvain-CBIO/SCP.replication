@@ -1,4 +1,5 @@
 ##' @title ComBat v3.34 batch correction
+##'##' @title ComBat v3.3##' @title ComBat v3.34 batch correction
 ##'
 ##' @description
 ##'
@@ -50,25 +51,6 @@
 ##' @importFrom matrixStats rowVars colSds
 ##'
 ##' @return data A probe x sample genomic measure matrix, adjusted for batch effects.
-##'
-##' @examples
-##' library(bladderbatch)
-##' data(bladderdata)
-##' dat <- bladderEset[1:50,]
-##'
-##' pheno <- pData(dat)
-##' edata <- exprs(dat)
-##' batch <- pheno$batch
-##' mod <- model.matrix(~as.factor(cancer), data=pheno)
-##'
-##' # parametric adjustment
-##' combat_edata1 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
-##'
-##' # non-parametric adjustment, mean-only version
-##' combat_edata2 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
-##'
-##' # reference-batch version, with covariates
-##' combat_edata3 <- ComBatv3.34(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
 ##'
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL,
@@ -665,7 +647,6 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
     if (!"File.Name" %in% colnames(colData)) 
         stop("'colData' must contain a column named 'File.Name' that provides ",
              "a link to the 'File.Name' column in 'reportData'")
-    reportData$File.Name <- make.names(reportData$File.Name)
     if (multiplexing == "none" && !is.null(extractedData)) 
         stop("Providing 'extractedData' for label-free experiments ",
              "('multiplexed == \"none\"') is not expected. Raise an ",
@@ -690,25 +671,26 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
                  "'reportData$Modified.Sequence': ",
                  paste0(unique(colData$Label[mis]), collapse = ", "))
         }
+        ## Identify which variables are correlated with the run-specific
+        ## precursor IDs
+        nIds <- length(unique(paste0(reportData$Precursor.Id, reportData$File.Name)))
+        nLevels <- sapply(colnames(reportData), function(x) {
+            nrow(unique(reportData[, c("Precursor.Id", "File.Name", x)]))
+        })
+        idCols <- names(nLevels)[nLevels == nIds]
+        ## Transform the reportData to a wide format with respect to label
+        reportData <- pivot_wider(reportData, id_cols = all_of(idCols),
+                                  names_from = "Label", 
+                                  values_from = "Ms1.Area")
     } else if (multiplexing == "none") {
         colData$Label <- "Ms1.Area"
         args$sep <- ""
+        args$suffix <- ""
     } else {
         stop("The '", multiplexing, "' multiplexing strategy is not ",
              "implemented. Raise an issue if you need this feature: ",
              "https://github.com/UCLouvain-CBIO/scp/issues/new/choose")
     }
-    ## Identify which variables are correlated with the run-specific
-    ## precursor IDs
-    nIds <- length(unique(paste0(reportData$Precursor.Id, reportData$File.Name)))
-    nLevels <- sapply(colnames(reportData), function(x) {
-        nrow(unique(reportData[, c("Precursor.Id", "File.Name", x)]))
-    })
-    idCols <- names(nLevels)[nLevels == nIds]
-    ## Transform the reportData to a wide format with respect to label
-    reportData <- pivot_wider(reportData, id_cols = all_of(idCols),
-                              names_from = "Label", 
-                              values_from = "Ms1.Area")
     
     ## Read using readSCP
     out <- do.call(readSCP, c(args, list(featureData = reportData,
