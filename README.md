@@ -99,3 +99,9 @@ restore the correct dependency versions, but it does not consider the
 R or Python software version. You may run into trouble if your R 
 and/or Python versions do not match with the versions indicated at the
 end of each analysis (section *Requirements*). 
+
+# Licence
+
+All vignettes are distributed under a 
+[CC BY-SA licence](https://creativecommons.org/licenses/by-sa/2.0/) 
+licence.

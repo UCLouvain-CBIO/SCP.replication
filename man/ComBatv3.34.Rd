@@ -2,7 +2,8 @@
 % Please edit documentation in R/utils.R
 \name{ComBatv3.34}
 \alias{ComBatv3.34}
-\title{ComBat v3.34 batch correction}
+\title{ComBat v3.34 batch correction
+##' @title ComBat v3.3##' @title ComBat v3.34 batch correction}
 \usage{
 ComBatv3.34(
   dat,
@@ -54,24 +55,4 @@ empirical Bayes frameworks for adjusting data for batch effects.
 Users are returned an expression matrix that has been corrected
 for batch effects. The input data are assumed to be cleaned and
 normalized before batch effect removal.
-}
-\examples{
-library(bladderbatch)
-data(bladderdata)
-dat <- bladderEset[1:50,]
-
-pheno <- pData(dat)
-edata <- exprs(dat)
-batch <- pheno$batch
-mod <- model.matrix(~as.factor(cancer), data=pheno)
-
-# parametric adjustment
-combat_edata1 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=FALSE)
-
-# non-parametric adjustment, mean-only version
-combat_edata2 <- ComBatv3.34(dat=edata, batch=batch, mod=NULL, par.prior=FALSE, mean.only=TRUE)
-
-# reference-batch version, with covariates
-combat_edata3 <- ComBatv3.34(dat=edata, batch=batch, mod=mod, par.prior=TRUE, ref.batch=3)
-
 }

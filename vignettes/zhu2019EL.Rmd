@@ -729,9 +729,7 @@ The proteins names in the `scp` data are encoded as Ensembl ID. We
 convert them to protein symbols using the `biomaRt` package. For reproducibility
 purposes, we stored the 
 
-
-
-```{r}
+```{r, eval = FALSE}
 gallus <- useMart("ensembl", dataset = "ggallus_gene_ensembl")
 conversionDF <- getBM(values = sel,
                       attributes = c("ensembl_peptide_id", "uniprot_gn_symbol"),
@@ -743,6 +741,12 @@ conversionDF <- conversionDF[!duplicated(conversionDF$ensembl_peptide_id), ]
 
 selscp <- conversionDF$uniprot_gn_symbol
 ```
+
+```{r, echo = FALSE}
+data("ggalusGeneDf")
+selscp <- ggalusGeneDf$uniprot_gn_symbol
+```
+
 
 We next plot the number of proteins found only in this replication,
 only in the paper, or in both the replication and paper.
@@ -1206,5 +1210,12 @@ format(object.size(scp), units = "auto")
 ```{r}
 sessionInfo()
 ```
+
+
+# Licence
+
+This vignette is distributed under a 
+[CC BY-SA licence](https://creativecommons.org/licenses/by-sa/2.0/) 
+licence.
 
 # Reference

@@ -375,5 +375,11 @@ format(object.size(williams), units = "GB")
 sessionInfo()
 ```
 
+# Licence
+
+This vignette is distributed under a 
+[CC BY-SA licence](https://creativecommons.org/licenses/by-sa/2.0/) 
+licence.
+
 # Reference
 
