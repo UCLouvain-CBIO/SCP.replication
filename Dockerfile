@@ -22,7 +22,7 @@ RUN apt-get update \
 COPY . /home/rstudio/SCP.replication/
 
 ## Change home directory
-WORKDIR /home/rstudio/SCP.replication/vignettes/
+WORKDIR /home/rstudio/SCP.replication/
 
 ## Install SCP.replication and dependencies, and copy source 
 RUN R -e "BiocManager::install('UCLouvain-CBIO/SCP.replication', dependencies = TRUE)"

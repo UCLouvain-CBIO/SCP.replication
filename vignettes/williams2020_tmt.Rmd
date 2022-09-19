@@ -136,7 +136,9 @@ is contained in the `rowData` of each assay (`Reverse` and
 filter on the `rowData`. 
 
 ```{r}
-(williams <- filterFeatures(williams, ~ Reverse != "+" & Potential.contaminant != "+"))
+(williams <- filterFeatures(williams,
+                            ~ Reverse != "+" &
+                                Potential.contaminant != "+"))
 ```
 
 We are left with 17,735 peptides and 2,583 proteins that pass the 
@@ -157,8 +159,10 @@ We then apply `logTransform()` on the `proteins_corrected` assay
 containing the protein data normalized by MaxQuant.
 
 ```{r}
-(williams <- logTransform(williams, base = 2,
-                          i = "proteins_corrected", name = "proteins_log"))
+(williams <- logTransform(williams, 
+                         i = "proteins_corrected",
+                         name = "proteins_log", 
+                         base = 2))
 ```
 
 We stored the results in a new assay called `proteins_log`.
@@ -170,15 +174,19 @@ The authors then further normalize the data by *sequentially centering*
 to the median is readily available in `normalizeSCP()`.
 
 ```{r}
-williams <- normalizeSCP(williams, method = "center.median",
-                         i = "proteins_log", name = "proteins_norm")
+williams <- normalizeSCP(williams,
+                         i = "proteins_log",
+                         name = "proteins_norm",
+                         method = "center.median")
 ```
 
-However, this is not the case for the row centering. The author mention
-they perform the row centering for each batch separately. We need to
-implement this custom normalization. First, we extract the assay of 
-interest with the associated `colData` using `getWithColData()`.
+# Batch correction
 
+The author mention they perform row centering for each batch separately. This 
+functionality is not available from the package we rely on. So, we'll perform
+this step manually. First, we extract the normalized assay along with the
+associated `colData` using `getWithColData()`.
+<>
 ```{r}
 sceNorm <- getWithColData(williams, "proteins_norm")
 ```
@@ -199,9 +207,9 @@ Finally, we add the row-normalized assay back in the data set and add
 the relationships from the previous assay to this new assay.
 
 ```{r}
-williams <- addAssay(williams, sceNorm, name = "proteins_norm2")
+williams <- addAssay(williams, sceNorm, name = "proteins_bc")
 williams <- addAssayLinkOneToOne(williams, from = "proteins_norm", 
-                                 to = "proteins_norm2")
+                                 to = "proteins_bc")
 ```
 
 # Handle missing data
@@ -210,7 +218,7 @@ The authors remove proteins that have more than 30 \% missing data.
 We use `filterNA()` and provide the threshold of maximum 30\% missing values. 
 
 ```{r}
-williams <- filterNA(williams, pNA = 0.3,  i = "proteins_norm2")
+williams <- filterNA(williams, i = "proteins_bc", pNA = 0.3)
 ```
 
 # Keep confident proteins
@@ -227,7 +235,7 @@ prots <- rowData(williams[["peptides_corrected"]])$Leading.razor.protein
 ## Get all proteins that are present at least twice
 prots <- unique(prots[duplicated(prots)])
 ## Keep only proteins that were kept after missing data filtering
-prots <- prots[prots %in% rownames(williams)[["proteins_norm2"]]]
+prots <- prots[prots %in% rownames(williams)[["proteins_bc"]]]
 head(prots)
 ```
 We generated a vector with the proteins identified at least twice. We
@@ -265,7 +273,7 @@ during the quantitative data processing. We extract the assay as well
 as the associated sample annotations using `getWithColData()`.
 
 ```{r}
-sce <- getWithColData(williams, "proteins_norm2")
+sce <- getWithColData(williams, "proteins_bc")
 ```
 
 ## Correlation analysis
@@ -312,7 +320,7 @@ impute the missing values with zeros as PCA does not support missing
 value. 
 
 ```{r}
-sce <- runPCA(impute(sce, method = "zero"), exprs_values = 1)
+sce <- runPCA(sce, exprs_values = 1)
 ```
 
 We generate the PCA plots using `plotPCA()`, and use different colouring
@@ -334,6 +342,25 @@ We were able to reproduce the general results from the analysis by
 small differences between workflows. Without a script or the 
 intermediate results from the authors, we are unable to pinpoint which
 steps differ.
+
+# Reproduce this vignette
+
+You can reproduce this vignette using `Docker`:
+
+```
+docker pull cvanderaa/scp_replication_docker:v1
+docker run \
+    -e PASSWORD=bioc \
+    -p 8787:8787 \
+    cvanderaa/scp_replication_docker:v1
+```
+
+Open your browser and go to http://localhost:8787. The USER is `rstudio` and 
+the password is `bioc`. You can find the vignette in the `vignettes` folder. 
+
+See the 
+[website home page](https://uclouvain-cbio.github.io/SCP.replication/index.html)
+for more information.
 
 # Requirements
 

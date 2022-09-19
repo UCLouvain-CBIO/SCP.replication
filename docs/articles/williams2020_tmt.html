@@ -43,7 +43,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -53,10 +53,16 @@
       <a href="../articles/SCoPE2.html">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a>
     </li>
     <li>
+      <a href="../articles/derks2022.html">Replication of the plexDIA analysis (Derks et al. 2022)</a>
+    </li>
+    <li>
+      <a href="../articles/leduc2022.html">Replication of the nPOP analysis (Leduc et al. 2022)</a>
+    </li>
+    <li>
       <a href="../articles/liang2020.html">Exploring the autoPOTS data (Liang et al. 2020)</a>
     </li>
     <li>
-      <a href="../articles/schoof2021.html">Reproduction of the AML model analysis (Schoof et al. 2021)</a>
+      <a href="../articles/schoof2021.html">Replication of the AML model analysis (Schoof et al. 2021)</a>
     </li>
     <li>
       <a href="../articles/williams2020_tmt.html">Reproducing the multiplexed SCP analysis by Williams et al. 2020</a>
@@ -80,11 +86,14 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Reproducing the multiplexed SCP analysis by Williams et al. 2020</h1>
-                        <h4 data-toc-skip class="author">Christophe Vanderaa, Computational Biology, UCLouvain</h4>
-                        <h4 data-toc-skip class="author">Laurent Gatto, Computational Biology, UCLouvain</h4>
+      <h1 data-toc-skip>Reproducing the multiplexed SCP analysis by
+Williams et al. 2020</h1>
+                        <h4 data-toc-skip class="author">Christophe
+Vanderaa, Computational Biology, UCLouvain</h4>
+                        <h4 data-toc-skip class="author">Laurent Gatto,
+Computational Biology, UCLouvain</h4>
             
-            <h4 data-toc-skip class="date">5 January 2022</h4>
+            <h4 data-toc-skip class="date">19 September 2022</h4>
       
       
       <div class="hidden name"><code>williams2020_tmt.Rmd</code></div>
@@ -93,350 +102,492 @@
 
     
     
-<div class="section level1">
-<h1 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
-</h1>
-<p>Williams et al. present an auto-sampling device to interface between the nanoPOTS processing workflow and the LC-MS/MS. This allows for increased automation of the technology that is critical for advancing the field to real single-cell proteomics applications.</p>
-<p>The authors did not provided the code required to fully reproduce their analysis. We therefore based our replication solely on the experimental section. The authors mention:</p>
+<div class="section level2">
+<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
+</h2>
+<p>Williams et al. present an auto-sampling device to interface between
+the nanoPOTS processing workflow and the LC-MS/MS. This allows for
+increased automation of the technology that is critical for advancing
+the field to real single-cell proteomics applications.</p>
+<p>The authors did not provided the code required to fully reproduce
+their analysis. We therefore based our replication solely on the
+experimental section. The authors mention:</p>
 <blockquote>
-<p>For TMT-based quantification, corrected reporter ion intensities were extracted. Reporter ion intensities from single cells were normalized to the reference channel containing 0.2 ng of apeptide mixture from the three AML cell lines at PSM level using MaxQuant (v. 1.6.12.0). To minimize the batch effect from multiple TMT experiments, the relative abundances from 19 TMT plexes were log2-transformed and the data matrices from all of the TMT experiments were combined after sequentially centering the column and row values to their median values. A criterion of &gt;70% valid values and at least two identified peptides per protein were required to generate the “quantifiable’ protein list. The data matrix was further analyzed by Perseus for statistical analysis including princip[al] component analysis (PCA) and heatmap analysis.</p>
+<p>For TMT-based quantification, corrected reporter ion intensities were
+extracted. Reporter ion intensities from single cells were normalized to
+the reference channel containing 0.2 ng of apeptide mixture from the
+three AML cell lines at PSM level using MaxQuant (v. 1.6.12.0). To
+minimize the batch effect from multiple TMT experiments, the relative
+abundances from 19 TMT plexes were log2-transformed and the data
+matrices from all of the TMT experiments were combined after
+sequentially centering the column and row values to their median values.
+A criterion of &gt;70% valid values and at least two identified peptides
+per protein were required to generate the “quantifiable’ protein list.
+The data matrix was further analyzed by Perseus for statistical analysis
+including princip[al] component analysis (PCA) and heatmap analysis.</p>
 </blockquote>
-<p>Furthermore, the processed data by the authors is not provided, so we will benchmark the replication based on the figures in the article.</p>
-<p>The authors however distribute the MaxQuant output that we have already converted to the <code>scp</code> data framework (<span class="citation">Vanderaa and Gatto (2021)</span>). See the <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html" class="external-link"><code>scp</code> vignette</a> for more information about the framework. The <code>QFeatures</code> object containing the data sets from Williams et al. is available from the <code>scpdata</code> package. Let’s load the required packages before starting the replication.</p>
+<p>Furthermore, the processed data by the authors is not provided, so we
+will benchmark the replication based on the figures in the article.</p>
+<p>The authors however distribute the MaxQuant output that we have
+already converted to the <code>scp</code> data framework (<span class="citation">Vanderaa and Gatto (2021)</span>). See the <a href="http://www.bioconductor.org/packages/release/bioc/vignettes/scp/inst/doc/scp.html" class="external-link"><code>scp</code>
+vignette</a> for more information about the framework. The
+<code>QFeatures</code> object containing the data sets from Williams et
+al. is available from the <code>scpdata</code> package. Let’s load the
+required packages before starting the replication.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">scpdata</span><span class="op">)</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://UCLouvain-CBIO.github.io/scp" class="external-link">scp</a></span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">scpdata</span><span class="op">)</span></span>
+<span><span class="co">## Warning: multiple methods tables found for 'aperm'</span></span>
+<span><span class="co">## Warning: replacing previous import 'BiocGenerics::aperm' by</span></span>
+<span><span class="co">## 'DelayedArray::aperm' when loading 'SummarizedExperiment'</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://UCLouvain-CBIO.github.io/scp" class="external-link">scp</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jokergoo/ComplexHeatmap" class="external-link">ComplexHeatmap</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://bioconductor.org/packages/scater/" class="external-link">scater</a></span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level1">
-<h1 id="load-the-data">Load the data<a class="anchor" aria-label="anchor" href="#load-the-data"></a>
-</h1>
-<p>We can now load the multiplexed (TMT) SCP data set from Williams et al. This is performed by calling the <code><a href="https://rdrr.io/pkg/scpdata/man/williams2020_tmt.html" class="external-link">williams2020_tmt()</a></code> function from <code>scpdata</code>.</p>
+<div class="section level2">
+<h2 id="load-the-data">Load the data<a class="anchor" aria-label="anchor" href="#load-the-data"></a>
+</h2>
+<p>We can now load the multiplexed (TMT) SCP data set from Williams et
+al. This is performed by calling the <code><a href="https://rdrr.io/pkg/scpdata/man/williams2020_tmt.html" class="external-link">williams2020_tmt()</a></code>
+function from <code>scpdata</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scpdata/man/williams2020_tmt.html" class="external-link">williams2020_tmt</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-<span class="co">## An instance of class QFeatures containing 4 assays:</span>
-<span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17966 rows and 209 columns </span>
-<span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17966 rows and 209 columns </span>
-<span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2646 rows and 209 columns </span>
-<span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2646 rows and 209 columns</span></code></pre></div>
-<p>The data contain 4 different <code>SingleCellExperiment</code> objects that we refer to as <strong>assays</strong>. Each assay contains expression data along with feature metadata. Each row in an assay represents a <strong>feature</strong> that is either a peptide (assay 1-2) or a protein (assay 3-4). The protein and peptide data are split in two assays, containing either the summed peptide/protein intensities, or the corrected (reference normalization) quantifications. We also store the relationships between features of different assays. For instance, <code>peptides_intensity</code> are linked to <code>proteins_intensity</code>. We can plot these relationships and get an overveiew of the data set.</p>
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scpdata/man/williams2020_tmt.html" class="external-link">williams2020_tmt</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## An instance of class QFeatures containing 4 assays:</span></span>
+<span><span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17966 rows and 209 columns </span></span>
+<span><span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17966 rows and 209 columns </span></span>
+<span><span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2646 rows and 209 columns </span></span>
+<span><span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2646 rows and 209 columns</span></span></code></pre></div>
+<p>The data contain 4 different <code>SingleCellExperiment</code>
+objects that we refer to as <strong>assays</strong>. Each assay contains
+expression data along with feature metadata. Each row in an assay
+represents a <strong>feature</strong> that is either a peptide (assay
+1-2) or a protein (assay 3-4). The protein and peptide data are split in
+two assays, containing either the summed peptide/protein intensities, or
+the corrected (reference normalization) quantifications. We also store
+the relationships between features of different assays. For instance,
+<code>peptides_intensity</code> are linked to
+<code>proteins_intensity</code>. We can plot these relationships and get
+an overveiew of the data set.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span></span></code></pre></div>
 <p><img src="williams2020_tmt_files/figure-html/unnamed-chunk-3-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>Each column (n = 209) in an assay represents a <strong>sample</strong>. We can easily retrieve the sample annotations from the <code>colData</code>.</p>
+<p>Each column (n = 209) in an assay represents a
+<strong>sample</strong>. We can easily retrieve the sample annotations
+from the <code>colData</code>.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu">colData</span><span class="op">(</span><span class="va">williams</span><span class="op">)</span>
-<span class="co">## DataFrame with 209 rows and 5 columns</span>
-<span class="co">##           Channel  SampleType ChannelIndex      Amount       Batch</span>
-<span class="co">##       &lt;character&gt; &lt;character&gt;  &lt;character&gt; &lt;character&gt; &lt;character&gt;</span>
-<span class="co">## 1.A1       TMT126       Boost            1        10ng          A1</span>
-<span class="co">## 2.A1      TMT127N   Reference            2       0.2ng          A1</span>
-<span class="co">## 3.A1      TMT127C       Empty            3           0          A1</span>
-<span class="co">## 4.A1      TMT128N     MOLM-14            4       1cell          A1</span>
-<span class="co">## 5.A1      TMT128C        K562            5       1cell          A1</span>
-<span class="co">## ...           ...         ...          ...         ...         ...</span>
-<span class="co">## 7.C4      TMT129C     MOLM-14            7       1cell          C4</span>
-<span class="co">## 8.C4      TMT130N        K562            8       1cell          C4</span>
-<span class="co">## 9.C4      TMT130C         CMK            9       1cell          C4</span>
-<span class="co">## 10.C4     TMT131N     MOLM-14           10       1cell          C4</span>
-<span class="co">## 11.C4     TMT131C        K562           11       1cell          C4</span>
-<span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">williams</span><span class="op">$</span><span class="va">SampleType</span><span class="op">)</span>
-<span class="co">## </span>
-<span class="co">##     Boost       CMK     Empty      K562   MOLM-14 Reference </span>
-<span class="co">##        19        38        19        57        57        19</span></code></pre></div>
-<p>Most of the samples are single cells, either CMK, K562 or MOLM-14. The remaining assays are either booster channels (<code>Boost</code>) with 10ng of protein lysate used to enhance peptide identification, reference channels (<code>Reference') with 0.2ng of protein lysate used for  reference normalization by MaxQuant, and empty channels ('Empty</code>) with no material but containing spillover signal from the booster channel.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span></span>
+<span><span class="co">## DataFrame with 209 rows and 5 columns</span></span>
+<span><span class="co">##           Channel  SampleType ChannelIndex      Amount       Batch</span></span>
+<span><span class="co">##       &lt;character&gt; &lt;character&gt;  &lt;character&gt; &lt;character&gt; &lt;character&gt;</span></span>
+<span><span class="co">## 1.A1       TMT126       Boost            1        10ng          A1</span></span>
+<span><span class="co">## 2.A1      TMT127N   Reference            2       0.2ng          A1</span></span>
+<span><span class="co">## 3.A1      TMT127C       Empty            3           0          A1</span></span>
+<span><span class="co">## 4.A1      TMT128N     MOLM-14            4       1cell          A1</span></span>
+<span><span class="co">## 5.A1      TMT128C        K562            5       1cell          A1</span></span>
+<span><span class="co">## ...           ...         ...          ...         ...         ...</span></span>
+<span><span class="co">## 7.C4      TMT129C     MOLM-14            7       1cell          C4</span></span>
+<span><span class="co">## 8.C4      TMT130N        K562            8       1cell          C4</span></span>
+<span><span class="co">## 9.C4      TMT130C         CMK            9       1cell          C4</span></span>
+<span><span class="co">## 10.C4     TMT131N     MOLM-14           10       1cell          C4</span></span>
+<span><span class="co">## 11.C4     TMT131C        K562           11       1cell          C4</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">williams</span><span class="op">$</span><span class="va">SampleType</span><span class="op">)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">##     Boost       CMK     Empty      K562   MOLM-14 Reference </span></span>
+<span><span class="co">##        19        38        19        57        57        19</span></span></code></pre></div>
+<p>Most of the samples are single cells, either CMK, K562 or MOLM-14.
+The remaining assays are either booster channels (<code>Boost</code>)
+with 10ng of protein lysate used to enhance peptide identification,
+reference channels
+(<code>Reference') with 0.2ng of protein lysate used for  reference normalization by MaxQuant, and empty channels ('Empty</code>)
+with no material but containing spillover signal from the booster
+channel.</p>
 </div>
-<div class="section level1">
-<h1 id="feature-quality-control">Feature quality control<a class="anchor" aria-label="anchor" href="#feature-quality-control"></a>
-</h1>
-<p>The first step of the workflow is to remove reverse hits and contaminants. Before performing this step, we subsest the data to only single-cell samples. This subset is performed on the <code>Amount</code> variable from the <code>colData</code>, so we use <code>subsetByColData()</code>.</p>
+<div class="section level2">
+<h2 id="feature-quality-control">Feature quality control<a class="anchor" aria-label="anchor" href="#feature-quality-control"></a>
+</h2>
+<p>The first step of the workflow is to remove reverse hits and
+contaminants. Before performing this step, we subsest the data to only
+single-cell samples. This subset is performed on the <code>Amount</code>
+variable from the <code>colData</code>, so we use
+<code><a href="http://waldronlab.io/MultiAssayExperiment/reference/subsetBy.html" class="external-link">subsetByColData()</a></code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu">subsetByColData</span><span class="op">(</span><span class="va">williams</span>, <span class="va">williams</span><span class="op">$</span><span class="va">Amount</span> <span class="op">==</span> <span class="st">"1cell"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">## An instance of class QFeatures containing 4 assays:</span>
-<span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17966 rows and 152 columns </span>
-<span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17966 rows and 152 columns </span>
-<span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2646 rows and 152 columns </span>
-<span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2646 rows and 152 columns</span></code></pre></div>
-<p>We are left with a data set containing 152 single-cells. We can now filter out the reverse hits and contaminants. The required information is contained in the <code>rowData</code> of each assay (<code>Reverse</code> and <code>Potential.contaminant</code>, respectively). We use <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html" class="external-link">filterFeatures()</a></code> to filter on the <code>rowData</code>.</p>
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://waldronlab.io/MultiAssayExperiment/reference/subsetBy.html" class="external-link">subsetByColData</a></span><span class="op">(</span><span class="va">williams</span>, <span class="va">williams</span><span class="op">$</span><span class="va">Amount</span> <span class="op">==</span> <span class="st">"1cell"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## An instance of class QFeatures containing 4 assays:</span></span>
+<span><span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17966 rows and 152 columns </span></span>
+<span><span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17966 rows and 152 columns </span></span>
+<span><span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2646 rows and 152 columns </span></span>
+<span><span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2646 rows and 152 columns</span></span></code></pre></div>
+<p>We are left with a data set containing 152 single-cells. We can now
+filter out the reverse hits and contaminants. The required information
+is contained in the <code>rowData</code> of each assay
+(<code>Reverse</code> and <code>Potential.contaminant</code>,
+respectively). We use <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html" class="external-link">filterFeatures()</a></code> to filter on the
+<code>rowData</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html" class="external-link">filterFeatures</a></span><span class="op">(</span><span class="va">williams</span>, <span class="op">~</span> <span class="va">Reverse</span> <span class="op">!=</span> <span class="st">"+"</span> <span class="op">&amp;</span> <span class="va">Potential.contaminant</span> <span class="op">!=</span> <span class="st">"+"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">## An instance of class QFeatures containing 4 assays:</span>
-<span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17735 rows and 152 columns </span>
-<span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17735 rows and 152 columns </span>
-<span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2583 rows and 152 columns </span>
-<span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2583 rows and 152 columns</span></code></pre></div>
-<p>We are left with 17,735 peptides and 2,583 proteins that pass the quality control.</p>
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-filtering.html" class="external-link">filterFeatures</a></span><span class="op">(</span><span class="va">williams</span>, <span class="op">~</span> <span class="va">Reverse</span> <span class="op">!=</span> <span class="st">"+"</span> <span class="op">&amp;</span> <span class="va">Potential.contaminant</span> <span class="op">!=</span> <span class="st">"+"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## An instance of class QFeatures containing 4 assays:</span></span>
+<span><span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17735 rows and 152 columns </span></span>
+<span><span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17735 rows and 152 columns </span></span>
+<span><span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2583 rows and 152 columns </span></span>
+<span><span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2583 rows and 152 columns</span></span></code></pre></div>
+<p>We are left with 17,735 peptides and 2,583 proteins that pass the
+quality control.</p>
 </div>
-<div class="section level1">
-<h1 id="log-transformation">Log-transformation<a class="anchor" aria-label="anchor" href="#log-transformation"></a>
-</h1>
-<p>The authors next mention they log2-transformed the protein data. They however do not mention how they deal with 0 values that will become infinite after any logarithmic transformation. In this replication study, we replace 0’s with missing values using <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>.</p>
+<div class="section level2">
+<h2 id="log-transformation">Log-transformation<a class="anchor" aria-label="anchor" href="#log-transformation"></a>
+</h2>
+<p>The authors next mention they log2-transformed the protein data. They
+however do not mention how they deal with 0 values that will become
+infinite after any logarithmic transformation. In this replication
+study, we replace 0’s with missing values using
+<code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA()</a></code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">williams</span>, i <span class="op">=</span> <span class="st">"proteins_corrected"</span><span class="op">)</span></code></pre></div>
-<p>We then apply <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">logTransform()</a></code> on the <code>proteins_corrected</code> assay containing the protein data normalized by MaxQuant.</p>
+<code class="sourceCode R"><span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">zeroIsNA</a></span><span class="op">(</span><span class="va">williams</span>, i <span class="op">=</span> <span class="st">"proteins_corrected"</span><span class="op">)</span></span></code></pre></div>
+<p>We then apply <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">logTransform()</a></code> on the
+<code>proteins_corrected</code> assay containing the protein data
+normalized by MaxQuant.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">logTransform</a></span><span class="op">(</span><span class="va">williams</span>, base <span class="op">=</span> <span class="fl">2</span>,
-                          i <span class="op">=</span> <span class="st">"proteins_corrected"</span>, name <span class="op">=</span> <span class="st">"proteins_log"</span><span class="op">)</span><span class="op">)</span>
-<span class="co">## An instance of class QFeatures containing 5 assays:</span>
-<span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17735 rows and 152 columns </span>
-<span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17735 rows and 152 columns </span>
-<span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2583 rows and 152 columns </span>
-<span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2583 rows and 152 columns </span>
-<span class="co">##  [5] proteins_log: SingleCellExperiment with 2583 rows and 152 columns</span></code></pre></div>
-<p>We stored the results in a new assay called <code>proteins_log</code>.</p>
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">logTransform</a></span><span class="op">(</span><span class="va">williams</span>, base <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>                          i <span class="op">=</span> <span class="st">"proteins_corrected"</span>, name <span class="op">=</span> <span class="st">"proteins_log"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">## An instance of class QFeatures containing 5 assays:</span></span>
+<span><span class="co">##  [1] peptides_intensity: SingleCellExperiment with 17735 rows and 152 columns </span></span>
+<span><span class="co">##  [2] peptides_corrected: SingleCellExperiment with 17735 rows and 152 columns </span></span>
+<span><span class="co">##  [3] proteins_intensity: SingleCellExperiment with 2583 rows and 152 columns </span></span>
+<span><span class="co">##  [4] proteins_corrected: SingleCellExperiment with 2583 rows and 152 columns </span></span>
+<span><span class="co">##  [5] proteins_log: SingleCellExperiment with 2583 rows and 152 columns</span></span></code></pre></div>
+<p>We stored the results in a new assay called
+<code>proteins_log</code>.</p>
 </div>
-<div class="section level1">
-<h1 id="normalization">Normalization<a class="anchor" aria-label="anchor" href="#normalization"></a>
-</h1>
-<p>The authors then further normalize the data by <em>sequentially centering</em> <em>the column and row values to their median values</em>. Centering columns to the median is readily available in <code><a href="https://UCLouvain-CBIO.github.io/scp/reference/normalizeSCP.html" class="external-link">normalizeSCP()</a></code>.</p>
+<div class="section level2">
+<h2 id="normalization">Normalization<a class="anchor" aria-label="anchor" href="#normalization"></a>
+</h2>
+<p>The authors then further normalize the data by <em>sequentially
+centering</em> <em>the column and row values to their median
+values</em>. Centering columns to the median is readily available in
+<code><a href="https://UCLouvain-CBIO.github.io/scp/reference/normalizeSCP.html" class="external-link">normalizeSCP()</a></code>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/normalizeSCP.html" class="external-link">normalizeSCP</a></span><span class="op">(</span><span class="va">williams</span>, method <span class="op">=</span> <span class="st">"center.median"</span>,
-                         i <span class="op">=</span> <span class="st">"proteins_log"</span>, name <span class="op">=</span> <span class="st">"proteins_norm"</span><span class="op">)</span></code></pre></div>
-<p>However, this is not the case for the row centering. The author mention they perform the row centering for each batch separately. We need to implement this custom normalization. First, we extract the assay of interest with the associated <code>colData</code> using <code>getWithColData()</code>.</p>
+<code class="sourceCode R"><span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://UCLouvain-CBIO.github.io/scp/reference/normalizeSCP.html" class="external-link">normalizeSCP</a></span><span class="op">(</span><span class="va">williams</span>, method <span class="op">=</span> <span class="st">"center.median"</span>,</span>
+<span>                         i <span class="op">=</span> <span class="st">"proteins_log"</span>, name <span class="op">=</span> <span class="st">"proteins_norm"</span><span class="op">)</span></span></code></pre></div>
+<p>However, this is not the case for the row centering. The author
+mention they perform the row centering for each batch separately. We
+need to implement this custom normalization. First, we extract the assay
+of interest with the associated <code>colData</code> using
+<code><a href="http://waldronlab.io/MultiAssayExperiment/reference/MultiAssayExperiment-helpers.html" class="external-link">getWithColData()</a></code>.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">sceNorm</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">williams</span>, <span class="st">"proteins_norm"</span><span class="op">)</span>
-<span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></code></pre></div>
-<p>Then, we build a for loop that iterates through each batch and centers the rows based on the median within each batch.</p>
+<code class="sourceCode R"><span><span class="va">sceNorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://waldronlab.io/MultiAssayExperiment/reference/MultiAssayExperiment-helpers.html" class="external-link">getWithColData</a></span><span class="op">(</span><span class="va">williams</span>, <span class="st">"proteins_norm"</span><span class="op">)</span></span>
+<span><span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></span></code></pre></div>
+<p>Then, we build a for loop that iterates through each batch and
+centers the rows based on the median within each batch.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw">for</span> <span class="op">(</span><span class="va">batch</span> <span class="kw">in</span> <span class="va">sceNorm</span><span class="op">$</span><span class="va">Batch</span><span class="op">)</span> <span class="op">{</span>
-    <span class="va">ind</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">sceNorm</span><span class="op">$</span><span class="va">Batch</span> <span class="op">==</span> <span class="va">batch</span><span class="op">)</span> 
-    <span class="va">rowMeds</span> <span class="op">&lt;-</span> <span class="fu">rowMedians</span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-    <span class="fu">assay</span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">sweep</a></span><span class="op">(</span><span class="fu">assay</span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="st">"-"</span>, 
-                                   STATS <span class="op">=</span> <span class="va">rowMeds</span>, MARGIN <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
-<span class="op">}</span></code></pre></div>
-<p>Finally, we add the row-normalized assay back in the data set and add the relationships from the previous assay to this new assay.</p>
+<code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">batch</span> <span class="kw">in</span> <span class="va">sceNorm</span><span class="op">$</span><span class="va">Batch</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">ind</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">sceNorm</span><span class="op">$</span><span class="va">Batch</span> <span class="op">==</span> <span class="va">batch</span><span class="op">)</span> </span>
+<span>    <span class="va">rowMeds</span> <span class="op">&lt;-</span> <span class="fu">rowMedians</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-processing.html" class="external-link">sweep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">sceNorm</span><span class="op">[</span>, <span class="va">ind</span><span class="op">]</span><span class="op">)</span>, FUN <span class="op">=</span> <span class="st">"-"</span>, </span>
+<span>                                   STATS <span class="op">=</span> <span class="va">rowMeds</span>, MARGIN <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Finally, we add the row-normalized assay back in the data set and add
+the relationships from the previous assay to this new assay.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html" class="external-link">addAssay</a></span><span class="op">(</span><span class="va">williams</span>, <span class="va">sceNorm</span>, name <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span>
-<span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html" class="external-link">addAssayLinkOneToOne</a></span><span class="op">(</span><span class="va">williams</span>, from <span class="op">=</span> <span class="st">"proteins_norm"</span>, 
-                                 to <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-class.html" class="external-link">addAssay</a></span><span class="op">(</span><span class="va">williams</span>, <span class="va">sceNorm</span>, name <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span></span>
+<span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/AssayLinks.html" class="external-link">addAssayLinkOneToOne</a></span><span class="op">(</span><span class="va">williams</span>, from <span class="op">=</span> <span class="st">"proteins_norm"</span>, </span>
+<span>                                 to <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level1">
-<h1 id="handle-missing-data">Handle missing data<a class="anchor" aria-label="anchor" href="#handle-missing-data"></a>
-</h1>
-<p>The authors remove proteins that have more than 30 % missing data. We use <code><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">filterNA()</a></code> and provide the threshold of maximum 30% missing values.</p>
+<div class="section level2">
+<h2 id="handle-missing-data">Handle missing data<a class="anchor" aria-label="anchor" href="#handle-missing-data"></a>
+</h2>
+<p>The authors remove proteins that have more than 30 % missing data. We
+use <code><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">filterNA()</a></code> and provide the threshold of maximum 30%
+missing values.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/QFeatures-missing-data.html" class="external-link">filterNA</a></span><span class="op">(</span><span class="va">williams</span>, pNA <span class="op">=</span> <span class="fl">0.3</span>,  i <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">filterNA</a></span><span class="op">(</span><span class="va">williams</span>, pNA <span class="op">=</span> <span class="fl">0.3</span>,  i <span class="op">=</span> <span class="st">"proteins_norm2"</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level1">
-<h1 id="keep-confident-proteins">Keep confident proteins<a class="anchor" aria-label="anchor" href="#keep-confident-proteins"></a>
-</h1>
-<p>The authors next keep only proteins that are identified with at least 2 peptides. We can retrieve which proteins are made of several peptides from the <code>rowData</code> of the <code>peptides_corrected</code> assay. The peptides were mapped to the protein data thanks to the <code>Leading.razor.protein</code>. All proteins that are present at least 2 are kept.</p>
+<div class="section level2">
+<h2 id="keep-confident-proteins">Keep confident proteins<a class="anchor" aria-label="anchor" href="#keep-confident-proteins"></a>
+</h2>
+<p>The authors next keep only proteins that are identified with at least
+2 peptides. We can retrieve which proteins are made of several peptides
+from the <code>rowData</code> of the <code>peptides_corrected</code>
+assay. The peptides were mapped to the protein data thanks to the
+<code>Leading.razor.protein</code>. All proteins that are present at
+least 2 are kept.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">## Get `Leading.razor.protein` from the peptide `rowData`</span>
-<span class="va">prots</span> <span class="op">&lt;-</span> <span class="fu">rowData</span><span class="op">(</span><span class="va">williams</span><span class="op">[[</span><span class="st">"peptides_corrected"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">Leading.razor.protein</span>
-<span class="co">## Get all proteins that are present at least twice</span>
-<span class="va">prots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">prots</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated</a></span><span class="op">(</span><span class="va">prots</span><span class="op">)</span><span class="op">]</span><span class="op">)</span>
-<span class="co">## Keep only proteins that were kept after missing data filtering</span>
-<span class="va">prots</span> <span class="op">&lt;-</span> <span class="va">prots</span><span class="op">[</span><span class="va">prots</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span><span class="op">[[</span><span class="st">"proteins_norm2"</span><span class="op">]</span><span class="op">]</span><span class="op">]</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">prots</span><span class="op">)</span>
-<span class="co">## [1] "TPM3_HUMAN"  "XPO2_HUMAN"  "PTMA_HUMAN"  "MIC19_HUMAN" "RL1D1_HUMAN"</span>
-<span class="co">## [6] "TLN1_HUMAN"</span></code></pre></div>
-<p>We generated a vector with the proteins identified at least twice. We can now use it to subset the data set. Note that a <code>QFeatures</code> object can be seen as a three-order array: <span class="math inline">\(features \times samples \times assay\)</span>. Hence, <code>QFeatures</code> supports three-order subsetting <code>x[rows, columns, assays]</code>. The great advantage of this subsetting is that all peptides linked to these desired proteins are also retrieved thanks to the relationships stored between proteins and peptides.</p>
+<code class="sourceCode R"><span><span class="co">## Get `Leading.razor.protein` from the peptide `rowData`</span></span>
+<span><span class="va">prots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">rowData</a></span><span class="op">(</span><span class="va">williams</span><span class="op">[[</span><span class="st">"peptides_corrected"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">$</span><span class="va">Leading.razor.protein</span></span>
+<span><span class="co">## Get all proteins that are present at least twice</span></span>
+<span><span class="va">prots</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">prots</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated</a></span><span class="op">(</span><span class="va">prots</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">## Keep only proteins that were kept after missing data filtering</span></span>
+<span><span class="va">prots</span> <span class="op">&lt;-</span> <span class="va">prots</span><span class="op">[</span><span class="va">prots</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span><span class="op">[[</span><span class="st">"proteins_norm2"</span><span class="op">]</span><span class="op">]</span><span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">prots</span><span class="op">)</span></span>
+<span><span class="co">## [1] "TPM3_HUMAN"  "XPO2_HUMAN"  "PTMA_HUMAN"  "MIC19_HUMAN" "RL1D1_HUMAN"</span></span>
+<span><span class="co">## [6] "TLN1_HUMAN"</span></span></code></pre></div>
+<p>We generated a vector with the proteins identified at least twice. We
+can now use it to subset the data set. Note that a
+<code>QFeatures</code> object can be seen as a three-order array: <span class="math inline">\(features \times samples \times assay\)</span>.
+Hence, <code>QFeatures</code> supports three-order subsetting
+<code>x[rows, columns, assays]</code>. The great advantage of this
+subsetting is that all peptides linked to these desired proteins are
+also retrieved thanks to the relationships stored between proteins and
+peptides.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="va">williams</span><span class="op">[</span><span class="va">prots</span>, , <span class="op">]</span><span class="op">)</span>
-<span class="co">## An instance of class QFeatures containing 7 assays:</span>
-<span class="co">##  [1] peptides_intensity: SingleCellExperiment with 12538 rows and 152 columns </span>
-<span class="co">##  [2] peptides_corrected: SingleCellExperiment with 12538 rows and 152 columns </span>
-<span class="co">##  [3] proteins_intensity: SingleCellExperiment with 1197 rows and 152 columns </span>
-<span class="co">##  [4] proteins_corrected: SingleCellExperiment with 1197 rows and 152 columns </span>
-<span class="co">##  [5] proteins_log: SingleCellExperiment with 1197 rows and 152 columns </span>
-<span class="co">##  [6] proteins_norm: SingleCellExperiment with 1197 rows and 152 columns </span>
-<span class="co">##  [7] proteins_norm2: SingleCellExperiment with 1197 rows and 152 columns</span></code></pre></div>
-<p>This step concludes the quantitative data processing. We update the <code>QFeatures</code> plot that provides an overview of the processing.</p>
+<code class="sourceCode R"><span><span class="op">(</span><span class="va">williams</span> <span class="op">&lt;-</span> <span class="va">williams</span><span class="op">[</span><span class="va">prots</span>, , <span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">## An instance of class QFeatures containing 7 assays:</span></span>
+<span><span class="co">##  [1] peptides_intensity: SingleCellExperiment with 12538 rows and 152 columns </span></span>
+<span><span class="co">##  [2] peptides_corrected: SingleCellExperiment with 12538 rows and 152 columns </span></span>
+<span><span class="co">##  [3] proteins_intensity: SingleCellExperiment with 1197 rows and 152 columns </span></span>
+<span><span class="co">##  [4] proteins_corrected: SingleCellExperiment with 1197 rows and 152 columns </span></span>
+<span><span class="co">##  [5] proteins_log: SingleCellExperiment with 1197 rows and 152 columns </span></span>
+<span><span class="co">##  [6] proteins_norm: SingleCellExperiment with 1197 rows and 152 columns </span></span>
+<span><span class="co">##  [7] proteins_norm2: SingleCellExperiment with 1197 rows and 152 columns</span></span></code></pre></div>
+<p>This step concludes the quantitative data processing. We update the
+<code>QFeatures</code> plot that provides an overview of the
+processing.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">williams</span><span class="op">)</span></span></code></pre></div>
 <p><img src="williams2020_tmt_files/figure-html/unnamed-chunk-16-1.png" width="70%" style="display: block; margin: auto;"></p>
 </div>
-<div class="section level1">
-<h1 id="downstream-analysis">Downstream analysis<a class="anchor" aria-label="anchor" href="#downstream-analysis"></a>
-</h1>
-<p>The authors used the processed data to perform two types of downstream analysis: single-cell correlation analysis and principal component analysis. We here provide the published figure that we aim to reproduce in this vignette.</p>
+<div class="section level2">
+<h2 id="downstream-analysis">Downstream analysis<a class="anchor" aria-label="anchor" href="#downstream-analysis"></a>
+</h2>
+<p>The authors used the processed data to perform two types of
+downstream analysis: single-cell correlation analysis and principal
+component analysis. We here provide the published figure that we aim to
+reproduce in this vignette.</p>
 <div class="figure" style="text-align: center">
 <img src="figs/williams2020-figure6.png" alt="Figure 6 from Williams et al. 2020" width="50%"><p class="caption">
 Figure 6 from Williams et al. 2020
 </p>
 </div>
-<p>To run the downstream analysis, we only need the last assay generated during the quantitative data processing. We extract the assay as well as the associated sample annotations using <code>getWithColData()</code>.</p>
+<p>To run the downstream analysis, we only need the last assay generated
+during the quantitative data processing. We extract the assay as well as
+the associated sample annotations using
+<code><a href="http://waldronlab.io/MultiAssayExperiment/reference/MultiAssayExperiment-helpers.html" class="external-link">getWithColData()</a></code>.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu">getWithColData</span><span class="op">(</span><span class="va">williams</span>, <span class="st">"proteins_norm2"</span><span class="op">)</span>
-<span class="co">## Warning: 'experiments' dropped; see 'metadata'</span>
-<span class="co">## Warning: Ignoring redundant column names in 'colData(x)':</span></code></pre></div>
-<div class="section level2">
-<h2 id="correlation-analysis">Correlation analysis<a class="anchor" aria-label="anchor" href="#correlation-analysis"></a>
-</h2>
+<code class="sourceCode R"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://waldronlab.io/MultiAssayExperiment/reference/MultiAssayExperiment-helpers.html" class="external-link">getWithColData</a></span><span class="op">(</span><span class="va">williams</span>, <span class="st">"proteins_norm2"</span><span class="op">)</span></span>
+<span><span class="co">## Warning: 'experiments' dropped; see 'metadata'</span></span>
+<span><span class="co">## Warning: Ignoring redundant column names in 'colData(x)':</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="correlation-analysis">Correlation analysis<a class="anchor" aria-label="anchor" href="#correlation-analysis"></a>
+</h3>
 <p>We first compute the correlation matrix. We use pairwise</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu">assay</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span>
-<span class="va">corMat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">m</span>, method <span class="op">=</span> <span class="st">"pearson"</span>, use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span><span class="op">)</span></code></pre></div>
-<p>We use the <code>ComplexHeatmap</code> package to plot the heatmap. This package allows easy annotation of the plot, namely labeling each sample with its sample type and channel.</p>
+<code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span></span>
+<span><span class="va">corMat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">m</span>, method <span class="op">=</span> <span class="st">"pearson"</span>, use <span class="op">=</span> <span class="st">"pairwise.complete.obs"</span><span class="op">)</span></span></code></pre></div>
+<p>We use the <code>ComplexHeatmap</code> package to plot the heatmap.
+This package allows easy annotation of the plot, namely labeling each
+sample with its sample type and channel.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/jokergoo/ComplexHeatmap" class="external-link">ComplexHeatmap</a></span><span class="op">)</span>
-<span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CMK <span class="op">=</span> <span class="st">"green4"</span>, `K562` <span class="op">=</span> <span class="st">"dodgerblue"</span>, `MOLM-14` <span class="op">=</span> <span class="st">"red3"</span><span class="op">)</span>
-<span class="va">colAnnot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/columnAnnotation.html" class="external-link">columnAnnotation</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">SampleType</span>,
-                             Channel <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">Channel</span>,
-                             col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">cols</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CMK <span class="op">=</span> <span class="st">"green4"</span>, `K562` <span class="op">=</span> <span class="st">"dodgerblue"</span>, `MOLM-14` <span class="op">=</span> <span class="st">"red3"</span><span class="op">)</span></span>
+<span><span class="va">colAnnot</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/columnAnnotation.html" class="external-link">columnAnnotation</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">SampleType</span>,</span>
+<span>                             Channel <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">Channel</span>,</span>
+<span>                             col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Population <span class="op">=</span> <span class="va">cols</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>We can now plot the heatmap.</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/Heatmap.html" class="external-link">Heatmap</a></span><span class="op">(</span><span class="va">corMat</span>, name <span class="op">=</span> <span class="st">"Pearson correlation"</span>,
-        show_row_names <span class="op">=</span> <span class="cn">FALSE</span>, show_column_names <span class="op">=</span> <span class="cn">FALSE</span>,
-        top_annotation <span class="op">=</span> <span class="va">colAnnot</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/ComplexHeatmap/man/Heatmap.html" class="external-link">Heatmap</a></span><span class="op">(</span><span class="va">corMat</span>, name <span class="op">=</span> <span class="st">"Pearson correlation"</span>,</span>
+<span>        show_row_names <span class="op">=</span> <span class="cn">FALSE</span>, show_column_names <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>        top_annotation <span class="op">=</span> <span class="va">colAnnot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="williams2020_tmt_files/figure-html/unnamed-chunk-21-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>Like in the figure from the article, we observe a positive correlation between samples from the same cell type. We also observe with sample type clusters. While this is not shown in the original figure, we can clearly link this effect to TMT channel bias. This should be corrected for, but a the poor experimental design causes sample type and TMT channel to be confounded, and hence entangling the TMT effects with bioligical effects.</p>
+<p>Like in the figure from the article, we observe a positive
+correlation between samples from the same cell type. We also observe
+with sample type clusters. While this is not shown in the original
+figure, we can clearly link this effect to TMT channel bias. This should
+be corrected for, but a the poor experimental design causes sample type
+and TMT channel to be confounded, and hence entangling the TMT effects
+with bioligical effects.</p>
+</div>
+<div class="section level3">
+<h3 id="pca">PCA<a class="anchor" aria-label="anchor" href="#pca"></a>
+</h3>
+<p>PCA can directly be computed from a <code>SingleCellExperiment</code>
+object thanks to the <code>scater</code> package. We therefore use
+<code><a href="https://rdrr.io/pkg/BiocSingular/man/runPCA.html" class="external-link">runPCA()</a></code>. Note that we also impute the missing values with
+zeros as PCA does not support missing value.</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocSingular/man/runPCA.html" class="external-link">runPCA</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/ProtGenerics/man/protgenerics.html" class="external-link">impute</a></span><span class="op">(</span><span class="va">sce</span>, method <span class="op">=</span> <span class="st">"zero"</span><span class="op">)</span>, exprs_values <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>We generate the PCA plots using <code><a href="https://rdrr.io/pkg/BiocGenerics/man/plotPCA.html" class="external-link">plotPCA()</a></code>, and use
+different colouring schemes to highlight different samples
+annotations.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/plotPCA.html" class="external-link">plotPCA</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"SampleType"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="williams2020_tmt_files/figure-html/unnamed-chunk-23-1.png" width="70%" style="display: block; margin: auto;"></p>
+<p>The sample types can be differentiated on the PCA plot, although the
+CMK and MOLM-14 slightly overlap what is not observed in the published
+work. Another small difference is that the first to PC explaine 15 % of
+the variance while the authors report 22 % explained variance.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="pca">PCA<a class="anchor" aria-label="anchor" href="#pca"></a>
+<h2 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
 </h2>
-<p>PCA can directly be computed from a <code>SingleCellExperiment</code> object thanks to the <code>scater</code> package. We therefore use <code><a href="https://rdrr.io/pkg/scater/man/runPCA.html" class="external-link">runPCA()</a></code>. Note that we also impute the missing values with zeros as PCA does not support missing value.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://bioconductor.org/packages/scater/" class="external-link">scater</a></span><span class="op">)</span>
-<span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/scater/man/runPCA.html" class="external-link">runPCA</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/QFeatures/man/impute.html" class="external-link">impute</a></span><span class="op">(</span><span class="va">sce</span>, method <span class="op">=</span> <span class="st">"zero"</span><span class="op">)</span>, exprs_values <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></code></pre></div>
-<p>We generate the PCA plots using <code><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html" class="external-link">plotPCA()</a></code>, and use different colouring schemes to highlight different samples annotations.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/pkg/scater/man/plot_reddim.html" class="external-link">plotPCA</a></span><span class="op">(</span><span class="va">sce</span>, colour_by <span class="op">=</span> <span class="st">"SampleType"</span><span class="op">)</span></code></pre></div>
-<p><img src="williams2020_tmt_files/figure-html/unnamed-chunk-23-1.png" width="70%" style="display: block; margin: auto;"></p>
-<p>The sample types can be differentiated on the PCA plot, although the CMK and MOLM-14 slightly overlap what is not observed in the published work. Another small difference is that the first to PC explaine 15 % of the variance while the authors report 22 % explained variance.</p>
+<p>We were able to reproduce the general results from the analysis by
+<span class="citation">Williams et al. (2020)</span>. However, we notice
+small discrepancies indicating small differences between workflows.
+Without a script or the intermediate results from the authors, we are
+unable to pinpoint which steps differ.</p>
 </div>
+<div class="section level2">
+<h2 id="reproduce-this-vignette">Reproduce this vignette<a class="anchor" aria-label="anchor" href="#reproduce-this-vignette"></a>
+</h2>
+<p>You can reproduce this vignette using <code>Docker</code>:</p>
+<pre><code>docker pull cvanderaa/scp_replication_docker:v1
+docker run \
+    -e PASSWORD=bioc \
+    -p 8787:8787 \
+    cvanderaa/scp_replication_docker:v1</code></pre>
+<p>Open your browser and go to <a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a>. The USER is <code>rstudio</code>
+and the password is <code>bioc</code>. You can find the vignette in the
+<code>vignettes</code> folder.</p>
+<p>See the <a href="https://uclouvain-cbio.github.io/SCP.replication/index.html" class="external-link">website
+home page</a> for more information.</p>
 </div>
-<div class="section level1">
-<h1 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
-</h1>
-<p>We were able to reproduce the general results from the analysis by <span class="citation">Williams et al. (2020)</span>. However, we notice small discrepancies indicating small differences between workflows. Without a script or the intermediate results from the authors, we are unable to pinpoint which steps differ.</p>
-</div>
-<div class="section level1">
-<h1 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
-</h1>
-<div class="section level3">
-<h3 id="hardware-and-software">Hardware and software<a class="anchor" aria-label="anchor" href="#hardware-and-software"></a>
-</h3>
+<div class="section level2">
+<h2 id="requirements">Requirements<a class="anchor" aria-label="anchor" href="#requirements"></a>
+</h2>
+<div class="section level4">
+<h4 id="hardware-and-software">Hardware and software<a class="anchor" aria-label="anchor" href="#hardware-and-software"></a>
+</h4>
 <p>The system details of the machine that built the vignette are:</p>
-<pre><code><span class="co">## Machine: Linux (5.11.0-43-generic)</span>
-<span class="co">## R version: R.4.2.0 (svn: 81131)</span>
-<span class="co">## RAM: 16.5 GB</span>
-<span class="co">## CPU: 16 core(s) - 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz</span></code></pre>
+<pre><code><span><span class="co">## Machine: Linux (5.15.0-46-generic)</span></span>
+<span><span class="co">## R version: R.4.2.1 (svn: 82513)</span></span>
+<span><span class="co">## RAM: 16.5 GB</span></span>
+<span><span class="co">## CPU: 16 core(s) - 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz</span></span></code></pre>
 </div>
-<div class="section level3">
-<h3 id="timing">Timing<a class="anchor" aria-label="anchor" href="#timing"></a>
-</h3>
+<div class="section level4">
+<h4 id="timing">Timing<a class="anchor" aria-label="anchor" href="#timing"></a>
+</h4>
 <p>The total time required to compile this vignette is:</p>
-<pre><code><span class="co">## 31.58458 secs</span></code></pre>
+<pre><code><span><span class="co">## 56.68723 secs</span></span></code></pre>
 </div>
-<div class="section level3">
-<h3 id="memory">Memory<a class="anchor" aria-label="anchor" href="#memory"></a>
-</h3>
+<div class="section level4">
+<h4 id="memory">Memory<a class="anchor" aria-label="anchor" href="#memory"></a>
+</h4>
 <p>The final <code>williams</code> memory size is:</p>
-<pre><code><span class="co">## [1] "0.1 Gb"</span></code></pre>
+<pre><code><span><span class="co">## [1] "0.1 Gb"</span></span></code></pre>
 </div>
-<div class="section level3">
-<h3 id="session-info">Session info<a class="anchor" aria-label="anchor" href="#session-info"></a>
-</h3>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span>
-<span class="co">## R Under development (unstable) (2021-11-02 r81131)</span>
-<span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span>
-<span class="co">## Running under: Ubuntu 20.04.3 LTS</span>
-<span class="co">## </span>
-<span class="co">## Matrix products: default</span>
-<span class="co">## BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0</span>
-<span class="co">## LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0</span>
-<span class="co">## </span>
-<span class="co">## locale:</span>
-<span class="co">##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span>
-<span class="co">##  [3] LC_TIME=en_GB.UTF-8        LC_COLLATE=en_US.UTF-8    </span>
-<span class="co">##  [5] LC_MONETARY=en_GB.UTF-8    LC_MESSAGES=en_US.UTF-8   </span>
-<span class="co">##  [7] LC_PAPER=en_GB.UTF-8       LC_NAME=C                 </span>
-<span class="co">##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span>
-<span class="co">## [11] LC_MEASUREMENT=en_GB.UTF-8 LC_IDENTIFICATION=C       </span>
-<span class="co">## </span>
-<span class="co">## attached base packages:</span>
-<span class="co">## [1] grid      stats4    stats     graphics  grDevices utils     datasets </span>
-<span class="co">## [8] methods   base     </span>
-<span class="co">## </span>
-<span class="co">## other attached packages:</span>
-<span class="co">##  [1] benchmarkme_1.0.7           scater_1.23.2              </span>
-<span class="co">##  [3] ggplot2_3.3.5               scuttle_1.5.0              </span>
-<span class="co">##  [5] SingleCellExperiment_1.17.2 ComplexHeatmap_2.11.0      </span>
-<span class="co">##  [7] scp_1.5.0                   scpdata_1.3.2              </span>
-<span class="co">##  [9] ExperimentHub_2.3.4         AnnotationHub_3.3.7        </span>
-<span class="co">## [11] BiocFileCache_2.3.3         dbplyr_2.1.1               </span>
-<span class="co">## [13] QFeatures_1.5.3             MultiAssayExperiment_1.21.5</span>
-<span class="co">## [15] SummarizedExperiment_1.25.3 Biobase_2.55.0             </span>
-<span class="co">## [17] GenomicRanges_1.47.5        GenomeInfoDb_1.31.1        </span>
-<span class="co">## [19] IRanges_2.29.1              S4Vectors_0.33.8           </span>
-<span class="co">## [21] BiocGenerics_0.41.2         MatrixGenerics_1.7.0       </span>
-<span class="co">## [23] matrixStats_0.61.0          BiocStyle_2.23.1           </span>
-<span class="co">## </span>
-<span class="co">## loaded via a namespace (and not attached):</span>
-<span class="co">##   [1] circlize_0.4.13               systemfonts_1.0.3            </span>
-<span class="co">##   [3] igraph_1.2.10                 lazyeval_0.2.2               </span>
-<span class="co">##   [5] BiocParallel_1.29.6           digest_0.6.29                </span>
-<span class="co">##   [7] foreach_1.5.1                 htmltools_0.5.2              </span>
-<span class="co">##   [9] viridis_0.6.2                 magick_2.7.3                 </span>
-<span class="co">##  [11] fansi_0.5.0                   magrittr_2.0.1               </span>
-<span class="co">##  [13] memoise_2.0.1                 ScaledMatrix_1.3.0           </span>
-<span class="co">##  [15] cluster_2.1.2                 doParallel_1.0.16            </span>
-<span class="co">##  [17] Biostrings_2.63.0             pkgdown_2.0.1                </span>
-<span class="co">##  [19] colorspace_2.0-2              ggrepel_0.9.1                </span>
-<span class="co">##  [21] blob_1.2.2                    rappdirs_0.3.3               </span>
-<span class="co">##  [23] textshaping_0.3.6             xfun_0.29                    </span>
-<span class="co">##  [25] dplyr_1.0.7                   crayon_1.4.2                 </span>
-<span class="co">##  [27] RCurl_1.98-1.5                jsonlite_1.7.2               </span>
-<span class="co">##  [29] iterators_1.0.13              glue_1.6.0                   </span>
-<span class="co">##  [31] gtable_0.3.0                  zlibbioc_1.41.0              </span>
-<span class="co">##  [33] XVector_0.35.0                GetoptLong_1.0.5             </span>
-<span class="co">##  [35] DelayedArray_0.21.2           BiocSingular_1.11.0          </span>
-<span class="co">##  [37] shape_1.4.6                   scales_1.1.1                 </span>
-<span class="co">##  [39] DBI_1.1.2                     Rcpp_1.0.7                   </span>
-<span class="co">##  [41] viridisLite_0.4.0             xtable_1.8-4                 </span>
-<span class="co">##  [43] clue_0.3-60                   bit_4.0.4                    </span>
-<span class="co">##  [45] rsvd_1.0.5                    MsCoreUtils_1.7.2            </span>
-<span class="co">##  [47] httr_1.4.2                    RColorBrewer_1.1-2           </span>
-<span class="co">##  [49] ellipsis_0.3.2                farver_2.1.0                 </span>
-<span class="co">##  [51] pkgconfig_2.0.3               sass_0.4.0                   </span>
-<span class="co">##  [53] utf8_1.2.2                    labeling_0.4.2               </span>
-<span class="co">##  [55] tidyselect_1.1.1              rlang_0.4.12                 </span>
-<span class="co">##  [57] later_1.3.0                   AnnotationDbi_1.57.1         </span>
-<span class="co">##  [59] munsell_0.5.0                 BiocVersion_3.15.0           </span>
-<span class="co">##  [61] tools_4.2.0                   cachem_1.0.6                 </span>
-<span class="co">##  [63] generics_0.1.1                RSQLite_2.2.9                </span>
-<span class="co">##  [65] evaluate_0.14                 stringr_1.4.0                </span>
-<span class="co">##  [67] fastmap_1.1.0                 yaml_2.2.1                   </span>
-<span class="co">##  [69] ragg_1.2.1                    knitr_1.37                   </span>
-<span class="co">##  [71] bit64_4.0.5                   fs_1.5.2                     </span>
-<span class="co">##  [73] purrr_0.3.4                   KEGGREST_1.35.0              </span>
-<span class="co">##  [75] AnnotationFilter_1.19.0       sparseMatrixStats_1.7.0      </span>
-<span class="co">##  [77] mime_0.12                     compiler_4.2.0               </span>
-<span class="co">##  [79] beeswarm_0.4.0                filelock_1.0.2               </span>
-<span class="co">##  [81] curl_4.3.2                    png_0.1-7                    </span>
-<span class="co">##  [83] interactiveDisplayBase_1.33.0 tibble_3.1.6                 </span>
-<span class="co">##  [85] bslib_0.3.1                   stringi_1.7.6                </span>
-<span class="co">##  [87] highr_0.9                     desc_1.4.0                   </span>
-<span class="co">##  [89] lattice_0.20-45               ProtGenerics_1.27.1          </span>
-<span class="co">##  [91] Matrix_1.3-4                  vctrs_0.3.8                  </span>
-<span class="co">##  [93] pillar_1.6.4                  lifecycle_1.0.1              </span>
-<span class="co">##  [95] BiocManager_1.30.16           jquerylib_0.1.4              </span>
-<span class="co">##  [97] GlobalOptions_0.1.2           BiocNeighbors_1.13.0         </span>
-<span class="co">##  [99] cowplot_1.1.1                 bitops_1.0-7                 </span>
-<span class="co">## [101] irlba_2.3.5                   httpuv_1.6.4                 </span>
-<span class="co">## [103] R6_2.5.1                      bookdown_0.24                </span>
-<span class="co">## [105] promises_1.2.0.1              gridExtra_2.3                </span>
-<span class="co">## [107] vipor_0.4.5                   codetools_0.2-18             </span>
-<span class="co">## [109] benchmarkmeData_1.0.4         MASS_7.3-54                  </span>
-<span class="co">## [111] assertthat_0.2.1              rprojroot_2.0.2              </span>
-<span class="co">## [113] rjson_0.2.20                  withr_2.4.3                  </span>
-<span class="co">## [115] GenomeInfoDbData_1.2.7        parallel_4.2.0               </span>
-<span class="co">## [117] beachmat_2.11.0               rmarkdown_2.11               </span>
-<span class="co">## [119] DelayedMatrixStats_1.17.0     shiny_1.7.1                  </span>
-<span class="co">## [121] ggbeeswarm_0.6.0</span></code></pre></div>
+<div class="section level4">
+<h4 id="session-info">Session info<a class="anchor" aria-label="anchor" href="#session-info"></a>
+</h4>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">## R version 4.2.1 (2022-06-23)</span></span>
+<span><span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
+<span><span class="co">## Running under: Ubuntu 20.04.4 LTS</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## Matrix products: default</span></span>
+<span><span class="co">## BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0</span></span>
+<span><span class="co">## LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## locale:</span></span>
+<span><span class="co">##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span></span>
+<span><span class="co">##  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    </span></span>
+<span><span class="co">##  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   </span></span>
+<span><span class="co">##  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 </span></span>
+<span><span class="co">##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span></span>
+<span><span class="co">## [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## attached base packages:</span></span>
+<span><span class="co">## [1] grid      stats4    stats     graphics  grDevices utils     datasets </span></span>
+<span><span class="co">## [8] methods   base     </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## other attached packages:</span></span>
+<span><span class="co">##  [1] benchmarkme_1.0.8           scater_1.25.6              </span></span>
+<span><span class="co">##  [3] ggplot2_3.3.6               scuttle_1.7.4              </span></span>
+<span><span class="co">##  [5] SingleCellExperiment_1.19.0 ComplexHeatmap_2.13.1      </span></span>
+<span><span class="co">##  [7] scp_1.7.0                   scpdata_1.5.0              </span></span>
+<span><span class="co">##  [9] ExperimentHub_2.5.0         AnnotationHub_3.5.1        </span></span>
+<span><span class="co">## [11] BiocFileCache_2.5.0         dbplyr_2.2.1               </span></span>
+<span><span class="co">## [13] QFeatures_1.7.1             MultiAssayExperiment_1.23.8</span></span>
+<span><span class="co">## [15] SummarizedExperiment_1.27.3 Biobase_2.57.1             </span></span>
+<span><span class="co">## [17] GenomicRanges_1.49.1        GenomeInfoDb_1.33.7        </span></span>
+<span><span class="co">## [19] IRanges_2.31.2              S4Vectors_0.35.3           </span></span>
+<span><span class="co">## [21] BiocGenerics_0.43.4         MatrixGenerics_1.9.1       </span></span>
+<span><span class="co">## [23] matrixStats_0.62.0          BiocStyle_2.25.0           </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## loaded via a namespace (and not attached):</span></span>
+<span><span class="co">##   [1] circlize_0.4.15               BiocBaseUtils_0.99.12        </span></span>
+<span><span class="co">##   [3] systemfonts_1.0.4             igraph_1.3.4                 </span></span>
+<span><span class="co">##   [5] lazyeval_0.2.2                BiocParallel_1.31.12         </span></span>
+<span><span class="co">##   [7] digest_0.6.29                 foreach_1.5.2                </span></span>
+<span><span class="co">##   [9] htmltools_0.5.3               magick_2.7.3                 </span></span>
+<span><span class="co">##  [11] viridis_0.6.2                 fansi_1.0.3                  </span></span>
+<span><span class="co">##  [13] magrittr_2.0.3                memoise_2.0.1                </span></span>
+<span><span class="co">##  [15] ScaledMatrix_1.5.1            cluster_2.1.4                </span></span>
+<span><span class="co">##  [17] doParallel_1.0.17             Biostrings_2.65.6            </span></span>
+<span><span class="co">##  [19] pkgdown_2.0.6                 colorspace_2.0-3             </span></span>
+<span><span class="co">##  [21] ggrepel_0.9.1                 blob_1.2.3                   </span></span>
+<span><span class="co">##  [23] rappdirs_0.3.3                textshaping_0.3.6            </span></span>
+<span><span class="co">##  [25] xfun_0.33                     dplyr_1.0.10                 </span></span>
+<span><span class="co">##  [27] crayon_1.5.1                  RCurl_1.98-1.8               </span></span>
+<span><span class="co">##  [29] jsonlite_1.8.0                iterators_1.0.14             </span></span>
+<span><span class="co">##  [31] glue_1.6.2                    gtable_0.3.1                 </span></span>
+<span><span class="co">##  [33] zlibbioc_1.43.0               XVector_0.37.1               </span></span>
+<span><span class="co">##  [35] GetoptLong_1.0.5              DelayedArray_0.23.1          </span></span>
+<span><span class="co">##  [37] BiocSingular_1.13.1           shape_1.4.6                  </span></span>
+<span><span class="co">##  [39] scales_1.2.1                  DBI_1.1.3                    </span></span>
+<span><span class="co">##  [41] Rcpp_1.0.9                    viridisLite_0.4.1            </span></span>
+<span><span class="co">##  [43] xtable_1.8-4                  clue_0.3-61                  </span></span>
+<span><span class="co">##  [45] bit_4.0.4                     rsvd_1.0.5                   </span></span>
+<span><span class="co">##  [47] MsCoreUtils_1.9.1             httr_1.4.4                   </span></span>
+<span><span class="co">##  [49] RColorBrewer_1.1-3            ellipsis_0.3.2               </span></span>
+<span><span class="co">##  [51] farver_2.1.1                  pkgconfig_2.0.3              </span></span>
+<span><span class="co">##  [53] sass_0.4.2                    utf8_1.2.2                   </span></span>
+<span><span class="co">##  [55] labeling_0.4.2                tidyselect_1.1.2             </span></span>
+<span><span class="co">##  [57] rlang_1.0.5                   later_1.3.0                  </span></span>
+<span><span class="co">##  [59] AnnotationDbi_1.59.1          munsell_0.5.0                </span></span>
+<span><span class="co">##  [61] BiocVersion_3.16.0            tools_4.2.1                  </span></span>
+<span><span class="co">##  [63] cachem_1.0.6                  cli_3.4.0                    </span></span>
+<span><span class="co">##  [65] generics_0.1.3                RSQLite_2.2.17               </span></span>
+<span><span class="co">##  [67] evaluate_0.16                 stringr_1.4.1                </span></span>
+<span><span class="co">##  [69] fastmap_1.1.0                 yaml_2.3.5                   </span></span>
+<span><span class="co">##  [71] ragg_1.2.2                    knitr_1.40                   </span></span>
+<span><span class="co">##  [73] bit64_4.0.5                   fs_1.5.2                     </span></span>
+<span><span class="co">##  [75] purrr_0.3.4                   KEGGREST_1.37.3              </span></span>
+<span><span class="co">##  [77] AnnotationFilter_1.21.0       sparseMatrixStats_1.9.0      </span></span>
+<span><span class="co">##  [79] mime_0.12                     compiler_4.2.1               </span></span>
+<span><span class="co">##  [81] beeswarm_0.4.0                filelock_1.0.2               </span></span>
+<span><span class="co">##  [83] curl_4.3.2                    png_0.1-7                    </span></span>
+<span><span class="co">##  [85] interactiveDisplayBase_1.35.0 tibble_3.1.8                 </span></span>
+<span><span class="co">##  [87] bslib_0.4.0                   stringi_1.7.8                </span></span>
+<span><span class="co">##  [89] highr_0.9                     desc_1.4.2                   </span></span>
+<span><span class="co">##  [91] lattice_0.20-45               ProtGenerics_1.29.0          </span></span>
+<span><span class="co">##  [93] Matrix_1.5-1                  vctrs_0.4.1                  </span></span>
+<span><span class="co">##  [95] pillar_1.8.1                  lifecycle_1.0.2              </span></span>
+<span><span class="co">##  [97] BiocManager_1.30.18           jquerylib_0.1.4              </span></span>
+<span><span class="co">##  [99] GlobalOptions_0.1.2           BiocNeighbors_1.15.1         </span></span>
+<span><span class="co">## [101] bitops_1.0-7                  irlba_2.3.5                  </span></span>
+<span><span class="co">## [103] httpuv_1.6.6                  R6_2.5.1                     </span></span>
+<span><span class="co">## [105] bookdown_0.29                 promises_1.2.0.1             </span></span>
+<span><span class="co">## [107] gridExtra_2.3                 vipor_0.4.5                  </span></span>
+<span><span class="co">## [109] codetools_0.2-18              benchmarkmeData_1.0.4        </span></span>
+<span><span class="co">## [111] MASS_7.3-58.1                 assertthat_0.2.1             </span></span>
+<span><span class="co">## [113] rprojroot_2.0.3               rjson_0.2.21                 </span></span>
+<span><span class="co">## [115] withr_2.5.0                   GenomeInfoDbData_1.2.8       </span></span>
+<span><span class="co">## [117] parallel_4.2.1                beachmat_2.13.4              </span></span>
+<span><span class="co">## [119] rmarkdown_2.16                DelayedMatrixStats_1.19.0    </span></span>
+<span><span class="co">## [121] Cairo_1.6-0                   shiny_1.7.2                  </span></span>
+<span><span class="co">## [123] ggbeeswarm_0.6.0</span></span></code></pre></div>
 </div>
 </div>
-<div class="section level1 unnumbered">
-<h1 class="unnumbered" id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
-</h1>
+<div class="section level2">
+<h2 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>
+</h2>
+<p>This vignette is distributed under a <a href="https://creativecommons.org/licenses/by-sa/2.0/" class="external-link">CC BY-SA
+licence</a> licence.</p>
+</div>
+<div class="section level2">
+<h2 class="unnumbered" id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a>
+</h2>
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-Vanderaa2021-ue" class="csl-entry">
-Vanderaa, Christophe, and Laurent Gatto. 2021. <span>“Replication of Single-Cell Proteomics Data Reveals Important Computational Challenges.”</span> <em>Expert Rev. Proteomics</em>, October.
+Vanderaa, Christophe, and Laurent Gatto. 2021. <span>“Replication of
+Single-Cell Proteomics Data Reveals Important Computational
+Challenges.”</span> <em>Expert Rev. Proteomics</em>, October.
 </div>
 <div id="ref-Williams2020-ty" class="csl-entry">
-Williams, Sarah M, Andrey V Liyu, Chia-Feng Tsai, Ronald J Moore, Daniel J Orton, William B Chrisler, Matthew J Gaffrey, et al. 2020. <span>“Automated Coupling of Nanodroplet Sample Preparation with Liquid <span>Chromatography-Mass</span> Spectrometry for <span>High-Throughput</span> <span>Single-Cell</span> Proteomics.”</span> <em>Anal. Chem.</em> 92 (15): 10588–96.
+Williams, Sarah M, Andrey V Liyu, Chia-Feng Tsai, Ronald J Moore, Daniel
+J Orton, William B Chrisler, Matthew J Gaffrey, et al. 2020.
+<span>“Automated Coupling of Nanodroplet Sample Preparation with Liquid
+<span>Chromatography-Mass</span> Spectrometry for
+<span>High-Throughput</span> <span>Single-Cell</span>
+Proteomics.”</span> <em>Anal. Chem.</em> 92 (15): 10588–96.
 </div>
 </div>
 </div>
@@ -459,7 +610,7 @@ Williams, Sarah M, Andrey V Liyu, Chia-Feng Tsai, Ronald J Moore, Daniel J Orton
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>

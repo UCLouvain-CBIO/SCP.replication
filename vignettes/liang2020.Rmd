@@ -838,12 +838,31 @@ TODO add paragraph: single-cell signal ~ blank signal -> list
 arguments => is autoPOTS really working for sc samples?
 
 Finally, this vignette also provides a demonstration that using the 
-`scp` data framework is ideal f     or the manipulation and visualization
+`scp` data framework is ideal for the manipulation and visualization
 of MS-SCP data. The `longFormat` output that is used throughout this
 vignette can be plugged in to powerful visualization tools such as 
 `ggplot2` or `upsetR`. This allowed an in-depth exploration of the 
 data and hence we could highlight some aspect of the data that were
 overlook in the original paper. 
+
+# Reproduce this vignette
+
+You can reproduce this vignette using `Docker`:
+
+```
+docker pull cvanderaa/scp_replication_docker:v1
+docker run \
+    -e PASSWORD=bioc \
+    -p 8787:8787 \
+    cvanderaa/scp_replication_docker:v1
+```
+
+Open your browser and go to http://localhost:8787. The USER is `rstudio` and 
+the password is `bioc`. You can find the vignette in the `vignettes` folder. 
+
+See the 
+[website home page](https://uclouvain-cbio.github.io/SCP.replication/index.html)
+for more information.
 
 # Requirements
 

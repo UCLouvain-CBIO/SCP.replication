@@ -1145,6 +1145,25 @@ easy-to-read and highly documented code. This workflow can serve as a
 starting ground to improve upon the current methods and to design new
 modelling tools dedicated to single-cell proteomics. 
 
+# Reproduce this vignette
+
+You can reproduce this vignette using `Docker`:
+
+```
+docker pull cvanderaa/scp_replication_docker:v1
+docker run \
+    -e PASSWORD=bioc \
+    -p 8787:8787 \
+    cvanderaa/scp_replication_docker:v1
+```
+
+Open your browser and go to http://localhost:8787. The USER is `rstudio` and 
+the password is `bioc`. You can find the vignette in the `vignettes` folder. 
+
+See the 
+[website home page](https://uclouvain-cbio.github.io/SCP.replication/index.html)
+for more information.
+
 # Requirements
 
 ### Hardware and software
