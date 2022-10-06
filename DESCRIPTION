@@ -13,8 +13,9 @@ Authors@R:
 Description: Repository of vignettes about the replication of
     single-cell analyses.
 Depends:
-   QFeatures (>= 1.3.3),
-   scp (>= 1.1.5),
+   R (>= 4.2.0),
+   QFeatures (>= 1.7.3),
+   scp (>= 1.7.4),
    scpdata,
    SingleCellExperiment
 Imports:
@@ -44,7 +45,6 @@ Suggests:
    patchwork,
    pkgdown,
    RColorBrewer,
-   renv,
    rmarkdown,
    scater,
    scran,

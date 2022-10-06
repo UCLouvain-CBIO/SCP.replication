@@ -83,6 +83,15 @@ Daniel J. Orton, William B. Chrisler, Matthew J. Gaffrey, et al. 2020.
 Chromatography-Mass Spectrometry for High-Throughput Single-Cell
 Proteomics.” Analytical Chemistry 92 (15): 10588–96.
 
+### [Replication of the nPOP analysis (Leduc et al. 2022)](https://uclouvain-cbio.github.io/SCP.replication/articles/leduc2022.html)
+
+Project tag: `leduc2022`
+Docker image: `cvanderaa/scp_replication_docker:v1`
+
+> Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and 
+Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across
+Single Cells Using nPOP.” bioRxiv. https://doi.org/10.1101/2021.04.24.441211.
+
 ## Replicate the analyses locally
 
 You can reproduce the analysis vignettes on your local machine using `Docker`. 
@@ -102,13 +111,93 @@ Then, you can start an Rstudio session within a Docker container using:
 docker run \
     -e PASSWORD=bioc \
     -p 8787:8787 \
+    -v `pwd`:/home/rstudio/SCP.replication/ \ ## use %CD% instead of `pwd` for Windows
     cvanderaa/scp_replication_docker:vX
 ```
 
 Open your browser and go to http://localhost:8787. The USER is `rstudio` and 
-the password is `bioc`. See the the 
+the password is `bioc`. See the
 [DockerHub repository](https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker)
 for more detailed information on getting started with `Docker`.
+
+## Note to future self
+
+### Build the docker image
+
+Commit all recent changes to `SCP.replication` and push to the GitHub repo. The
+docker image is built from the master branch of `UCLouvain-CBIO/SCP.replication`,
+so make sure all changes needed for building the new vignette are live on GitHub.
+This is also true for: 
+
+-  `rformassspectrometry/QFeatures`
+-  `UCLouvain-CBIO/scpdata`
+-  `UCLouvain-CBIO/scp`
+
+A new docker image should be built every time we add a new vignette. 
+If new dependencies are required, update the `Dockerfile` accordingly.
+
+Then build the image (make sure to `cd` in the `SCP.replication` repo):
+
+```
+docker build -t cvanderaa/scp_replication_docker:vX .
+```
+
+Make sure to **increment vX** with the latest version. See the 
+[DockerHub repo](https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker)
+for the latest tag. When complete, push the new image to DockerHub:
+
+```
+docker push cvanderaa/scp_replication_docker:vX 
+```
+
+### Build the website
+
+Once the image is pushed to DockerHub, create a new job in the 
+`Makefile`:
+
+```
+articles_in_vX:
+  docker run -e PASSWORD=scp \
+	  ## use %CD% instead of `pwd` for Windows
+    -v `pwd`:/home/rstudio/SCP.replication/ \
+    -it cvanderaa/scp_replication_docker:vX \
+		bash -c "cd SCP.replication; R --quiet -e \"pkgdown::build_article('NEW_VIGNETTE')\""
+```
+
+Make sure to adapt `vX` and `NEW_VIGNETTE` with the correct tag and 
+the name of the new vignette to add, respectively. Then append to the 
+`articles` job the following lines: 
+
+```
+## Compile vignettes using cvanderaa/scp_replication_docker:vX
+docker pull cvanderaa/scp_replication_docker:vX
+make articles_in_vX
+```
+
+Again, make sure to adapt `vX` with the correct tag and make sure the
+`article` job finishes with the following command to ensure that all
+vignettes are correctly indexed on the website.
+
+```
+${R} -e "pkgdown::build_articles_index()";
+```
+
+Then run the following for building the website:
+
+```
+make website
+```
+
+Finally, push the changes in `docs/` to Github to make the changes to
+the website live. 
+
+# Citation
+
+To cite the SCP.replication website in publications please use:
+
+> Vanderaa Christophe and Laurent Gatto. The current state of 
+  single-cell proteomics data analysis. arXiv:2210.01020; 
+  doi: https://doi.org/10.48550/arXiv.2210.01020 (2022).
 
 # Licence
 

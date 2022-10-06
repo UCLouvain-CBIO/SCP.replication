@@ -18,11 +18,10 @@ RUN apt-get update \
 	&& update-alternatives --set "libblas.so.3-${ARCH}-linux-gnu" "/usr/lib/${ARCH}-linux-gnu/blas/libblas.so.3" \
 	&& update-alternatives --set "liblapack.so.3-${ARCH}-linux-gnu" "/usr/lib/${ARCH}-linux-gnu/lapack/liblapack.so.3"
 
-## Copy the SCP.replication repo to give access to the vignette source code
-COPY . /home/rstudio/SCP.replication/
-
 ## Change home directory
-WORKDIR /home/rstudio/SCP.replication/
+WORKDIR /home/rstudio/
 
-## Install SCP.replication and dependencies, and copy source 
-RUN R -e "BiocManager::install('UCLouvain-CBIO/SCP.replication', dependencies = TRUE)"
+## Install SCP.replication and dependencies
+RUN R -e "BiocManager::install(c('rformassspectrometry/QFeatures', 'UCLouvain-CBIO/scpdata', 'UCLouvain-CBIO/scp', 'UCLouvain-CBIO/SCP.replication'), dependencies = TRUE) "
+## Do a second pass in case some packages failed to installed
+RUN R -e "BiocManager::install(c('rformassspectrometry/QFeatures', 'UCLouvain-CBIO/scpdata', 'UCLouvain-CBIO/scp', 'UCLouvain-CBIO/SCP.replication'), dependencies = TRUE) "
