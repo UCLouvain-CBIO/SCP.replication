@@ -54,6 +54,9 @@
       <a href="articles/SCoPE2.html">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a>
     </li>
     <li>
+      <a href="articles/brunner2022.html">Replication of the cell cycle state study (Brunner et al. 2021)</a>
+    </li>
+    <li>
       <a href="articles/derks2022.html">Replication of the plexDIA analysis (Derks et al. 2022)</a>
     </li>
     <li>
@@ -147,6 +150,13 @@
 <p>Project tag: <code>williams2020_tmt</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
 <blockquote><p>Williams, Sarah M., Andrey V. Liyu, Chia-Feng Tsai, Ronald J. Moore, Daniel J. Orton, William B. Chrisler, Matthew J. Gaffrey, et al. 2020. “Automated Coupling of Nanodroplet Sample Preparation with Liquid Chromatography-Mass Spectrometry for High-Throughput Single-Cell Proteomics.” Analytical Chemistry 92 (15): 10588–96.</p></blockquote>
 </div>
+<div class="section level3">
+<h3 id="replication-of-the-npop-analysis-leduc-et-al-2022">
+<a href="https://uclouvain-cbio.github.io/SCP.replication/articles/leduc2022.html" class="external-link">Replication of the nPOP analysis (Leduc et al. 2022)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-npop-analysis-leduc-et-al-2022"></a>
+</h3>
+<p>Project tag: <code>leduc2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
+<blockquote><p>Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across Single Cells Using nPOP.” bioRxiv. <a href="https://doi.org/10.1101/2021.04.24.441211" class="external-link uri">https://doi.org/10.1101/2021.04.24.441211</a>.</p></blockquote>
+</div>
 </div>
 <div class="section level2">
 <h2 id="replicate-the-analyses-locally">Replicate the analyses locally<a class="anchor" aria-label="anchor" href="#replicate-the-analyses-locally"></a>
@@ -158,9 +168,55 @@
 <pre><code>docker run \
     -e PASSWORD=bioc \
     -p 8787:8787 \
+    -v `pwd`:/home/rstudio/SCP.replication/ \ ## use %CD% instead of `pwd` for Windows
     cvanderaa/scp_replication_docker:vX</code></pre>
-<p>Open your browser and go to <a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a>. The USER is <code>rstudio</code> and the password is <code>bioc</code>. See the the <a href="https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker" class="external-link">DockerHub repository</a> for more detailed information on getting started with <code>Docker</code>.</p>
+<p>Open your browser and go to <a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a>. The USER is <code>rstudio</code> and the password is <code>bioc</code>. See the <a href="https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker" class="external-link">DockerHub repository</a> for more detailed information on getting started with <code>Docker</code>.</p>
 </div>
+<div class="section level2">
+<h2 id="note-to-future-self">Note to future self<a class="anchor" aria-label="anchor" href="#note-to-future-self"></a>
+</h2>
+<div class="section level3">
+<h3 id="build-the-docker-image">Build the docker image<a class="anchor" aria-label="anchor" href="#build-the-docker-image"></a>
+</h3>
+<p>Commit all recent changes to <code>SCP.replication</code> and push to the GitHub repo. The docker image is built from the master branch of <code>UCLouvain-CBIO/SCP.replication</code>, so make sure all changes needed for building the new vignette are live on GitHub. This is also true for:</p>
+<ul>
+<li><code>rformassspectrometry/QFeatures</code></li>
+<li><code>UCLouvain-CBIO/scpdata</code></li>
+<li><code>UCLouvain-CBIO/scp</code></li>
+</ul>
+<p>A new docker image should be built every time we add a new vignette. If new dependencies are required, update the <code>Dockerfile</code> accordingly.</p>
+<p>Then build the image (make sure to <code>cd</code> in the <code>SCP.replication</code> repo):</p>
+<pre><code>docker build -t cvanderaa/scp_replication_docker:vX .</code></pre>
+<p>Make sure to <strong>increment vX</strong> with the latest version. See the <a href="https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker" class="external-link">DockerHub repo</a> for the latest tag. When complete, push the new image to DockerHub:</p>
+<pre><code>docker push cvanderaa/scp_replication_docker:vX </code></pre>
+</div>
+<div class="section level3">
+<h3 id="build-the-website">Build the website<a class="anchor" aria-label="anchor" href="#build-the-website"></a>
+</h3>
+<p>Once the image is pushed to DockerHub, create a new job in the <code>Makefile</code>:</p>
+<pre><code>articles_in_vX:
+  docker run -e PASSWORD=scp \
+      ## use %CD% instead of `pwd` for Windows
+    -v `pwd`:/home/rstudio/SCP.replication/ \
+    -it cvanderaa/scp_replication_docker:vX \
+        bash -c "cd SCP.replication; R --quiet -e \"pkgdown::build_article('NEW_VIGNETTE')\""</code></pre>
+<p>Make sure to adapt <code>vX</code> and <code>NEW_VIGNETTE</code> with the correct tag and the name of the new vignette to add, respectively. Then append to the <code>articles</code> job the following lines:</p>
+<pre><code>## Compile vignettes using cvanderaa/scp_replication_docker:vX
+docker pull cvanderaa/scp_replication_docker:vX
+make articles_in_vX</code></pre>
+<p>Again, make sure to adapt <code>vX</code> with the correct tag and make sure the <code>article</code> job finishes with the following command to ensure that all vignettes are correctly indexed on the website.</p>
+<pre><code>${R} -e "pkgdown::build_articles_index()";</code></pre>
+<p>Then run the following for building the website:</p>
+<pre><code>make website</code></pre>
+<p>Finally, push the changes in <code>docs/</code> to Github to make the changes to the website live.</p>
+</div>
+</div>
+</div>
+<div class="section level1">
+<h1 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h1>
+<p>To cite the SCP.replication website in publications please use:</p>
+<blockquote><p>Vanderaa Christophe and Laurent Gatto. The current state of single-cell proteomics data analysis. arXiv:2210.01020; doi: <a href="https://doi.org/10.48550/arXiv.2210.01020" class="external-link uri">https://doi.org/10.48550/arXiv.2210.01020</a> (2022).</p></blockquote>
 </div>
 <div class="section level1">
 <h1 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>

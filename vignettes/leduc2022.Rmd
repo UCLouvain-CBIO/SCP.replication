@@ -61,7 +61,7 @@ Therefore, our first contribution is to formalize the data processing
 into a conceptual flow chart.
 
 ```{r, results='markup', fig.cap="Overview of the processing workflow by Leduc et al.", echo=FALSE, out.width='100%', fig.align='center'}
-knitr::include_graphics("leduc2022-workflow.png")
+knitr::include_graphics("figs/leduc2022-workflow.png")
 ```
 
 This replication vignette relies on a data framework dedicated to SCP
@@ -94,7 +94,8 @@ library(patchwork)
 
 ### `scpdata` and the `leduc2022` dataset
 
-We also implemented a data package called `scpdata`. It distributes
+We also implemented a data package called `scpdata` (@Vanderaa2022-qv).
+It distributes
 published SCP datasets, such as the `leduc2022` dataset. The datasets
 were downloaded from the data source provided in the publication and
 formatted to a `QFeatures` object so that it is compatible with our
@@ -134,110 +135,9 @@ formatted data can be retrieved from the `scpdata` package using the
 `leduc2022()` function. All datasets in `scpdata` are called after 
 the first author and the date of publication.
 
-```{r load_data, eval=FALSE}
-scp <- leduc2022()
+```{r load_data}
+leduc <- leduc2022()
 ```
-
-## To include in `scpdata`
-
-Actually, `leduc2022()` is still in development and is not yet 
-available from `scpdata`. The code below will soon be published in
-`scpdata`. We here include it so that we can still run the vignette. 
-
-```{r}
-# All files were downloaded from 
-# https://drive.google.com/drive/folders/117ZUG5aFIJt0vrqIxpKXQJorNtekO-BV
-
-datadir <- "~/PhD/.localdata/SCP/leduc2022/"
-
-####---- Prepare sample annotations ----####
-
-# The sample annotations are provided in 2 separate tables:
-design <- read.csv(paste0(datadir, "annotation.csv"))
-batch <- read.csv(paste0(datadir, "batch.csv"))
-
-# Clean the sample metadata so that it meets the requirements for
-# `scp::readSCP`. We first need to transform the design (set x 
-# reporter ion) to a long table so that one line is one sample. 
-design <- pivot_longer(design, -Set, names_to = "Channel", 
-                       values_to = "SampleAnnotation")
-design$SampleType <- recode(design$SampleAnnotation, 
-                            neg = "NegControl",
-                            u = "Monocyte",
-                            m = "Melanoma cell",
-                            unused = "Unused",
-                            reference = "Reference",
-                            carrier = "Carrier")
-
-# We then make some slight corrections to the batch data
-colnames(batch)[1] <- "Set" ## consistent naming with design
-batch$digest <- as.character(batch$digest)
-
-# We can now combine the two tables in a single annotation table
-sampleAnnotation <- inner_join(design, batch, by = "Set")
-
-####---- Prepare PSM data ----####
-
-ev <- read.delim(paste0(datadir, "ev_updated.txt"))
-colnames(ev) <- gsub("^Reporter.intensity.(\\d*)$", "RI\\1", colnames(ev))
-colnames(ev)[colnames(ev) == "Raw.file"] <- "Set"
-ev$modseq <- paste0(ev$Modified.sequence, ev$Charge)
-## This removes DIA runs
-ev <- ev[ev$Set %in% sampleAnnotation$Set, ]
-
-## Create the QFeatures object
-leduc <- readSCP(ev, sampleAnnotation, 
-                 channelCol = "Channel", 
-                 batchCol = "Set")
-
-## Clean protein names
-rdList <- lapply(rowData(leduc), function (rd) {
-    rd$Leading.razor.protein.cleaned <- 
-        gsub("^.*\\|(.*)\\|.*", "\\1", rd$Leading.razor.protein)
-    rd
-})
-rowData(leduc) <- rdList
-
-####---- Retrieve processed data ----####
-
-## Retrieve the data processed by Leduc et al. 
-sampleInd <- read.csv(paste0(datadir, "misc/sample_index.csv"), row.names = 2)
-files <- c("t0.csv", "t3.csv", "t4b.csv", "t6.csv")
-processedData <- lapply(files, function(f) {
-    ## Read data
-    dat <- read.csv(paste0(datadir, "processed_data/", f), row.names = 1)
-    dat <- as.matrix(dat)
-    ## Convert column names
-    fileID <- sub("X", "", sampleInd[colnames(dat), "rawfile"])
-    channel <- sampleInd[colnames(dat), "channel"]
-    colnames(dat) <- paste0(fileID, "RI", channel)
-    ## Convert to a SCE
-    dat <- SingleCellExperiment(dat)
-    ## Add colData
-    colData(dat) <- colData(leduc)[colnames(dat), ]
-    dat
-})
-names(processedData) <- c("peptides", "peptides_log", "proteins_norm2", "proteins_processed") 
-
-## Add `peptides` data
-leduc <- addAssay(leduc, processedData$peptides, name = "peptides")
-## TODO: add AssayLinks
-
-## Add `peptides_log` data
-leduc <- addAssay(leduc, processedData$peptides_log, name = "peptides_log")
-## TODO: add AssayLinks
-
-## Add `proteins_norm2` data
-leduc <- addAssay(leduc, processedData$proteins_norm2, name = "proteins_norm2")
-## TODO: add AssayLinks
-
-## Add `proteins_processed` data
-leduc <- addAssay(leduc, processedData$proteins_processed, name = "proteins_processed")
-## TODO: add AssayLinks
-```
-
-**Stop "To include in `scpdata`"**
-
 
 The data contain 138 different `SingleCellExperiment` objects that we
 refer to as **assays**. Each assay contains expression data along with
@@ -372,24 +272,6 @@ leduc <- filterFeatures(leduc, ~ Potential.contaminant != "+" &
                             dart_qval < 0.01)
 ```
 
-**!discussion**:
-
-- keeping PIF that is missing seems strange... Replacing NAs by 0.6 
-looks odd. This is seen in the original code. 
-
-```{r, eval=FALSE}
-ev <- ev %>% filter(PIF >.6 | is.na(PIF)==T)
-ev$PIF[is.na(ev$PIF)==T] <- .6
-```
-
-- This workflow is missing a step because we cannot currently filter based
-on the quantitative data using the `QFeatures`/`scp` framework. However,
-this filter is implied when computing the SCR since a zero carrier will
-not allow to compute SCR. The missing step is:
-
-```{r, eval=FALSE}
-ev <- ev %>% filter(Reporter.intensity.corrected.1 != 0)
-```
 
 ## Sample to carrier filter
 
@@ -432,15 +314,11 @@ assay.
 ```{r}
 leduc <- computeSCR(leduc, names(leduc),
                     colvar = "SampleType", 
-                    samplePattern = "Mel|Macro|Neg",
+                    samplePattern = "Mel|Macro",
                     carrierPattern = "Carrier",
                     sampleFUN = "mean",
                     rowDataName = "MeanSCR")
 ```
-
-**!discussion**: It is probably better to exclude negative controls 
-when computing the SCR. Since it should not heavily influence the 
-results, we replicate the original study. 
 
 Before applying the filter, we plot the distribution of the mean SCR.
 
@@ -475,7 +353,7 @@ which variable should be modified or added (if they do not exist yet).
 So, for each assay, we compute the summed signal in single-cells (and
 negative controls) and store the results in a `DataFrame`.
 
-```{r}
+```{r, message=FALSE}
 sums <- lapply(names(leduc), function(i) {
     sce <- leduc[[i]]
     sel <- grep("Mel|Macro|Neg", colData(leduc)[colnames(sce), "SampleType"])
@@ -484,9 +362,6 @@ sums <- lapply(names(leduc), function(i) {
     DataFrame(ScSums = rs)
 })
 ```
-
-**!discussion**: is this chunk above difficult to read? I need to 
-discuss this with Laurent. 
 
 The list of `DataFrame` is named after the corresponding assays and 
 the `rowData` of the `leduc` object is modified.
@@ -532,7 +407,7 @@ leduc <- divideByReference(leduc, i = names(leduc),
                            refPattern = "Reference")
 ```
 
-**!discussion**: Notice that when taking all samples we also include the reference
+Notice that when taking all samples we also include the reference
 channel itself. Hence, from now on, the reference channels will 
 contain only ones.
 
@@ -610,16 +485,16 @@ rbindRowData(leduc, i = grep("^pep", names(leduc))) %>%
     data.frame %>%
     group_by(modseq) %>%
     ## The majority vote happens here
-    mutate(Leading.razor.protein.cleaned =
-               names(sort(table(Leading.razor.protein.cleaned),
+    mutate(Leading.razor.protein.symbol =
+               names(sort(table(Leading.razor.protein),
                           decreasing = TRUE))[1]) %>%
-    select(modseq, Leading.razor.protein.cleaned) %>%
-    filter(!duplicated(modseq, Leading.razor.protein.cleaned)) ->
+    select(modseq, Leading.razor.protein.symbol) %>%
+    filter(!duplicated(modseq, Leading.razor.protein.symbol)) ->
     ppMap
 consensus <- lapply(peptideAssays, function(i) {
     ind <- match(rowData(leduc[[i]])$modseq, ppMap$modseq)
-    DataFrame(Leading.razor.protein.cleaned =
-                  ppMap$Leading.razor.protein.cleaned[ind])
+    DataFrame(Leading.razor.protein.symbol =
+                  ppMap$Leading.razor.protein.symbol[ind])
 })
 ## Name the list
 names(consensus) <- peptideAssays
@@ -686,7 +561,7 @@ retained CVs that are computed using at least 3 peptides (`nobs = 3`).
 ```{r compute_medianCV}
 leduc <- medianCVperCell(leduc,
                          i = peptideAssays,
-                         groupBy = "Leading.razor.protein.cleaned",
+                         groupBy = "Leading.razor.protein.symbol",
                          nobs = 3,
                          na.rm = TRUE,
                          colDataName = "MedianCV",
@@ -869,7 +744,7 @@ Note that we here use the median as a summarizing function.
 leduc <- aggregateFeatures(leduc,
                            i = "peptides_log",
                            name = "proteins",
-                           fcol = "Leading.razor.protein.cleaned",
+                           fcol = "Leading.razor.protein.symbol",
                            fun = matrixStats::colMedians, 
                            na.rm = TRUE)
 ```
@@ -937,9 +812,6 @@ data.frame(pNA = nNA(leduc, "proteins_norm2")$nNAcols$pNA) %>%
     geom_histogram() +
     xlab("Percentage missingnes per cell")
 ```
-
-**!discussion**: given this graph above, should cells not better be 
-filtered with 80\% missing values instead of 99\%?
 
 The missing data is imputed using K nearest neighbors. The authors run
 KNN with k = 3. We made a wrapper around the author's code to apply
@@ -1031,12 +903,6 @@ leduc <- sweep(leduc,
                STATS = rowMedians(assay(leduc[["proteins_batchC_norm1"]]),
                                   na.rm = TRUE))
 ```
-
-**!discussion**: non imputed data is considered as the final protein
-data where values that were missing before imputation are replaced by
-zero, this does not seem correct.
-
-
 
 # Compare the final results
 

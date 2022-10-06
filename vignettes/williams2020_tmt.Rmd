@@ -81,7 +81,7 @@ library(scater)
 
 We can now load the multiplexed (TMT) SCP data set from Williams et al.
 This is performed by calling the `williams2020_tmt()` function from 
-`scpdata`. 
+`scpdata` (@Vanderaa2022-qv). 
 
 ```{r}
 (williams <- williams2020_tmt())

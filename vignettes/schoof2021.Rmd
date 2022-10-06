@@ -122,7 +122,8 @@ library("circlize")
 
 ### `scpdata` and the AML differentiation dataset
 
-We also implemented a data package called `scpdata`. It distributes
+We also implemented a data package called `scpdata` (@Vanderaa2022-qv).
+It distributes
 published MS-SCP datasets, such as the dataset that will be analysed
 in this vignette. The data were downloaded from the data source
 provided in the publication and formatted to a `QFeatures` object so
@@ -533,6 +534,7 @@ features of the old and new assay based on the protein accession.
 
 ```{r}
 sce <- AnnData2SCE(adata)
+colData(sce) <- NULL ## removeColData
 scp <- addAssay(scp, sce, name = "proteins_norm")
 scp <- addAssayLink(scp, from = "proteins", to = "proteins_norm",
                     varFrom = "Accession", varTo = "Accession")
@@ -760,6 +762,7 @@ and add it to the `QFeatures` object.
 
 ```{r}
 sce <- AnnData2SCE(adata)
+colData(sce) <- NULL ## removeColData
 scp <- addAssay(scp, sce, name = "proteins_imput")
 scp <- addAssayLink(scp, from = "proteins_log", to = "proteins_imput",
                     varFrom = "Accession", varTo = "Accession")

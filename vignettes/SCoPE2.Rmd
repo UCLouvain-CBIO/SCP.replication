@@ -109,7 +109,8 @@ library(patchwork)
 
 ### `scpdata` and the SCoPE2 dataset
 
-We also implemented a data package called `scpdata`. It distributes
+We also implemented a data package called `scpdata` (@Vanderaa2022-qv).
+It distributes
 published MS-SCP datasets, such as the SCoPE2 dataset. The datasets
 were downloaded from the data source provided in the publication and
 formatted to a `QFeatures` object so that it is compatible with our

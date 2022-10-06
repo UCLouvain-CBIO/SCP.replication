@@ -96,7 +96,8 @@ library("ggpointdensity")
 
 ## `scpdata` and the `leduc2022` dataset
 
-We also implemented a data package called `scpdata`. It distributes
+We also implemented a data package called `scpdata` (@Vanderaa2022-qv).
+It distributes
 published SCP datasets, such as the `derks2022` dataset. The datasets
 were downloaded from the data source provided in the publication and
 formatted to a `QFeatures` object so that it is compatible with our
@@ -127,102 +128,6 @@ authors have made to publicly share all the data generated in their
 project, from raw files to final expression tables (see the Slavov Lab 
 [website](https://scp.slavovlab.net/Derks_et_al_2022)).
 
-## To include in `scpdata`
-
-Actually, `derks2022()` is still in development and is not yet 
-available from `scpdata`. The code below will soon be published in
-`scpdata`. We here include it so that we can still run the vignette. 
-
-```{r}
-## All data files were retrieved from this Google Drive repository:
-## https://drive.google.com/drive/folders/1pUC2zgXKtKYn22mlor0lmUDK0frgwL_-
-datadir <- "~/PhD/.localdata/SCP/derks2022/"
-
-## Sample annotations
-
-sampleAnnot <- read.delim(paste0(datadir, "Meta_SingleCell_updated_1.tsv"))
-## Add which dataset each sample is part of
-sampleAnnot$dataset <- sampleAnnot$Instrument
-sampleAnnot$dataset[!sampleAnnot$Real_single_cell & 
-                        sampleAnnot$Instrument == "Q-Exactive"] <- "bulk"
-## Adapt variable to better match the DIANN output data
-sampleAnnot$Label <- as.character(sampleAnnot$Label)
-timsPath <- make.names("F:\\JD\\plexDIA\\Bruker\\OneDrive_1_3-9-2022\\")
-qePath <- make.names("F:\\JD\\plexDIA\\nPOP\\")
-sampleAnnot$File.Name <- ifelse(sampleAnnot$Instrument == "timsTOFSCP",
-                                paste0(timsPath, sampleAnnot$Raw, ".d"),
-                                paste0(qePath, sampleAnnot$Raw, ".raw"))
-
-## Bulk data
-
-# We load the DIA-NN main output table and the MS1 extracted report table.
-# These are read and combined in a `QFeatures`object. 
-extractedDataBulk <- read.delim(paste0(datadir, "qe_bulk/Report.pr_matrix_channels_ms1_extracted.tsv"))
-reportDataBulk <- read.delim(paste0(datadir, "qe_bulk/Report.tsv"))
-reportDataBulk$File.Name <- make.names(reportDataBulk$File.Name)
-bulk <- readSCPfromDIANN(colData = sampleAnnot, 
-                         reportData = reportDataBulk,
-                         extractedData = extractedDataBulk,
-                         multiplexing = "mTRAQ")
-## Rename the MS1Extracted assay
-names(bulk)[length(bulk)] <- "bulk_prec_extracted"
-
-## Load timsTOF-SCP data
-
-# We load the DIA-NN main output table and the MS1 extracted report table.
-# These are read and combined in a `QFeatures`object. 
-extractedDataTims <- read.delim(paste0(datadir, "tims_sc/Report.pr_matrix_channels_ms1_extracted.tsv"))
-reportDataTims <- read.delim(paste0(datadir, "tims_sc/Report.tsv"))
-reportDataTims$File.Name <- make.names(reportDataTims$File.Name)
-# We modify the `Run` variable to match the `Run` variables in the other tables
-reportDataTims$Run <- make.names(reportDataTims$Run)
-tims <- readSCPfromDIANN(colData = sampleAnnot, 
-                         reportData = reportDataTims,
-                         extractedData = extractedDataTims,
-                         multiplexing = "mTRAQ")
-names(tims)[length(tims)] <- "tims_prec_extracted"
-
-## Load Q-Exactive data
-
-# We load the DIA-NN main output table and the MS1 extracted report table.
-# These are read and combined in a `QFeatures`object. 
-extractedDataQE <- read.delim(paste0(datadir, "qe_sc/Report.pr_matrix_channels_ms1_extracted.tsv"))
-reportDataQE <- read.delim(paste0(datadir, "qe_sc/Report.tsv"))
-reportDataQE$File.Name <- make.names(reportDataQE$File.Name)
-qe <- readSCPfromDIANN(colData = sampleAnnot, 
-                       reportData = reportDataQE,
-                       extractedData = extractedDataQE,
-                       multiplexing = "mTRAQ")
-names(qe)[length(qe)] <- "qe_prec_extracted"
-
-## Load protein data
-
-prots <- read.delim(paste0(datadir, "Proteins_SC_IDs.txt"))
-prots <- readSingleCellExperiment(prots, fname = "prot",
-                                  ecol = grep("id", colnames(prots)))
-colData(prots) <- DataFrame(sampleAnnot[sampleAnnot$id %in% colnames(prots), ])
-colnames(prots) <- paste0(prots$File.Name, ".", prots$Label)
-
-## Combine all datasets
-## TODO implement a c() method to simplify this process...
-derks2022 <- QFeatures(experiments = c(experiments(bulk), experiments(tims),
-                                       experiments(qe)),
-                       colData = rbind(colData(bulk), colData(tims), colData(qe)),
-                       assayLinks = Reduce(append, list(bulk@assayLinks, tims@assayLinks, 
-                                                        qe@assayLinks)))
-derks2022 <- addAssay(derks2022, prots, name = "proteins")
-derks2022 <- addAssayLink(derks2022, 
-                          from = grep("extracted$", names(derks2022)),
-                          to = "proteins",
-                          varFrom = rep("Protein.Group", 3), 
-                          varTo = "prot")
-
-## Save data
-## ...
-```
-
-**Stop "To include in `scpdata`"**
-
 We formatted the `derks2022` dataset following our data framework. The 
 formatted data can be retrieved from the `scpdata` package using the 
 `derks2022()` function. All datasets in `scpdata` are called after 
@@ -238,9 +143,9 @@ for more details). The data also contains the protein data for all
 samples as processed by the authors. 
 
 ```{r load_data}
-# (scp <- derks2022())
-(derks <- derks2022)
+(derks <- derks2022())
 ```
+
 The datasets are stored in a `QFeatures` object. In total, it contains
 66 different `SingleCellExperiment` objects 
 that we refer to as **assays**. Each assay contains expression data 
@@ -326,36 +231,41 @@ for (i in c("bulk", "qe", "tims")) {
 
 # Precursor FDR control
 
-**!discussion** this is too complicated. Could we refactor 
-filterFeatures in QFeatures to make this easier?
-
-**!discussion** There was a copy-paste issue in the original code: 
-the authors used the scQE dataset instead of the bulkQE dataset... 
-
-`PGs_0.01FDR <- SC[which(SC$Lib.PG.Q.Value<0.01),] %>% distinct(Protein.Group)`
-
-Should have been
-
-`PGs_0.01FDR <- B[which(B$Lib.PG.Q.Value<0.01),] %>% distinct(Protein.Group)`
-
-In this vignette, we use the correct set of filtered proteins. 
+Precursors are then filtered to control for protein FDR. To perform 
+this, we will again loop over the 3 datasets as the set of protein that
+comply to the FDR threshold is dataset-dependent. We retrieve the 
+assays that link to extracted signal assay as these contain the FDR
+threshold. Once identified, we combine all the available `rowData` in
+a single table using `rbindRowData()`. This table is then filtered to 
+retrieve the proteins with low FDR and we subset the corrected signal 
+assay to contain only precursors that map those proteins. Finally, we
+restore any lost link between the precursors of corrected assay with 
+its parent assay using `addAssayLink()`.
 
 ```{r}
 for (i in c("bulk", "qe", "tims")) {
+    ## Find the assays that contain the FDR (q-value) information
     repAssays <- assayLink(derks, paste0(i ,"_prec_extracted"))@from
+    ## Combine all rowData in a single table
     rd <- rbindRowData(derks, repAssays)
+    ## Perform filtering
     PGs_0.01FDR <- unique(rd$Protein.Group[rd$Lib.PG.Q.Value < 0.01])
+    ## Apply the filter to the corrected signal assay
     x <- derks[[paste0(i ,"_prec_corrected")]]
     ind <- rowData(x)$Protein.Group %in% PGs_0.01FDR
     derks[[paste0(i ,"_prec_corrected")]] <- x[ind, ]
-    if (!all(ind)) 
-        derks <- addAssayLink(derks, from = paste0(i ,"_prec_extracted"), 
-                              to = paste0(i ,"_prec_corrected"),
-                              varFrom = "Precursor.Id",
-                              varTo = "Precursor.Id")
+    ## AssayLinks are lost when removing proteins, we recreate them
+    derks <- addAssayLink(derks, from = paste0(i ,"_prec_extracted"), 
+                          to = paste0(i ,"_prec_corrected"),
+                          varFrom = "Precursor.Id",
+                          varTo = "Precursor.Id")
     cat("Finished FDR control for the", i, "dataset\n")
 }
 ```
+
+**discussion** you find this chuk too complicated? Let's discuss this 
+by opening an issue
+[here](https://github.com/UCLouvain-CBIO/SCP.replication/issues/new/choose).
 
 # Combine the datasets
 
@@ -419,11 +329,13 @@ compute the percent missing data for each column. We store it in the
 derks$pNA <- colMeans(assay(derks[["prec_corrected"]]) == 0, na.rm = TRUE)
 ```
 
-**!discussion**: I do not agree with how the missing data is computed. Missing
-data is defined by the authors as the the number of zero values and
-ignore the presence of NA's in the data. In my opinion, ignoring the
-NA's underestimates the data missingness. Here is what I suggest (not
-run):
+In this step, the authors ignore `NA`'s and only count  zeros. This 
+underestimates the missing data rate per-cell. An alternative is to 
+include NA's as well, although it may overestimate the missing data 
+rate when the different acquisition runs or dataset do not contain
+overlapping proteins. This is shown by the code chunk below as an 
+example, but it is not executed and we'll stick to the author's 
+original procedure.
 
 ```{r, eval=FALSE}
 derks <- zeroIsNA(derks, "prec_corrected")
@@ -487,12 +399,10 @@ We add the batch corrected values as a new assay using
 `addAssayLinkOneToOne()`. 
 
 ```{r}
-derks <- addAssay(derks, sce, name = "prec_runnorm", dropColData = TRUE)
+sce$pNA <- NULL ## Remove pNA to avoid later conflicts
+derks <- addAssay(derks, sce, name = "prec_runnorm")
 derks <- addAssayLinkOneToOne(derks, from = "prec_corrected", to = "prec_runnorm")
 ```
-
-**!discussion**: this type of batch correction is rather common and 
-should be implemented in `scp` or maybe even in `QFeatures`. 
 
 # Normalization
 
@@ -557,7 +467,8 @@ for (batch in sce$File.Name) {
                       STATS = rowMeans(m[, ind, drop = FALSE], na.rm = TRUE))
 }
 assay(sce) <- m
-derks <- addAssay(derks, sce, name = "prot_runnorm", dropColData = TRUE)
+sce$pNA <- NULL ## Remove pNA to avoid later conflicts
+derks <- addAssay(derks, sce, name = "prot_runnorm")
 derks <- addAssayLinkOneToOne(derks, from = "prot", to = "prot_runnorm")
 ```
 
@@ -619,9 +530,6 @@ derks$pNA <- colMeans(is.na(assay(derks[["prot_log"]])))
 derks <- subsetByColData(derks, derks$pNA < 0.95)
 ```
 
-**!discussion**: it would be nice to have a `byRow = TRUE` argument in
-filterNA to filter based on rows or columns. 
-
 # Imputation
 
 Although we filtered on missing data, the protein data is majorly
@@ -657,7 +565,7 @@ sce <- getWithColData(derks, "prot_imp")
 batch <- sce$Label
 mod <- model.matrix(~ Celltype, data = colData(sce))
 assay(sce) <- ComBat(assay(sce), batch = batch, mod = mod)
-derks <- addAssay(derks, sce, name = "prot_bc", dropColData = TRUE)
+derks <- addAssay(derks, sce, name = "prot_bc")
 derks <- addAssayLinkOneToOne(derks, from = "prot_imp", to = "prot_bc")
 ```
 

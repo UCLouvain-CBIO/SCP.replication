@@ -3,11 +3,12 @@ pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   SCoPE2: SCoPE2.html
+  brunner2022: brunner2022.html
   derks2022: derks2022.html
   leduc2022: leduc2022.html
   liang2020: liang2020.html
   schoof2021: schoof2021.html
   williams2020_tmt: williams2020_tmt.html
   zhu2019EL: zhu2019EL.html
-last_built: 2022-09-19T08:56Z
+last_built: 2022-10-06T20:22Z
 

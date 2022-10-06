@@ -104,7 +104,8 @@ library(splines)
 
 ### `scpdata` and the hair-cell development dataset
 
-We also implemented a data package called `scpdata`. It distributes
+We also implemented a data package called `scpdata` (@Vanderaa2022-qv).
+It distributes
 published MS-SCP datasets, such as the dataset that will be analysed
 in this vignette. The data were downloaded from the data source
 provided in the publication and formatted to a `QFeatures` object so
@@ -688,6 +689,10 @@ and should be removed. We here only keep single-cells samples.
 
 ```{r}
 scp <- subsetByColData(scp, scp$Cells.per.well == 1)
+## Fix bug, should soon be solved, cf https://github.com/waldronlab/MultiAssayExperiment/issues/317 
+lvs <- levels(scp@sampleMap$assay)
+newlvs <- c(lvs, setdiff(names(scp), lvs))
+levels(scp@sampleMap$assay) <- newlvs
 ```
 
 ## Feature selection based on protein detection rate
@@ -727,19 +732,19 @@ selpaper <- c("LRRC59", "PGM1", "HBBA", "ERP44", "KRT7", "SRSF6",
 
 The proteins names in the `scp` data are encoded as Ensembl ID. We
 convert them to protein symbols using the `biomaRt` package. For reproducibility
-purposes, we stored the 
+purposes, we stored the `ggalusGeneDf` table 
 
 ```{r, eval = FALSE}
 gallus <- useMart("ensembl", dataset = "ggallus_gene_ensembl")
-conversionDF <- getBM(values = sel,
+ggalusGeneDf <- getBM(values = sel,
                       attributes = c("ensembl_peptide_id", "uniprot_gn_symbol"),
                       filters = "ensembl_peptide_id",
                       mart = gallus)
 ## Remove duplicate gene symbol
-conversionDF <- conversionDF[conversionDF$uniprot_gn_symbol != "CRABP-I", ]
-conversionDF <- conversionDF[!duplicated(conversionDF$ensembl_peptide_id), ]
+ggalusGeneDf <- ggalusGeneDf[ggalusGeneDf$uniprot_gn_symbol != "CRABP-I", ]
+ggalusGeneDf <- ggalusGeneDf[!duplicated(ggalusGeneDf$ensembl_peptide_id), ]
 
-selscp <- conversionDF$uniprot_gn_symbol
+selscp <- ggalusGeneDf$uniprot_gn_symbol
 ```
 
 ```{r, echo = FALSE}
@@ -1025,7 +1030,7 @@ plotPCA(sce,
 The PCA plot also shows good separation between the two cell types.
 Moreover, the batch correction allowed a good mixing of the two
 experimental batches. Almost half of the variance is explained by the
-two components, indicating a string biological effect.
+two components, indicating a strong biological effect.
 
 ### Clustering
 

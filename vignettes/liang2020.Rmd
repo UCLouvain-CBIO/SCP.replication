@@ -93,7 +93,8 @@ we here only use the MaxQuant output. We retrieved the data from the
 PXD021882 repository. We formatted the data to a `QFeatures` object 
 following the `scp` data format (more information can be found in the 
 [`scp` vignette](https://uclouvain-cbio.github.io/scp/articles/scp.html)).
-This formatted data is available directly from the `scpdata` package: 
+This formatted data is available directly from the `scpdata` package
+(@Vanderaa2022-qv): 
 
 ```{r load_data}
 autoPOTS <- liang2020_hela()
