@@ -156,6 +156,37 @@
 </h3>
 <p>Project tag: <code>leduc2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
 <blockquote><p>Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across Single Cells Using nPOP.” bioRxiv. <a href="https://doi.org/10.1101/2021.04.24.441211" class="external-link uri">https://doi.org/10.1101/2021.04.24.441211</a>.</p></blockquote>
+<p>See also</p>
+<ul>
+<li>The nPOP <a href="https://scp.slavovlab.net/nPOP" class="external-link">website</a>
+</li>
+<li>The nPOP Github <a href="https://github.com/SlavovLab/nPOP" class="external-link">repository</a>
+</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="replication-of-the-plexdia-analysis-derks-et-al-2022">
+<a href="https://uclouvain-cbio.github.io/SCP.replication/articles/derks2022.html" class="external-link">Replication of the plexDIA analysis (Derks et al. 2022)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-plexdia-analysis-derks-et-al-2022"></a>
+</h3>
+<p>Project tag: <code>derks2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
+<blockquote><p>Derks, Jason, Andrew Leduc, Georg Wallmann, R. Gray Huffman, Matthew Willetts, Saad Khan, Harrison Specht, Markus Ralser, Vadim Demichev, and Nikolai Slavov. 2022. “Increasing the Throughput of Sensitive Proteomics by plexDIA.” Nature Biotechnology, July, 2021.11.03.467007.</p></blockquote>
+<p>See also</p>
+<ul>
+<li>The plexDIA <a href="https://scp.slavovlab.net/plexDIA" class="external-link">website</a>
+</li>
+<li>The plexDIA Github <a href="https://github.com/SlavovLab/plexDIA" class="external-link">repository</a>
+</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="replication-of-the-cell-cycle-state-study-brunner-et-al-2021">
+<a href="https://uclouvain-cbio.github.io/SCP.replication/articles/brunner2022.html" class="external-link">Replication of the cell cycle state study (Brunner et al. 2021)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-cell-cycle-state-study-brunner-et-al-2021"></a>
+</h3>
+<p>Project tag: <code>brunner2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
+<blockquote><p>Brunner, Andreas-David, Marvin Thielert, Catherine Vasilopoulou, Constantin Ammar, Fabian Coscia, Andreas Mund, Ole B. Hoerning, et al. 2022. “Ultra-High Sensitivity Mass Spectrometry Quantifies Single-Cell Proteome Changes upon Perturbation.” Molecular Systems Biology 18 (3): e10798.</p></blockquote>
+<p>See also</p>
+<ul><li>The author’s Github <a href="https://github.com/theislab/singlecell_proteomics" class="external-link">repository</a>
+</li></ul>
 </div>
 </div>
 <div class="section level2">
@@ -163,13 +194,14 @@
 </h2>
 <p>You can reproduce the analysis vignettes on your local machine using <code>Docker</code>. You must first install Docker. Then, pull the image from the <a href="https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker" class="external-link">DockerHub repository</a>.</p>
 <pre><code>docker pull cvanderaa/scp_replication_docker:vX</code></pre>
-<p>As we’ll release more vignettes, we will release new image tags. Make sure to pull the correct version for the vignette you want to reproduce (cf sections above).</p>
+<p>As we’ll release more vignettes, we will release new image tags. Make sure to pull the correct version <code>vX</code> for the vignette you want to reproduce (cf sections above).</p>
 <p>Then, you can start an Rstudio session within a Docker container using:</p>
 <pre><code>docker run \
     -e PASSWORD=bioc \
     -p 8787:8787 \
-    -v `pwd`:/home/rstudio/SCP.replication/ \ ## use %CD% instead of `pwd` for Windows
+    -v `pwd`:/home/rstudio/SCP.replication/ \ 
     cvanderaa/scp_replication_docker:vX</code></pre>
+<p>Note you should use <code>%CD%</code> instead of <code>pwd</code> when using Windows.</p>
 <p>Open your browser and go to <a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a>. The USER is <code>rstudio</code> and the password is <code>bioc</code>. See the <a href="https://hub.docker.com/repository/docker/cvanderaa/scp_replication_docker" class="external-link">DockerHub repository</a> for more detailed information on getting started with <code>Docker</code>.</p>
 </div>
 <div class="section level2">
@@ -191,24 +223,21 @@
 <pre><code>docker push cvanderaa/scp_replication_docker:vX </code></pre>
 </div>
 <div class="section level3">
+<h3 id="compile-the-vignette">Compile the vignette<a class="anchor" aria-label="anchor" href="#compile-the-vignette"></a>
+</h3>
+<p>You can compile a new vignette or update an existing one using:</p>
+<pre><code>docker run -e PASSWORD=scp \
+        -v `pwd`:/home/rstudio/SCP.replication/ \
+        -it cvanderaa/scp_replication_docker:vX \
+        R --quiet -e "setwd('SCP.replication');pkgdown::build_article('VIGNETTE_NAME')"</code></pre>
+<p>Make sure to adapt <code>vX</code> and <code>VIGNETTE_NAME</code> with the correct tag and the name of the vignette to add or update.</p>
+</div>
+<div class="section level3">
 <h3 id="build-the-website">Build the website<a class="anchor" aria-label="anchor" href="#build-the-website"></a>
 </h3>
-<p>Once the image is pushed to DockerHub, create a new job in the <code>Makefile</code>:</p>
-<pre><code>articles_in_vX:
-  docker run -e PASSWORD=scp \
-      ## use %CD% instead of `pwd` for Windows
-    -v `pwd`:/home/rstudio/SCP.replication/ \
-    -it cvanderaa/scp_replication_docker:vX \
-        bash -c "cd SCP.replication; R --quiet -e \"pkgdown::build_article('NEW_VIGNETTE')\""</code></pre>
-<p>Make sure to adapt <code>vX</code> and <code>NEW_VIGNETTE</code> with the correct tag and the name of the new vignette to add, respectively. Then append to the <code>articles</code> job the following lines:</p>
-<pre><code>## Compile vignettes using cvanderaa/scp_replication_docker:vX
-docker pull cvanderaa/scp_replication_docker:vX
-make articles_in_vX</code></pre>
-<p>Again, make sure to adapt <code>vX</code> with the correct tag and make sure the <code>article</code> job finishes with the following command to ensure that all vignettes are correctly indexed on the website.</p>
-<pre><code>${R} -e "pkgdown::build_articles_index()";</code></pre>
-<p>Then run the following for building the website:</p>
-<pre><code>make website</code></pre>
-<p>Finally, push the changes in <code>docs/</code> to Github to make the changes to the website live.</p>
+<p>When you’re done compiling the vignette(s), rebuild the website shell using:</p>
+<pre><code>make website_shell</code></pre>
+<p>Push the changes in <code>docs/</code> to Github.</p>
 </div>
 </div>
 </div>

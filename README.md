@@ -92,6 +92,40 @@ Docker image: `cvanderaa/scp_replication_docker:v1`
 Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across
 Single Cells Using nPOP.” bioRxiv. https://doi.org/10.1101/2021.04.24.441211.
 
+See also
+
+- The nPOP [website](https://scp.slavovlab.net/nPOP)
+- The nPOP Github [repository](https://github.com/SlavovLab/nPOP)
+
+### [Replication of the plexDIA analysis (Derks et al. 2022)](https://uclouvain-cbio.github.io/SCP.replication/articles/derks2022.html)
+
+Project tag: `derks2022`
+Docker image: `cvanderaa/scp_replication_docker:v1`
+
+> Derks, Jason, Andrew Leduc, Georg Wallmann, R. Gray Huffman, Matthew
+Willetts, Saad Khan, Harrison Specht, Markus Ralser, Vadim Demichev, 
+and Nikolai Slavov. 2022. “Increasing the Throughput of Sensitive 
+Proteomics by plexDIA.” Nature Biotechnology, July, 2021.11.03.467007.
+
+See also
+
+- The plexDIA [website](https://scp.slavovlab.net/plexDIA)
+- The plexDIA Github [repository](https://github.com/SlavovLab/plexDIA)
+
+### [Replication of the cell cycle state study (Brunner et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/brunner2022.html)
+
+Project tag: `brunner2022`
+Docker image: `cvanderaa/scp_replication_docker:v1`
+
+> Brunner, Andreas-David, Marvin Thielert, Catherine Vasilopoulou, Constantin 
+Ammar, Fabian Coscia, Andreas Mund, Ole B. Hoerning, et al. 2022. “Ultra-High
+Sensitivity Mass Spectrometry Quantifies Single-Cell Proteome Changes upon
+Perturbation.” Molecular Systems Biology 18 (3): e10798.
+
+See also
+
+- The author's Github [repository](https://github.com/theislab/singlecell_proteomics)
+
 ## Replicate the analyses locally
 
 You can reproduce the analysis vignettes on your local machine using `Docker`. 
@@ -103,7 +137,7 @@ docker pull cvanderaa/scp_replication_docker:vX
 ```
 
 As we'll release more vignettes, we will release new image tags. Make sure to 
-pull the correct version for the vignette you want to reproduce (cf sections above). 
+pull the correct version `vX` for the vignette you want to reproduce (cf sections above). 
 
 Then, you can start an Rstudio session within a Docker container using:
 
@@ -111,9 +145,11 @@ Then, you can start an Rstudio session within a Docker container using:
 docker run \
     -e PASSWORD=bioc \
     -p 8787:8787 \
-    -v `pwd`:/home/rstudio/SCP.replication/ \ ## use %CD% instead of `pwd` for Windows
+    -v `pwd`:/home/rstudio/SCP.replication/ \ 
     cvanderaa/scp_replication_docker:vX
 ```
+
+Note you should use `%CD%` instead of `pwd` when using Windows. 
 
 Open your browser and go to http://localhost:8787. The USER is `rstudio` and 
 the password is `bioc`. See the
@@ -150,46 +186,29 @@ for the latest tag. When complete, push the new image to DockerHub:
 docker push cvanderaa/scp_replication_docker:vX 
 ```
 
+### Compile the vignette
+
+You can compile a new vignette or update an existing one using:
+
+```
+docker run -e PASSWORD=scp \
+		-v `pwd`:/home/rstudio/SCP.replication/ \
+		-it cvanderaa/scp_replication_docker:vX \
+		R --quiet -e "setwd('SCP.replication');pkgdown::build_article('VIGNETTE_NAME')"
+```
+
+Make sure to adapt `vX` and `VIGNETTE_NAME` with the correct tag and 
+the name of the vignette to add or update.
+
 ### Build the website
 
-Once the image is pushed to DockerHub, create a new job in the 
-`Makefile`:
+When you're done compiling the vignette(s), rebuild the website shell using: 
 
 ```
-articles_in_vX:
-  docker run -e PASSWORD=scp \
-	  ## use %CD% instead of `pwd` for Windows
-    -v `pwd`:/home/rstudio/SCP.replication/ \
-    -it cvanderaa/scp_replication_docker:vX \
-		bash -c "cd SCP.replication; R --quiet -e \"pkgdown::build_article('NEW_VIGNETTE')\""
+make website_shell
 ```
 
-Make sure to adapt `vX` and `NEW_VIGNETTE` with the correct tag and 
-the name of the new vignette to add, respectively. Then append to the 
-`articles` job the following lines: 
-
-```
-## Compile vignettes using cvanderaa/scp_replication_docker:vX
-docker pull cvanderaa/scp_replication_docker:vX
-make articles_in_vX
-```
-
-Again, make sure to adapt `vX` with the correct tag and make sure the
-`article` job finishes with the following command to ensure that all
-vignettes are correctly indexed on the website.
-
-```
-${R} -e "pkgdown::build_articles_index()";
-```
-
-Then run the following for building the website:
-
-```
-make website
-```
-
-Finally, push the changes in `docs/` to Github to make the changes to
-the website live. 
+Push the changes in `docs/` to Github. 
 
 # Citation
 

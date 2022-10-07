@@ -1,1 +1,4 @@
-vignettes/SCoPE2_cache
+.Rproj.user
+*.Rproj
+.Rbuildignore
+.vscode
