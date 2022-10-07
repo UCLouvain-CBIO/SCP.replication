@@ -732,7 +732,8 @@ selpaper <- c("LRRC59", "PGM1", "HBBA", "ERP44", "KRT7", "SRSF6",
 
 The proteins names in the `scp` data are encoded as Ensembl ID. We
 convert them to protein symbols using the `biomaRt` package. For reproducibility
-purposes, we stored the `ggalusGeneDf` table 
+purposes, we stored the `ggalusGeneDf` table in the `SCP.replication`
+package that is accessible using `data("ggalusGeneDf")`.
 
 ```{r, eval = FALSE}
 gallus <- useMart("ensembl", dataset = "ggallus_gene_ensembl")

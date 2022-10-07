@@ -814,7 +814,8 @@ selected proteins.</p>
 <p>The proteins names in the <code>scp</code> data are encoded as
 Ensembl ID. We convert them to protein symbols using the
 <code>biomaRt</code> package. For reproducibility purposes, we stored
-the <code>ggalusGeneDf</code> table</p>
+the <code>ggalusGeneDf</code> table in the <code>SCP.replication</code>
+package that is accessible using <code>data("ggalusGeneDf")</code>.</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gallus</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/useMart.html" class="external-link">useMart</a></span><span class="op">(</span><span class="st">"ensembl"</span>, dataset <span class="op">=</span> <span class="st">"ggallus_gene_ensembl"</span><span class="op">)</span></span>
 <span><span class="va">ggalusGeneDf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">sel</span>,</span>
@@ -1245,7 +1246,7 @@ home page</a> for more information.</p>
 <h4 id="timing">Timing<a class="anchor" aria-label="anchor" href="#timing"></a>
 </h4>
 <p>The total time required to compile this vignette is:</p>
-<pre><code><span><span class="co">## 1.024118 mins</span></span></code></pre>
+<pre><code><span><span class="co">## 58.42879 secs</span></span></code></pre>
 </div>
 <div class="section level4">
 <h4 id="memory">Memory<a class="anchor" aria-label="anchor" href="#memory"></a>
