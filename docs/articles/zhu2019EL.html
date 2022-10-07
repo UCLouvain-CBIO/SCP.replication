@@ -53,6 +53,9 @@
       <a href="../articles/SCoPE2.html">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a>
     </li>
     <li>
+      <a href="../articles/brunner2022.html">Replication of the cell cycle state study (Brunner et al. 2021)</a>
+    </li>
+    <li>
       <a href="../articles/derks2022.html">Replication of the plexDIA analysis (Derks et al. 2022)</a>
     </li>
     <li>
@@ -93,7 +96,7 @@ Vanderaa<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, Comput
                         <h4 data-toc-skip class="author">Laurent Gatto,
 Computational Biology, UCLouvain</h4>
             
-            <h4 data-toc-skip class="date">19 September 2022</h4>
+            <h4 data-toc-skip class="date">7 October 2022</h4>
       
       
       <div class="hidden name"><code>zhu2019EL.Rmd</code></div>
@@ -183,13 +186,13 @@ vignette</a> provides detailed information about the data structure. The
 <h4 id="scpdata-and-the-hair-cell-development-dataset">
 <code>scpdata</code> and the hair-cell development dataset<a class="anchor" aria-label="anchor" href="#scpdata-and-the-hair-cell-development-dataset"></a>
 </h4>
-<p>We also implemented a data package called <code>scpdata</code>. It
-distributes published MS-SCP datasets, such as the dataset that will be
-analysed in this vignette. The data were downloaded from the data source
-provided in the publication and formatted to a <code>QFeatures</code>
-object so that it is compatible with our software. The underlying data
-storage is based on the <code>ExperimentHub</code> package that provides
-a cloud-based storage infrastructure.</p>
+<p>We also implemented a data package called <code>scpdata</code> (<span class="citation">Vanderaa and Gatto (2022)</span>). It distributes
+published MS-SCP datasets, such as the dataset that will be analysed in
+this vignette. The data were downloaded from the data source provided in
+the publication and formatted to a <code>QFeatures</code> object so that
+it is compatible with our software. The underlying data storage is based
+on the <code>ExperimentHub</code> package that provides a cloud-based
+storage infrastructure.</p>
 <p>The dataset was retrieved from the PRIDE repository (accession ID:
 PXD014256). The annotation file that is provided in this repository
 contains mismatched information. We therefore received a corrected
@@ -759,7 +762,11 @@ that only 28 cells are present in this dataset. Furthermore, as
 mentioned in the previous section, some single-cell runs have failed and
 should be removed. We here only keep single-cells samples.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://waldronlab.io/MultiAssayExperiment/reference/subsetBy.html" class="external-link">subsetByColData</a></span><span class="op">(</span><span class="va">scp</span>, <span class="va">scp</span><span class="op">$</span><span class="va">Cells.per.well</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">scp</span> <span class="op">&lt;-</span> <span class="fu"><a href="http://waldronlab.io/MultiAssayExperiment/reference/subsetBy.html" class="external-link">subsetByColData</a></span><span class="op">(</span><span class="va">scp</span>, <span class="va">scp</span><span class="op">$</span><span class="va">Cells.per.well</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">## Fix bug, should soon be solved, cf https://github.com/waldronlab/MultiAssayExperiment/issues/317 </span></span>
+<span><span class="va">lvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">scp</span><span class="op">@</span><span class="va">sampleMap</span><span class="op">$</span><span class="va">assay</span><span class="op">)</span></span>
+<span><span class="va">newlvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">lvs</span>, <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">scp</span><span class="op">)</span>, <span class="va">lvs</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">scp</span><span class="op">@</span><span class="va">sampleMap</span><span class="op">$</span><span class="va">assay</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">newlvs</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="feature-selection-based-on-protein-detection-rate">Feature selection based on protein detection rate<a class="anchor" aria-label="anchor" href="#feature-selection-based-on-protein-detection-rate"></a>
@@ -807,18 +814,18 @@ selected proteins.</p>
 <p>The proteins names in the <code>scp</code> data are encoded as
 Ensembl ID. We convert them to protein symbols using the
 <code>biomaRt</code> package. For reproducibility purposes, we stored
-the</p>
+the <code>ggalusGeneDf</code> table</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gallus</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/useMart.html" class="external-link">useMart</a></span><span class="op">(</span><span class="st">"ensembl"</span>, dataset <span class="op">=</span> <span class="st">"ggallus_gene_ensembl"</span><span class="op">)</span></span>
-<span><span class="va">conversionDF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">sel</span>,</span>
+<span><span class="va">ggalusGeneDf</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/biomaRt/man/getBM.html" class="external-link">getBM</a></span><span class="op">(</span>values <span class="op">=</span> <span class="va">sel</span>,</span>
 <span>                      attributes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ensembl_peptide_id"</span>, <span class="st">"uniprot_gn_symbol"</span><span class="op">)</span>,</span>
 <span>                      filters <span class="op">=</span> <span class="st">"ensembl_peptide_id"</span>,</span>
 <span>                      mart <span class="op">=</span> <span class="va">gallus</span><span class="op">)</span></span>
 <span><span class="co">## Remove duplicate gene symbol</span></span>
-<span><span class="va">conversionDF</span> <span class="op">&lt;-</span> <span class="va">conversionDF</span><span class="op">[</span><span class="va">conversionDF</span><span class="op">$</span><span class="va">uniprot_gn_symbol</span> <span class="op">!=</span> <span class="st">"CRABP-I"</span>, <span class="op">]</span></span>
-<span><span class="va">conversionDF</span> <span class="op">&lt;-</span> <span class="va">conversionDF</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated</a></span><span class="op">(</span><span class="va">conversionDF</span><span class="op">$</span><span class="va">ensembl_peptide_id</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">ggalusGeneDf</span> <span class="op">&lt;-</span> <span class="va">ggalusGeneDf</span><span class="op">[</span><span class="va">ggalusGeneDf</span><span class="op">$</span><span class="va">uniprot_gn_symbol</span> <span class="op">!=</span> <span class="st">"CRABP-I"</span>, <span class="op">]</span></span>
+<span><span class="va">ggalusGeneDf</span> <span class="op">&lt;-</span> <span class="va">ggalusGeneDf</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/duplicated.html" class="external-link">duplicated</a></span><span class="op">(</span><span class="va">ggalusGeneDf</span><span class="op">$</span><span class="va">ensembl_peptide_id</span><span class="op">)</span>, <span class="op">]</span></span>
 <span></span>
-<span><span class="va">selscp</span> <span class="op">&lt;-</span> <span class="va">conversionDF</span><span class="op">$</span><span class="va">uniprot_gn_symbol</span></span></code></pre></div>
+<span><span class="va">selscp</span> <span class="op">&lt;-</span> <span class="va">ggalusGeneDf</span><span class="op">$</span><span class="va">uniprot_gn_symbol</span></span></code></pre></div>
 <p>We next plot the number of proteins found only in this replication,
 only in the paper, or in both the replication and paper.</p>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
@@ -1077,7 +1084,7 @@ the <code>runPCA</code> from the <code>scater</code> package.</p>
 <p>The PCA plot also shows good separation between the two cell types.
 Moreover, the batch correction allowed a good mixing of the two
 experimental batches. Almost half of the variance is explained by the
-two components, indicating a string biological effect.</p>
+two components, indicating a strong biological effect.</p>
 </div>
 <div class="section level4">
 <h4 id="clustering">Clustering<a class="anchor" aria-label="anchor" href="#clustering"></a>
@@ -1229,7 +1236,7 @@ home page</a> for more information.</p>
 <h4 id="hardware-and-software">Hardware and software<a class="anchor" aria-label="anchor" href="#hardware-and-software"></a>
 </h4>
 <p>The system details of the machine that built the vignette are:</p>
-<pre><code><span><span class="co">## Machine: Linux (5.15.0-46-generic)</span></span>
+<pre><code><span><span class="co">## Machine: Linux (5.15.0-48-generic)</span></span>
 <span><span class="co">## R version: R.4.2.1 (svn: 82513)</span></span>
 <span><span class="co">## RAM: 16.5 GB</span></span>
 <span><span class="co">## CPU: 16 core(s) - 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz</span></span></code></pre>
@@ -1238,7 +1245,7 @@ home page</a> for more information.</p>
 <h4 id="timing">Timing<a class="anchor" aria-label="anchor" href="#timing"></a>
 </h4>
 <p>The total time required to compile this vignette is:</p>
-<pre><code><span><span class="co">## 1.074228 mins</span></span></code></pre>
+<pre><code><span><span class="co">## 1.024118 mins</span></span></code></pre>
 </div>
 <div class="section level4">
 <h4 id="memory">Memory<a class="anchor" aria-label="anchor" href="#memory"></a>
@@ -1272,22 +1279,22 @@ home page</a> for more information.</p>
 <span><span class="co">## [8] methods   base     </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
-<span><span class="co">##  [1] benchmarkme_1.0.8           scater_1.25.6              </span></span>
+<span><span class="co">##  [1] benchmarkme_1.0.8           scater_1.25.7              </span></span>
 <span><span class="co">##  [3] scuttle_1.7.4               CellTrails_1.15.0          </span></span>
 <span><span class="co">##  [5] biomaRt_2.53.2              patchwork_1.1.2            </span></span>
 <span><span class="co">##  [7] forcats_0.5.2               stringr_1.4.1              </span></span>
 <span><span class="co">##  [9] dplyr_1.0.10                purrr_0.3.4                </span></span>
-<span><span class="co">## [11] readr_2.1.2                 tidyr_1.2.1                </span></span>
+<span><span class="co">## [11] readr_2.1.3                 tidyr_1.2.1                </span></span>
 <span><span class="co">## [13] tibble_3.1.8                ggplot2_3.3.6              </span></span>
 <span><span class="co">## [15] tidyverse_1.3.2             SCP.replication_0.2.1      </span></span>
-<span><span class="co">## [17] SingleCellExperiment_1.19.0 scpdata_1.5.0              </span></span>
-<span><span class="co">## [19] ExperimentHub_2.5.0         AnnotationHub_3.5.1        </span></span>
+<span><span class="co">## [17] SingleCellExperiment_1.19.1 scpdata_1.5.4              </span></span>
+<span><span class="co">## [19] ExperimentHub_2.5.0         AnnotationHub_3.5.2        </span></span>
 <span><span class="co">## [21] BiocFileCache_2.5.0         dbplyr_2.2.1               </span></span>
-<span><span class="co">## [23] scp_1.7.0                   QFeatures_1.7.1            </span></span>
-<span><span class="co">## [25] MultiAssayExperiment_1.23.8 SummarizedExperiment_1.27.3</span></span>
+<span><span class="co">## [23] scp_1.7.4                   QFeatures_1.7.3            </span></span>
+<span><span class="co">## [25] MultiAssayExperiment_1.23.9 SummarizedExperiment_1.27.3</span></span>
 <span><span class="co">## [27] Biobase_2.57.1              GenomicRanges_1.49.1       </span></span>
 <span><span class="co">## [29] GenomeInfoDb_1.33.7         IRanges_2.31.2             </span></span>
-<span><span class="co">## [31] S4Vectors_0.35.3            BiocGenerics_0.43.4        </span></span>
+<span><span class="co">## [31] S4Vectors_0.35.4            BiocGenerics_0.43.4        </span></span>
 <span><span class="co">## [33] MatrixGenerics_1.9.1        matrixStats_0.62.0         </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
@@ -1296,25 +1303,25 @@ home page</a> for more information.</p>
 <span><span class="co">##   [5] AnnotationDbi_1.59.1          grid_4.2.1                   </span></span>
 <span><span class="co">##   [7] BiocParallel_1.31.12          Rtsne_0.16                   </span></span>
 <span><span class="co">##   [9] ScaledMatrix_1.5.1            munsell_0.5.0                </span></span>
-<span><span class="co">##  [11] codetools_0.2-18              ragg_1.2.2                   </span></span>
+<span><span class="co">##  [11] codetools_0.2-18              ragg_1.2.3                   </span></span>
 <span><span class="co">##  [13] withr_2.5.0                   colorspace_2.0-3             </span></span>
 <span><span class="co">##  [15] filelock_1.0.2                highr_0.9                    </span></span>
-<span><span class="co">##  [17] knitr_1.40                    dtw_1.22-3                   </span></span>
-<span><span class="co">##  [19] labeling_0.4.2                GenomeInfoDbData_1.2.8       </span></span>
+<span><span class="co">##  [17] knitr_1.40                    dtw_1.23-1                   </span></span>
+<span><span class="co">##  [19] labeling_0.4.2                GenomeInfoDbData_1.2.9       </span></span>
 <span><span class="co">##  [21] farver_2.1.1                  bit64_4.0.5                  </span></span>
-<span><span class="co">##  [23] rprojroot_2.0.3               vctrs_0.4.1                  </span></span>
+<span><span class="co">##  [23] rprojroot_2.0.3               vctrs_0.4.2                  </span></span>
 <span><span class="co">##  [25] generics_0.1.3                xfun_0.33                    </span></span>
 <span><span class="co">##  [27] doParallel_1.0.17             R6_2.5.1                     </span></span>
 <span><span class="co">##  [29] ggbeeswarm_0.6.0              clue_0.3-61                  </span></span>
 <span><span class="co">##  [31] rsvd_1.0.5                    locfit_1.5-9.6               </span></span>
 <span><span class="co">##  [33] MsCoreUtils_1.9.1             AnnotationFilter_1.21.0      </span></span>
 <span><span class="co">##  [35] bitops_1.0-7                  cachem_1.0.6                 </span></span>
-<span><span class="co">##  [37] DelayedArray_0.23.1           assertthat_0.2.1             </span></span>
+<span><span class="co">##  [37] DelayedArray_0.23.2           assertthat_0.2.1             </span></span>
 <span><span class="co">##  [39] promises_1.2.0.1              scales_1.2.1                 </span></span>
 <span><span class="co">##  [41] googlesheets4_1.0.1           beeswarm_0.4.0               </span></span>
 <span><span class="co">##  [43] gtable_0.3.1                  beachmat_2.13.4              </span></span>
 <span><span class="co">##  [45] OrgMassSpecR_0.5-3            benchmarkmeData_1.0.4        </span></span>
-<span><span class="co">##  [47] sva_3.45.0                    rlang_1.0.5                  </span></span>
+<span><span class="co">##  [47] sva_3.45.0                    rlang_1.0.6                  </span></span>
 <span><span class="co">##  [49] genefilter_1.79.0             systemfonts_1.0.4            </span></span>
 <span><span class="co">##  [51] lazyeval_0.2.2                gargle_1.2.1                 </span></span>
 <span><span class="co">##  [53] broom_1.0.1                   BiocManager_1.30.18          </span></span>
@@ -1325,48 +1332,49 @@ home page</a> for more information.</p>
 <span><span class="co">##  [63] jquerylib_0.1.4               proxy_0.4-27                 </span></span>
 <span><span class="co">##  [65] Rcpp_1.0.9                    plyr_1.8.7                   </span></span>
 <span><span class="co">##  [67] sparseMatrixStats_1.9.0       progress_1.2.2               </span></span>
-<span><span class="co">##  [69] zlibbioc_1.43.0               RCurl_1.98-1.8               </span></span>
+<span><span class="co">##  [69] zlibbioc_1.43.0               RCurl_1.98-1.9               </span></span>
 <span><span class="co">##  [71] prettyunits_1.1.1             rpart_4.1.16                 </span></span>
-<span><span class="co">##  [73] viridis_0.6.2                 haven_2.5.1                  </span></span>
-<span><span class="co">##  [75] ggrepel_0.9.1                 cluster_2.1.4                </span></span>
-<span><span class="co">##  [77] fs_1.5.2                      magrittr_2.0.3               </span></span>
-<span><span class="co">##  [79] reprex_2.0.2                  googledrive_2.0.0            </span></span>
-<span><span class="co">##  [81] ProtGenerics_1.29.0           hms_1.1.2                    </span></span>
-<span><span class="co">##  [83] mime_0.12                     evaluate_0.16                </span></span>
-<span><span class="co">##  [85] xtable_1.8-4                  XML_3.99-0.10                </span></span>
-<span><span class="co">##  [87] readxl_1.4.1                  gridExtra_2.3                </span></span>
-<span><span class="co">##  [89] compiler_4.2.1                crayon_1.5.1                 </span></span>
-<span><span class="co">##  [91] htmltools_0.5.3               mgcv_1.8-40                  </span></span>
-<span><span class="co">##  [93] later_1.3.0                   tzdb_0.3.0                   </span></span>
-<span><span class="co">##  [95] lubridate_1.8.0               DBI_1.1.3                    </span></span>
-<span><span class="co">##  [97] EnvStats_2.7.0                MASS_7.3-58.1                </span></span>
-<span><span class="co">##  [99] rappdirs_0.3.3                BiocStyle_2.25.0             </span></span>
-<span><span class="co">## [101] cba_0.2-21                    Matrix_1.5-1                 </span></span>
-<span><span class="co">## [103] cli_3.4.0                     parallel_4.2.1               </span></span>
-<span><span class="co">## [105] igraph_1.3.4                  pkgconfig_2.0.3              </span></span>
-<span><span class="co">## [107] pkgdown_2.0.6                 foreach_1.5.2                </span></span>
-<span><span class="co">## [109] xml2_1.3.3                    annotate_1.75.0              </span></span>
-<span><span class="co">## [111] vipor_0.4.5                   bslib_0.4.0                  </span></span>
-<span><span class="co">## [113] XVector_0.37.1                rvest_1.0.3                  </span></span>
-<span><span class="co">## [115] digest_0.6.29                 Biostrings_2.65.6            </span></span>
-<span><span class="co">## [117] rmarkdown_2.16                cellranger_1.1.0             </span></span>
-<span><span class="co">## [119] dendextend_1.16.0             edgeR_3.39.6                 </span></span>
-<span><span class="co">## [121] DelayedMatrixStats_1.19.0     curl_4.3.2                   </span></span>
-<span><span class="co">## [123] shiny_1.7.2                   lifecycle_1.0.2              </span></span>
-<span><span class="co">## [125] nlme_3.1-159                  jsonlite_1.8.0               </span></span>
-<span><span class="co">## [127] BiocNeighbors_1.15.1          desc_1.4.2                   </span></span>
-<span><span class="co">## [129] viridisLite_0.4.1             limma_3.53.7                 </span></span>
-<span><span class="co">## [131] fansi_1.0.3                   pillar_1.8.1                 </span></span>
-<span><span class="co">## [133] lattice_0.20-45               KEGGREST_1.37.3              </span></span>
-<span><span class="co">## [135] fastmap_1.1.0                 httr_1.4.4                   </span></span>
-<span><span class="co">## [137] survival_3.4-0                interactiveDisplayBase_1.35.0</span></span>
-<span><span class="co">## [139] glue_1.6.2                    iterators_1.0.14             </span></span>
-<span><span class="co">## [141] png_0.1-7                     BiocVersion_3.16.0           </span></span>
-<span><span class="co">## [143] bit_4.0.4                     BiocBaseUtils_0.99.12        </span></span>
-<span><span class="co">## [145] stringi_1.7.8                 sass_0.4.2                   </span></span>
-<span><span class="co">## [147] blob_1.2.3                    textshaping_0.3.6            </span></span>
-<span><span class="co">## [149] BiocSingular_1.13.1           memoise_2.0.1                </span></span>
-<span><span class="co">## [151] irlba_2.3.5                   maptree_1.4-8</span></span></code></pre></div>
+<span><span class="co">##  [73] viridis_0.6.2                 cowplot_1.1.1                </span></span>
+<span><span class="co">##  [75] haven_2.5.1                   ggrepel_0.9.1                </span></span>
+<span><span class="co">##  [77] cluster_2.1.4                 fs_1.5.2                     </span></span>
+<span><span class="co">##  [79] magrittr_2.0.3                reprex_2.0.2                 </span></span>
+<span><span class="co">##  [81] googledrive_2.0.0             ProtGenerics_1.29.0          </span></span>
+<span><span class="co">##  [83] hms_1.1.2                     mime_0.12                    </span></span>
+<span><span class="co">##  [85] evaluate_0.16                 xtable_1.8-4                 </span></span>
+<span><span class="co">##  [87] XML_3.99-0.11                 readxl_1.4.1                 </span></span>
+<span><span class="co">##  [89] gridExtra_2.3                 compiler_4.2.1               </span></span>
+<span><span class="co">##  [91] crayon_1.5.2                  htmltools_0.5.3              </span></span>
+<span><span class="co">##  [93] mgcv_1.8-40                   later_1.3.0                  </span></span>
+<span><span class="co">##  [95] tzdb_0.3.0                    lubridate_1.8.0              </span></span>
+<span><span class="co">##  [97] DBI_1.1.3                     EnvStats_2.7.0               </span></span>
+<span><span class="co">##  [99] MASS_7.3-58.1                 rappdirs_0.3.3               </span></span>
+<span><span class="co">## [101] BiocStyle_2.25.0              cba_0.2-21                   </span></span>
+<span><span class="co">## [103] Matrix_1.5-1                  cli_3.4.1                    </span></span>
+<span><span class="co">## [105] parallel_4.2.1                igraph_1.3.5                 </span></span>
+<span><span class="co">## [107] pkgconfig_2.0.3               pkgdown_2.0.6                </span></span>
+<span><span class="co">## [109] foreach_1.5.2                 xml2_1.3.3                   </span></span>
+<span><span class="co">## [111] annotate_1.75.0               vipor_0.4.5                  </span></span>
+<span><span class="co">## [113] bslib_0.4.0                   XVector_0.37.1               </span></span>
+<span><span class="co">## [115] rvest_1.0.3                   digest_0.6.29                </span></span>
+<span><span class="co">## [117] Biostrings_2.65.6             rmarkdown_2.16               </span></span>
+<span><span class="co">## [119] cellranger_1.1.0              dendextend_1.16.0            </span></span>
+<span><span class="co">## [121] edgeR_3.39.6                  DelayedMatrixStats_1.19.1    </span></span>
+<span><span class="co">## [123] curl_4.3.2                    shiny_1.7.2                  </span></span>
+<span><span class="co">## [125] lifecycle_1.0.2               nlme_3.1-159                 </span></span>
+<span><span class="co">## [127] jsonlite_1.8.2                BiocNeighbors_1.15.1         </span></span>
+<span><span class="co">## [129] desc_1.4.2                    viridisLite_0.4.1            </span></span>
+<span><span class="co">## [131] limma_3.53.10                 fansi_1.0.3                  </span></span>
+<span><span class="co">## [133] pillar_1.8.1                  lattice_0.20-45              </span></span>
+<span><span class="co">## [135] KEGGREST_1.37.3               fastmap_1.1.0                </span></span>
+<span><span class="co">## [137] httr_1.4.4                    survival_3.4-0               </span></span>
+<span><span class="co">## [139] interactiveDisplayBase_1.35.0 glue_1.6.2                   </span></span>
+<span><span class="co">## [141] iterators_1.0.14              png_0.1-7                    </span></span>
+<span><span class="co">## [143] BiocVersion_3.16.0            bit_4.0.4                    </span></span>
+<span><span class="co">## [145] BiocBaseUtils_0.99.12         stringi_1.7.8                </span></span>
+<span><span class="co">## [147] sass_0.4.2                    blob_1.2.3                   </span></span>
+<span><span class="co">## [149] textshaping_0.3.6             BiocSingular_1.13.1          </span></span>
+<span><span class="co">## [151] memoise_2.0.1                 irlba_2.3.5.1                </span></span>
+<span><span class="co">## [153] maptree_1.4-8</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1390,6 +1398,10 @@ of <span>Hair-Bundle</span> Morphogenesis Revealed with
 Tyanova, Stefka, Tikira Temu, and Juergen Cox. 2016. <span>“The
 <span>MaxQuant</span> Computational Platform for Mass Spectrometry-Based
 Shotgun Proteomics.”</span> <em>Nat. Protoc.</em> 11 (12): 2301–19.
+</div>
+<div id="ref-Vanderaa2022-qv" class="csl-entry">
+Vanderaa, Christophe, and Laurent Gatto. 2022. <span>“The Current State
+of Single-Cell Proteomics Data Analysis,”</span> October. <a href="https://arxiv.org/abs/2210.01020" class="external-link">https://arxiv.org/abs/2210.01020</a>.
 </div>
 <div id="ref-Wickham2019-fz" class="csl-entry">
 Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy
