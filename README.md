@@ -12,7 +12,7 @@ under the `Articles` tab.
 The replication package can be installed with R >= 4.1 by running:
 
 ```
-BiocManager::install("UCLouvain/SCP.replication")
+BiocManager::install("UCLouvain-CBIO/SCP.replication")
 ```
 
 ## Reproduction of SCP data analyses
