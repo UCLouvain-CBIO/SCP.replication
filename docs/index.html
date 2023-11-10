@@ -69,6 +69,12 @@
       <a href="articles/schoof2021.html">Replication of the AML model analysis (Schoof et al. 2021)</a>
     </li>
     <li>
+      <a href="articles/scplainer_leduc2022.html">scplainer: reanalysis of the nPOP dataset (Leduc et al. 2022)</a>
+    </li>
+    <li>
+      <a href="articles/scplainer_woo2022.html">SCP data analysis of the macrophage activation dataset (Woo et al. 2022)</a>
+    </li>
+    <li>
       <a href="articles/williams2020_tmt.html">Reproducing the multiplexed SCP analysis by Williams et al. 2020</a>
     </li>
     <li>
@@ -99,7 +105,7 @@
 </h2>
 <p>All vignettes are pre-compiled and can be found on the <a href="https://uclouvain-cbio.github.io/SCP.replication/index.html" class="external-link">website</a> under the <code>Articles</code> tab.</p>
 <p>The replication package can be installed with R &gt;= 4.1 by running:</p>
-<pre><code><span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/BiocManager/man/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"UCLouvain/SCP.replication"</span><span class="op">)</span></span></code></pre>
+<pre><code><span><span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"UCLouvain-CBIO/SCP.replication"</span><span class="op">)</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="reproduction-of-scp-data-analyses">Reproduction of SCP data analyses<a class="anchor" aria-label="anchor" href="#reproduction-of-scp-data-analyses"></a>
@@ -110,7 +116,9 @@
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/SCoPE2.html" class="external-link">Reproduction of the SCoPE2 analysis (Specht et al. 2021)</a><a class="anchor" aria-label="anchor" href="#reproduction-of-the-scope2-analysis-specht-et-al-2021"></a>
 </h3>
 <p>Project tag: <code>SCoPE2</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Specht H, Emmott E, Petelski AA, Huffman RG, Perlman DH, Serra M, et al. Single-cell proteomic and transcriptomic analysis of macrophage heterogeneity using SCoPE2. Genome Biol. <a href="http://dx.doi.org/10.1186/s13059-021-02267-5" class="external-link">2021;22: 50</a>.</p></blockquote>
+<blockquote>
+<p>Specht H, Emmott E, Petelski AA, Huffman RG, Perlman DH, Serra M, et al. Single-cell proteomic and transcriptomic analysis of macrophage heterogeneity using SCoPE2. Genome Biol. <a href="http://dx.doi.org/10.1186/s13059-021-02267-5" class="external-link">2021;22: 50</a>.</p>
+</blockquote>
 <p>See also</p>
 <ul>
 <li>The SCoPE2 <a href="https://scope2.slavovlab.net/" class="external-link">website</a>
@@ -124,38 +132,50 @@
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/liang2020.html" class="external-link">Exploring the autoPOTS data (Liang et al. 2020)</a><a class="anchor" aria-label="anchor" href="#exploring-the-autopots-data-liang-et-al-2020"></a>
 </h3>
 <p>Project tag: <code>liang2020</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Liang, Yiran, Hayden Acor, Michaela A McCown, Andikan J Nwosu, Hannah Boekweg, Nathaniel B Axtell, Thy Truong, Yongzheng Cong, Samuel H Payne, and Ryan T Kelly. 2020. “Fully Automated Sample Processing and Analysis Workflow for Low-Input Proteome Profiling.” Anal. Chem., December.2021, <a href="https://pubs.acs.org/doi/10.1021/acs.analchem.0c04240" class="external-link">93, 3, 1658–1666</a>.</p></blockquote>
+<blockquote>
+<p>Liang, Yiran, Hayden Acor, Michaela A McCown, Andikan J Nwosu, Hannah Boekweg, Nathaniel B Axtell, Thy Truong, Yongzheng Cong, Samuel H Payne, and Ryan T Kelly. 2020. “Fully Automated Sample Processing and Analysis Workflow for Low-Input Proteome Profiling.” Anal. Chem., December.2021, <a href="https://pubs.acs.org/doi/10.1021/acs.analchem.0c04240" class="external-link">93, 3, 1658–1666</a>.</p>
+</blockquote>
 </div>
 <div class="section level3">
 <h3 id="reproduction-of-the-hair-cell-development-analysis-zhu-et-al-2019-elife">
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/zhu2019EL.html" class="external-link">Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)</a><a class="anchor" aria-label="anchor" href="#reproduction-of-the-hair-cell-development-analysis-zhu-et-al-2019-elife"></a>
 </h3>
 <p>Project tag: <code>zhu2019EL</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Zhu, Ying, Mirko Scheibinger, Daniel Christian Ellwanger, Jocelyn F Krey, Dongseok Choi, Ryan T Kelly, Stefan Heller, and Peter G Barr-Gillespie. 2019. “Single-Cell Proteomics Reveals Changes in Expression During Hair-Cell Development.” <a href="https://elifesciences.org/articles/50777" class="external-link">Elife 8 (November)</a>.</p></blockquote>
+<blockquote>
+<p>Zhu, Ying, Mirko Scheibinger, Daniel Christian Ellwanger, Jocelyn F Krey, Dongseok Choi, Ryan T Kelly, Stefan Heller, and Peter G Barr-Gillespie. 2019. “Single-Cell Proteomics Reveals Changes in Expression During Hair-Cell Development.” <a href="https://elifesciences.org/articles/50777" class="external-link">Elife 8 (November)</a>.</p>
+</blockquote>
 </div>
 <div class="section level3">
 <h3 id="reproduction-of-the-aml-model-analysis-schoof-et-al-2021">
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/schoof2021.html" class="external-link">Reproduction of the AML model analysis (Schoof et al. 2021)</a><a class="anchor" aria-label="anchor" href="#reproduction-of-the-aml-model-analysis-schoof-et-al-2021"></a>
 </h3>
 <p>Project tag: <code>schoof2021</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, John E. Dick, and Bo T. Porse. 2021. “Quantitative Single-Cell Proteomics as a Tool to Characterize Cellular Hierarchies.” Nature Communications 12 (1): 745679.</p></blockquote>
+<blockquote>
+<p>Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, John E. Dick, and Bo T. Porse. 2021. “Quantitative Single-Cell Proteomics as a Tool to Characterize Cellular Hierarchies.” Nature Communications 12 (1): 745679.</p>
+</blockquote>
 <p>See also</p>
-<ul><li>The SCeptre Github <a href="https://github.com/bfurtwa/SCeptre" class="external-link">repository</a>
-</li></ul>
+<ul>
+<li>The SCeptre Github <a href="https://github.com/bfurtwa/SCeptre" class="external-link">repository</a>
+</li>
+</ul>
 </div>
 <div class="section level3">
 <h3 id="reproducing-the-multiplexed-scp-analysis-by-williams-et-al-2020">
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/williams2020_tmt.html" class="external-link">Reproducing the multiplexed SCP analysis by Williams et al. 2020</a><a class="anchor" aria-label="anchor" href="#reproducing-the-multiplexed-scp-analysis-by-williams-et-al-2020"></a>
 </h3>
 <p>Project tag: <code>williams2020_tmt</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Williams, Sarah M., Andrey V. Liyu, Chia-Feng Tsai, Ronald J. Moore, Daniel J. Orton, William B. Chrisler, Matthew J. Gaffrey, et al. 2020. “Automated Coupling of Nanodroplet Sample Preparation with Liquid Chromatography-Mass Spectrometry for High-Throughput Single-Cell Proteomics.” Analytical Chemistry 92 (15): 10588–96.</p></blockquote>
+<blockquote>
+<p>Williams, Sarah M., Andrey V. Liyu, Chia-Feng Tsai, Ronald J. Moore, Daniel J. Orton, William B. Chrisler, Matthew J. Gaffrey, et al. 2020. “Automated Coupling of Nanodroplet Sample Preparation with Liquid Chromatography-Mass Spectrometry for High-Throughput Single-Cell Proteomics.” Analytical Chemistry 92 (15): 10588–96.</p>
+</blockquote>
 </div>
 <div class="section level3">
 <h3 id="replication-of-the-npop-analysis-leduc-et-al-2022">
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/leduc2022.html" class="external-link">Replication of the nPOP analysis (Leduc et al. 2022)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-npop-analysis-leduc-et-al-2022"></a>
 </h3>
 <p>Project tag: <code>leduc2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across Single Cells Using nPOP.” bioRxiv. <a href="https://doi.org/10.1101/2021.04.24.441211" class="external-link uri">https://doi.org/10.1101/2021.04.24.441211</a>.</p></blockquote>
+<blockquote>
+<p>Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across Single Cells Using nPOP.” bioRxiv. <a href="https://doi.org/10.1101/2021.04.24.441211" class="external-link uri">https://doi.org/10.1101/2021.04.24.441211</a>.</p>
+</blockquote>
 <p>See also</p>
 <ul>
 <li>The nPOP <a href="https://scp.slavovlab.net/nPOP" class="external-link">website</a>
@@ -169,7 +189,9 @@
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/derks2022.html" class="external-link">Replication of the plexDIA analysis (Derks et al. 2022)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-plexdia-analysis-derks-et-al-2022"></a>
 </h3>
 <p>Project tag: <code>derks2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Derks, Jason, Andrew Leduc, Georg Wallmann, R. Gray Huffman, Matthew Willetts, Saad Khan, Harrison Specht, Markus Ralser, Vadim Demichev, and Nikolai Slavov. 2022. “Increasing the Throughput of Sensitive Proteomics by plexDIA.” Nature Biotechnology, July, 2021.11.03.467007.</p></blockquote>
+<blockquote>
+<p>Derks, Jason, Andrew Leduc, Georg Wallmann, R. Gray Huffman, Matthew Willetts, Saad Khan, Harrison Specht, Markus Ralser, Vadim Demichev, and Nikolai Slavov. 2022. “Increasing the Throughput of Sensitive Proteomics by plexDIA.” Nature Biotechnology, July, 2021.11.03.467007.</p>
+</blockquote>
 <p>See also</p>
 <ul>
 <li>The plexDIA <a href="https://scp.slavovlab.net/plexDIA" class="external-link">website</a>
@@ -183,10 +205,14 @@
 <a href="https://uclouvain-cbio.github.io/SCP.replication/articles/brunner2022.html" class="external-link">Replication of the cell cycle state study (Brunner et al. 2021)</a><a class="anchor" aria-label="anchor" href="#replication-of-the-cell-cycle-state-study-brunner-et-al-2021"></a>
 </h3>
 <p>Project tag: <code>brunner2022</code> Docker image: <code>cvanderaa/scp_replication_docker:v1</code></p>
-<blockquote><p>Brunner, Andreas-David, Marvin Thielert, Catherine Vasilopoulou, Constantin Ammar, Fabian Coscia, Andreas Mund, Ole B. Hoerning, et al. 2022. “Ultra-High Sensitivity Mass Spectrometry Quantifies Single-Cell Proteome Changes upon Perturbation.” Molecular Systems Biology 18 (3): e10798.</p></blockquote>
+<blockquote>
+<p>Brunner, Andreas-David, Marvin Thielert, Catherine Vasilopoulou, Constantin Ammar, Fabian Coscia, Andreas Mund, Ole B. Hoerning, et al. 2022. “Ultra-High Sensitivity Mass Spectrometry Quantifies Single-Cell Proteome Changes upon Perturbation.” Molecular Systems Biology 18 (3): e10798.</p>
+</blockquote>
 <p>See also</p>
-<ul><li>The author’s Github <a href="https://github.com/theislab/singlecell_proteomics" class="external-link">repository</a>
-</li></ul>
+<ul>
+<li>The author’s Github <a href="https://github.com/theislab/singlecell_proteomics" class="external-link">repository</a>
+</li>
+</ul>
 </div>
 </div>
 <div class="section level2">
@@ -245,7 +271,9 @@
 <h1 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h1>
 <p>To cite the SCP.replication website in publications please use:</p>
-<blockquote><p>Vanderaa Christophe and Laurent Gatto. The current state of single-cell proteomics data analysis. arXiv:2210.01020; doi: <a href="https://doi.org/10.48550/arXiv.2210.01020" class="external-link uri">https://doi.org/10.48550/arXiv.2210.01020</a> (2022).</p></blockquote>
+<blockquote>
+<p>Vanderaa Christophe and Laurent Gatto. The current state of single-cell proteomics data analysis. arXiv:2210.01020; doi: <a href="https://doi.org/10.48550/arXiv.2210.01020" class="external-link uri">https://doi.org/10.48550/arXiv.2210.01020</a> (2022).</p>
+</blockquote>
 </div>
 <div class="section level1">
 <h1 id="licence">Licence<a class="anchor" aria-label="anchor" href="#licence"></a>
@@ -292,7 +320,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
