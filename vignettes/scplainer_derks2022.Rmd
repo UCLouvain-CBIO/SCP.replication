@@ -1,0 +1,654 @@
+---
+title: "scplainer: reanalysis of the plexDIA dataset (Derks et al. 2022)"
+author:
+    - Christophe Vanderaa, Computational Biology, UCLouvain
+    - Laurent Gatto, Computational Biology, UCLouvain
+output:
+    BiocStyle::html_document:
+        self_contained: yes
+        toc: true
+        toc_float: true
+        toc_depth: 2
+        code_folding: show
+date: "`r BiocStyle::doc_date()`"
+vignette: >
+    %\VignetteIndexEntry{derks2022 data analysis by scplainer}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+## Options for Rmarkdown compilation
+knitr::opts_chunk$set(
+    fig.width = 7,
+    fig.height = 5,
+    fig.align = "center",
+    message = FALSE,
+    warning = FALSE,
+    collapse = TRUE,
+    crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+)
+## Time the compilation
+timeStart <- Sys.time()
+```
+
+# Introduction
+
+In this vignette, we will analyse the `derks2022` dataset. The
+data were acquired using the plexDIA protocol 
+([Derks et al. 2022](http://dx.doi.org/10.1038/s41587-022-01389-w)).
+The authors performed mTRAQ-based labelling in DIA mode, and showed
+that plexDIA could increase the cell throughput while benefitting from
+the advantages of DIA.
+
+Before delving into the scplainer workflow, we recommend first 
+familiarising with the `scp` and `QFeatures` packages (see 
+[tutorials](https://uclouvain-cbio.github.io/scp/index.html)). 
+
+# Packages and data
+
+We rely on several packages to compile this vignette.
+
+```{r, warning=FALSE, message=FALSE}
+## Core packages
+library("scp")
+library("scpdata")
+## Utility packages
+library("ggplot2")
+library("patchwork")
+library("dplyr")
+library("scater")
+library("camprotR")
+```
+
+The data set is available from the `scpdata` package. 
+
+```{r}
+derks <- derks2022()
+```
+
+The data set contains 186 samples, including 12 negative control 
+samples, 12 bulk samples, 52 monocytes (U-937), 55 melanoma cells, and
+55 pancreatic ductal adenocarcinoma cells (PDAC). The samples were 
+labelled with mTRAQ-3 acquired either with a Q-Exactive (n = 153) or a
+timsTOF-SCP instrument (n = 33). 
+
+# Minimal data processing
+
+The minimal data processing workflow consists of 5 main steps:
+
+- Data cleaning
+- Feature quality control
+- Sample quality control
+- Peptide data assembly
+- Log2-transformation
+
+## Cleaning data
+
+The data available in `scpdata` were provided by the authors and were 
+analysed with DIA-NN. We will start with the precursor data and take 
+advantage of DIA-NN's capability to transfer precursor identities 
+across mTRAQ labels within the same runs. These data are available in 
+the `qe_prec_extracted` and `tims_prec_extracted` assays. 
+
+```{r}
+derks <- derks[, , c("qe_prec_extracted", "tims_prec_extracted")]
+```
+
+Next, we clean the cell type annotation and remove the `_t` tags 
+contained in cell type annotations that refer to samples acquired with
+timsTOF-SCP. Note that samples annotated with a `_DB` are bulk 
+samples. 
+
+```{r}
+derks$Celltype <- sub("_t", "", derks$Celltype)
+table(derks$Celltype)
+```
+
+The instrument information is available in a dedicated descriptor.
+
+```{r}
+table(derks$Instrument)
+```
+
+The data were acquired using mTRAQ-3 labelling ($\delta$0, $\delta$4 
+and $\delta$8).
+
+```{r}
+table(derks$Label)
+```
+
+The data were acquired as part of 59 MS acquisition batches. 
+
+```{r}
+length(unique(derks$Set))
+```
+
+Next, we remove feature annotations that won't be used in the remainder of
+the vignette. This is to avoid overcrowding of the annotation tables
+later in the vignette.
+
+```{r}
+requiredRowData <- c(
+    "Protein.Group", "Protein.Ids", "Protein.Names", "Genes", 
+    "First.Protein.Description", "Proteotypic", "Stripped.Sequence",
+    "Modified.Sequence", "Precursor.Charge", "Precursor.Id"
+)
+derks <- selectRowData(derks, requiredRowData)
+```
+
+We replace zeros with missing values. A zero may be a true zero (the feature
+is not present in the sample) or because of technical limitations (due
+to the technology or the computational pre-processing). Because we are
+not able to distinguish between the two, zeros should be replaced with
+`NA`.
+
+```{r}
+derks <- zeroIsNA(derks, i = names(derks))
+```
+
+Below is an overview of the cleaned `Qfeatures` object used as input 
+data for the data analysis. 
+
+```{r}
+derks
+```
+
+## Feature quality control
+
+We remove contaminants peptides that may propagate technical
+artefacts and bias data modelling. To identify contaminants we 
+retrieve the UniProt sequences in cRAP through the `camprotR` package.
+We also remove any peptide that maps to a keratin sequence. 
+
+```{r}
+contaminants <- paste(get_ccp_crap(), collapse = "|")
+keratins <- "KRT|^K\\d.\\d"
+derks <- filterFeatures(derks, ~ !grepl(contaminants, Protein.Ids) &
+                          !grepl(keratins, Protein.Names))
+```
+
+## Sample quality control 
+
+We next remove low-quality cells. The quality control criteria are:
+
+- We remove samples with low number of detected peptides. The 
+criterion is computed as follows:
+
+```{r}
+derks <- countUniqueFeatures(
+    derks, i = names(derks),
+    groupBy = "Stripped.Sequence", colDataName = "NumberPeptides"
+)
+```
+
+- We remove samples with low median intensity. The metric (note we 
+will later use it for normalisation) is computed as follows:
+
+```{r}
+MedianIntensity <- lapply(experiments(derks), function(x) {
+    out <- colMedians(log(assay(x)), na.rm = TRUE)
+    names(out) <- colnames(x)
+    out
+})
+names(MedianIntensity) <- NULL
+MedianIntensity <- unlist(MedianIntensity)
+colData(derks)[names(MedianIntensity), "MedianIntensity"] <- MedianIntensity
+```
+
+- We remove the samples that have a high median coefficient of 
+variation (CV). The CV is computed within each sample, by grouping
+the peptides that belong to the same protein or protein group. 
+Computing the median CV requires peptide normalisation (`norm = "SCoPE2"`)
+to avoid that differences in ionisation obscure the quantification accuracy. 
+This is computed as follows:
+
+```{r}
+derks <- medianCVperCell(
+    derks, i = names(derks),
+    groupBy = "Protein.Ids", nobs = 3,
+    norm = "SCoPE2",
+    colDataName = "MedianCV"
+)
+```
+
+We plot the metrics used to perform sample quality control. Since two
+different instruments were used, we expect different metric 
+distributions for each instrument and we plot the metrics separately.
+
+```{r qc_plot, fig.width=8, fig.height=4}
+pl <- list()
+for (i in unique(derks$Instrument)) {
+    pl[[i]] <- data.frame(colData(derks)) |>
+        dplyr::filter(Instrument == i) |>
+        ggplot() +
+        aes(y = MedianIntensity,
+            x = NumberPeptides,
+            color = MedianCV,
+            shape = Celltype) +
+        ggtitle(i) +
+        geom_point(size = 2) +
+        scale_color_continuous(type = "viridis")
+}
+wrap_plots(pl)
+```
+
+There are a few suspicious cells with a low number of detected 
+peptides, a low median intensity and a high median CV. For the 
+Q-Exactive dataset, we remove the group of cells that cluster with the
+negative control samples, that are cells with less than 750 peptides
+and a median intensity lower than 9.4. For the timsTOF-SCP dataset, we
+remove the group cells characterised by a median intensity lower than
+6.5. We apply the QC filter but also remove any sample that is not a
+single cell.
+
+```{r}
+derks$passQC <- (derks$Instrument == "Q-Exactive" &
+                    derks$MedianIntensity > 9.4 &
+                    derks$NumberPeptides > 750) |
+                (derks$Instrument == "timsTOFSCP" &
+                    derks$MedianIntensity > 6.5)
+derks$isSingleCell <- !grepl("Neg|DB$", derks$Celltype)
+derks <- subsetByColData(derks, derks$passQC & derks$isSingleCell)
+```
+
+## Peptide data assembly
+
+For now, we worked with precursor-level data. We here aggregate 
+precursors into peptides. However, we need to solve a minor issue in 
+the feature annotations. When aggregating peptides, we will only keep
+the feature annotations that have the common data. However, the 
+protein groups differ among a few precursor from the same peptide.
+Hence, the protein groups and the associated gene names are not 
+constant for some peptides that are removed during aggregation. To 
+avoid this, we ensure consistant protein groups across precursor from 
+the same peptide using majority vote.
+
+```{r}
+ppMap <- rbindRowData(derks, i = names(derks)) %>%
+    data.frame %>%
+    group_by(Stripped.Sequence) %>%
+    ## The majority vote happens here
+    summarise(
+        Protein.Group = names(sort(table(Protein.Group), decreasing = TRUE))[1],
+        Genes = names(sort(table(Genes), decreasing = TRUE))[1]
+    ) %>%
+    dplyr::select(Stripped.Sequence, Protein.Group, Genes)
+consensus <- lapply(names(derks), function(i) {
+    ind <- match(rowData(derks)[[i]]$Stripped.Sequence, ppMap$Stripped.Sequence)
+    DataFrame(
+        Protein.Group = ppMap$Protein.Group[ind],
+        Genes = ppMap$Genes[ind]
+    )
+})
+names(consensus) <- names(derks)
+rowData(derks) <- consensus
+```
+
+We then can safely perform peptide aggregation.
+
+```{r feature_aggregation, message=FALSE}
+peptideAssays <- paste0("peptides_", names(derks))
+derks <- aggregateFeatures(
+    derks, i = names(derks),
+    fcol = "Stripped.Sequence",
+    name = peptideAssays,
+    fun = colMedians, na.rm = TRUE
+)
+```
+
+Moreover, the data are stored in separate assays for each instrument.
+We here combine the two assays into one.
+
+```{r}
+derks <- joinAssays(derks, i = peptideAssays, name = "peptides")
+```
+
+## Log-transformation 
+
+We log2-transform the quantification data. 
+
+```{r}
+derks <- logTransform(derks, i = "peptides", name = "peptides_log")
+```
+
+Here is an overview of the data processing:
+
+```{r}
+plot(derks)
+```
+
+# Data modelling
+
+Model the data using scplainer, a linear regression model implemented in `scp`.
+The model is applied on a `SingleCellExperiment` so we extract it from
+the processed data set along with the `colData`
+
+```{r}
+sce <- getWithColData(derks, "peptides_log")
+```
+
+First, we must specify which variables to include in the model. We 
+here include 4 variables:
+
+- `MedianIntensity`: this is the normalisation factor used to correct 
+  for cell-specific technical differences.
+- `Set`: this is used to perform batch correction. We consider each 
+  acquisition run to be a batch. 
+- `Label`: this is used to correct for mTRAQ effects.
+- `Celltype`: this is the biological variable of interest. It
+  captures the difference between macrophages and monocytes
+
+`scpModelWorkflow()` fits linear regression models to the data, where
+the model is adapted for each peptide depending on its pattern of 
+missing values.
+
+```{r data_modelling, results='hide'}
+sce <- scpModelWorkflow(
+    sce,
+    formula = ~ 1 + ## intercept
+        ## normalisation
+        MedianIntensity +
+        ## batch effects
+        Set + Label +
+        ## biological variability
+        Celltype)
+```
+
+Once the model is prepared, we can explore the distribution of the n/p
+ratios.
+
+```{r}
+scpModelFilterPlot(sce)
+```
+
+About 40 % of the peptides do not have sufficient observations to estimate the
+model. You could consider $n/p$ a rough average of the number of
+replicates per parameter to fit (for categorical variables, the number
+of replicates per group). We recommend moving the threshold away from
+1 to increase statistical power and remove noisy peptides. This comes
+of course at the cost of less peptides included in the analysis.
+
+# Model analysis
+
+The model analysis consists of three steps: 
+
+- Analysis of variance
+- Differential abundance analysis
+- Component analysis
+
+## Analysis of variance
+
+The analysis of variance explores the proportion of data captures by each
+variable in the model. 
+
+```{r variance_analysis}
+(vaRes <- scpVarianceAnalysis(sce))
+vaRes[[1]]
+```
+
+The results are a list of tables, one table for each variable. Each 
+table reports for each peptide the variance captures (`SS`), the 
+residual degrees of freedom for estimating the variance (`df`) and the
+percentage of total variance explained (`percentExplainedVar`). To
+better explore the results, we add the annotations available in the
+`rowData`. 
+
+```{r}
+vaRes <- scpAnnotateResults(
+    vaRes, rowData(sce), by = "feature", by2 = "Stripped.Sequence"
+)
+```
+
+By default, we explore the variance for all peptides combined:
+
+```{r, fig.width=2.5, fig.height=4, out.width = "30%"}
+scpVariancePlot(vaRes)
+```
+
+We explore the top 20 peptides that are have the highest percentage of
+variance explained by the biological variable (top) or by the batch
+variable (bottom).
+
+```{r, fig.width=10, fig.height=8}
+scpVariancePlot(
+    vaRes, top = 20, by = "percentExplainedVar", effect = "Celltype",
+    decreasing = TRUE, combined = FALSE
+) +
+    scpVariancePlot(
+    vaRes, top = 20, by = "percentExplainedVar", effect = "Set",
+    decreasing = TRUE, combined = FALSE
+) +
+    plot_layout(ncol = 1, guides = "collect")
+```
+
+We can also group these peptide according to their protein. We simply
+need to provide the `fcol` argument.
+
+```{r, fig.width=10, fig.height=8}
+scpVariancePlot(
+    vaRes, top = 20, by = "percentExplainedVar", effect = "Celltype",
+    decreasing = TRUE, combined = FALSE, fcol = "Genes"
+) +
+    scpVariancePlot(
+    vaRes, top = 20, by = "percentExplainedVar", effect = "Set",
+    decreasing = TRUE, combined = FALSE, fcol = "Genes"
+) +
+    plot_layout(ncol = 1, guides = "collect")
+```
+
+## Differential abundance analysis
+
+Next, we explore the model output to understand the differences 
+between the cell types. The difference of interest is
+specified using the `contrast` argument. The first element points to 
+the variable to test and the two following element are the groups of
+interest to compare. You can provide multiple contrast in a list.
+
+```{r}
+(daRes <- scpDifferentialAnalysis(
+    sce, contrast = list(
+        c("Celltype", "Melanoma", "PDAC"),
+        c("Celltype", "Melanoma", "U-937"),
+        c("Celltype", "PDAC", "U-937")
+    )
+))
+daRes[[1]]
+```
+
+Similarly to analysis of variance, the results are a list of tables, one 
+table for each contrast. Each table reports for each peptide the 
+estimated difference between the two groups, the standard error 
+associated to the estimation, the degrees of freedom, the 
+t-statistics, the associated p-value and the p-value FDR-adjusted for
+multiple testing across all peptides. Again, to better explore the 
+results, we add the annotations available in the `rowData`. 
+
+```{r}
+daRes <- scpAnnotateResults(
+    daRes, rowData(sce), 
+    by = "feature", by2 = "Stripped.Sequence"
+)
+```
+
+We then visualize the results using a volcano plot. The function below
+return a volcano plot for each contrast. 
+
+```{r, fig.width=10, fig.height=4.5, warning=FALSE}
+wrap_plots(scpVolcanoPlot(daRes))
+```
+
+To help interpretation of the results, we will label the peptides with
+their protein name. Also we increase the number of labels shown on the plot.
+Finally, we can add colors to the plot. For instance, let's explore 
+the impact of the number of observations using the $n/p$ ratio. We
+create a new annotation table, add it to the results and redraw the 
+plot. The $n/p$ ratio is retrieved using scpModelFilterNPRatio
+
+```{r, fig.width=10, fig.height=4.5}
+np <- scpModelFilterNPRatio(sce)
+daRes <- scpAnnotateResults(
+    daRes, data.frame(feature = names(np), npRatio = np),
+    by = "feature"
+)
+wrap_plots(scpVolcanoPlot(
+    daRes, top = 30, textBy = "Genes", 
+    pointParams = list(aes(colour = npRatio))
+))
+```
+
+As expected, higher number of observations (higher $n/p$) lead to
+increased statistical power and hence to more significant results.
+
+Finally, we offer functionality to report results at the protein 
+level. 
+
+```{r, fig.width=10, fig.height=4.5, warning=FALSE}
+scpDifferentialAggregate(daRes, fcol = "Genes") |>
+    scpVolcanoPlot(top = 30, textBy = "Genes") |>
+    wrap_plots()
+```
+
+## Component analysis
+
+Finally, we perform component analysis to link the modelled effects to
+the cellular heterogeneity. We here run an APCA+ (extended 
+ANOVA-simultaneous principal component analysis) for the sample type 
+effect. In other words, we perform a PCA on the data that is capture
+by the sample type variable along with the residuals (unmodelled 
+data).
+
+```{r component_analysis}
+(caRes <- scpComponentAnalysis(
+    sce, ncomp = 2, method = "APCA", effect = "Celltype"
+))
+```
+
+The results are contained in a list with 2 elements. `bySample`
+contains the PC scores, that is the component results in sample space.
+`byFeature` contains the eigenvectors, that is the component results
+in feature space. 
+
+```{r}
+caRes$bySample
+```
+
+Each of the two elements contains components results
+for the data before modelling (`unmodelled`), for the residuals or for
+the APCA on the sample type variable (`APCA_Celltype`). 
+
+```{r}
+caRes$bySample[[1]]
+```
+
+Each elements is a table with the computed componoents. Let's explore
+the component analysis results in cell space. Similarly to the
+previous explorations, we annotate the results.
+
+```{r}
+caResCells <- caRes$bySample
+sce$cell <- colnames(sce)
+caResCells <- scpAnnotateResults(caResCells, colData(sce), by = "cell")
+```
+
+We then generate the component plot, colouring by `Celltype`. To 
+assess the impact of batch effects, we shape the points according to 
+the plate batch (cf intro) as well.
+
+```{r, fig.width=9, fig.height=3}
+scpComponentPlot(
+    caResCells,
+    pointParams = list(aes(colour = Celltype, shape = Instrument))
+) |>
+    wrap_plots() +
+    plot_layout(guides = "collect")
+```
+
+While the data before modelling is mainly driven by batch effects
+(instruments are separated on the first PC), the APCA clearly 
+separates the three cell populations. The PCA on the residuals 
+suggests that no additional unmodelled effects influence the data
+globally, indicating that our model accurately captures the variation
+in the data.
+
+We use the same approach to explore the component results in feature
+space. 
+
+```{r}
+caResPeps <- caRes$byFeature
+caResPeps <- scpAnnotateResults(
+    caResPeps, rowData(sce), by = "feature", by2 = "Stripped.Sequence"
+)
+```
+
+We plot the compenents in peptide-space. 
+
+```{r, fig.width=9, fig.height=3}
+plCApeps <- scpComponentPlot(
+    caResPeps, pointParams = list(size = 0.8, alpha = 0.4)
+)
+wrap_plots(plCApeps)
+```
+
+We can also combine the exploration of the components in cell and
+peptide space. This is possible thanks to biplots.
+
+```{r, fig.width=9, fig.height=3}
+biplots <- scpComponentBiplot(
+    caResCells, caResPeps, 
+    pointParams = list(aes(colour = Celltype, shape = Instrument)),
+    labelParams = list(size = 1.5, max.overlaps = 20),
+    textBy = "Genes", top = 20
+)
+wrap_plots(biplots, guides = "collect")
+```
+
+Finally, we offer functionality to aggregate the results at the 
+protein level instead of the peptide level. 
+
+```{r, fig.width=9, fig.height=3}
+caResProts <- scpComponentAggregate(caResPeps, fcol = "Genes")
+biplots <- scpComponentBiplot(
+    caResCells, caResProts, 
+    pointParams = list(aes(colour = Celltype, shape = Instrument)),
+    labelParams = list(size = 1.5, max.overlaps = 20),
+    textBy = "Genes", top = 20
+)
+wrap_plots(biplots, guides = "collect")
+```
+
+# Interactive visualisation with iSEE
+
+You can manually explore the data through an interactive interface 
+thanks to using `iSEE`: 
+
+```{r, eval=FALSE}
+library("iSEE")
+iSEE(sce)
+```
+
+# Session information {-}
+
+```{r setup2, include = FALSE}
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    comment = "",
+    crop = NULL
+)
+```
+
+```{r sessioninfo, echo=FALSE}
+sessionInfo()
+```
+
+# Citation
+
+```{r citation}
+citation("scp")
+```
+
+# License
+
+This vignette is distributed under a 
+[CC BY-SA license](https://creativecommons.org/licenses/by-sa/2.0/) 
+license.

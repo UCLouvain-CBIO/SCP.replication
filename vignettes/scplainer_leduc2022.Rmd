@@ -12,7 +12,7 @@ output:
         code_folding: show
 date: "`r BiocStyle::doc_date()`"
 vignette: >
-    %\VignetteIndexEntry{scplainer on leduc2022_pSCoPE}
+    %\VignetteIndexEntry{leduc2022_pSCoPE data analysis by scplainer}
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
@@ -219,7 +219,7 @@ leduc <- countUniqueFeatures(
 ```
 
 - We remove samples with low median intensity. The metric (note we 
-will later use it for normalization) is computed as follows:
+will later use it for normalisation) is computed as follows:
 
 ```{r}
 MedianIntensity <- lapply(experiments(leduc), function(x) {
@@ -232,7 +232,7 @@ MedianIntensity <- unlist(MedianIntensity)
 colData(leduc)[names(MedianIntensity), "MedianIntensity"] <- MedianIntensity
 ```
 
-- We remove the samples that have a high median coefficients of 
+- We remove the samples that have a high median coefficient of 
 variation (CV). The CV is computed within each sample, by grouping
 the peptides that belong to the same protein or protein group. This
 is computed as follows:
@@ -280,12 +280,14 @@ to each run. We therefore aggregate the PSMs to peptides.
 
 ```{r feature_aggregation, message=FALSE}
 peptideAssays <- paste0("peptides_", names(leduc))
-leduc <- aggregateFeatures(leduc,
-                           i = names(leduc),
-                           fcol = "Sequence",
-                           name = peptideAssays,
-                           fun = colMedians,
-                           na.rm = TRUE)
+leduc <- aggregateFeatures(
+    leduc,
+    i = names(leduc),
+    fcol = "Sequence",
+    name = peptideAssays,
+    fun = colMedians,
+    na.rm = TRUE
+)
 ```
 
 Next to that, we must adapt the peptide to protein mapping. When 
@@ -359,8 +361,8 @@ plot(leduc)
 
 # Data modelling
 
-Model the data using the linear regression model implemented in `scp`.
-The model is applied on a `SingleCellExperiment` so we extract it from
+Model the data using *scplainer*, the linear regression model implemented in `scp`.
+*scplainer* is applied on a `SingleCellExperiment` so we extract it from
 the processed data set along with the `colData`
 
 ```{r}
@@ -370,13 +372,13 @@ sce <- getWithColData(leduc, "peptides_log")
 First, we must specify which variables to include in the model. We 
 here include 4 variables:
 
-- `MedianIntensity`: this is the normalization factor used to correct 
+- `MedianIntensity`: this is the normalisation factor used to correct 
   for cell-specific technical differences.
 - `Channel`: this is used to correct for TMT effects.
 - `Set`: this is used to perform batch correction. We consider each 
   acquisition run to be a batch. 
 - `SampleType`: this is the biological variable of interest. It
-  capture the difference between macrophages and monocytes
+  captures the difference between macrophages and monocytes
 
 `scpModelWorkflow()` fits linear regression models to the data, where the
 model is adapted for each peptide depending on its pattern of missing
@@ -386,7 +388,7 @@ values.
 sce <- scpModelWorkflow(
     sce,
     formula = ~ 1 + ## intercept
-        ## normalization
+        ## normalisation
         MedianIntensity +
         ## batch effects
         Channel + Set + 
@@ -395,7 +397,7 @@ sce <- scpModelWorkflow(
 )
 ```
 
-Once the model is prepared, we can explore the distribution of the n/p
+Once the models are fit, we can explore the distribution of the n/p
 ratios.
 
 ```{r}
@@ -415,13 +417,13 @@ of course at the cost of less peptides included in the analysis.
 
 The model analysis consists of three steps: 
 
-- Variance analysis
+- Analysis of variance
 - Differential abundance analysis
 - Component analysis
 
-## Variance analysis
+## Analysis of variance
 
-The variance analysis explores the proportion of data captures by each
+The analysis of variance explores the proportion of data captures by each
 variable in the model. 
 
 ```{r variance_analysis}
@@ -494,7 +496,7 @@ interest to compare. You can provide multiple contrast in a list.
 daRes[[1]]
 ```
 
-Similarly to variance analysis, the results are a list of tables, one 
+Similarly to analysis of variance, the results are a list of tables, one 
 table for each contrast. Each table reports for each peptide the 
 estimated difference between the two groups, the standard error 
 associated to the estimation, the degrees of freedom, the 
@@ -517,7 +519,7 @@ scpVolcanoPlot(daRes)
 ```
 
 To help interpretation of the results, we will label the peptides with
-their protein name. Also we increase the number of labels shown on the plot.
+their gene name. Also we increase the number of labels shown on the plot.
 Finally, we can add colors to the plot. For instance, let's explore 
 the impact of the number of observations using the $n/p$ ratio. We
 create a new annotation table, add it to the results and redraw the 
@@ -661,7 +663,7 @@ wrap_plots(biplots, guides = "collect")
 # Interactive visualisation with iSEE
 
 You can manually explore the data through an interactive interface 
-thanks to using the iSEE: 
+thanks to `iSEE`:
 
 ```{r, eval=FALSE}
 library("iSEE")
