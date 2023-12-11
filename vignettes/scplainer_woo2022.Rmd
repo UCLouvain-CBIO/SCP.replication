@@ -12,7 +12,7 @@ output:
         code_folding: show
 date: "`r BiocStyle::doc_date()`"
 vignette: >
-    %\VignetteIndexEntry{woo2022_macrophage data analysis by scplainer}
+    %\VignetteIndexEntry{scplainer: woo2022_macrophage data analysis}
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
@@ -32,7 +32,8 @@ timeStart <- Sys.time()
 
 # Introduction
 
-In this vignette, we will analyse the `woo2022_macophage` dataset. The
+In this vignette, we will analyse the `woo2022_macophage` dataset 
+using the *scplainer* approach. The
 data were acquired using the TIFF acquisition protocol
 ([Woo et al. 2022](http://dx.doi.org/10.1016/j.cels.2022.02.003)).
 The authors performed a label-free experiment in DDA mode, and showed
@@ -77,7 +78,7 @@ table(woo$Chip)
 
 # Minimal data processing
 
-The minimal data processing workflow consists of 5 main steps:
+The minimal data processing workflow in *scplainer* consists of 5 main steps:
 
 - Data cleaning
 - Feature quality control
@@ -330,7 +331,7 @@ vaRes <- scpAnnotateResults(
 
 By default, we explore the variance for all peptides combined:
 
-```{r, fig.width=2.5, fig.height=4}
+```{r, fig.width=2.5, fig.height=4, out.width = "25%"}
 scpVariancePlot(vaRes)
 ```
 

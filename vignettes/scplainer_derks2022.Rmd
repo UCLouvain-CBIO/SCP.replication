@@ -12,7 +12,7 @@ output:
         code_folding: show
 date: "`r BiocStyle::doc_date()`"
 vignette: >
-    %\VignetteIndexEntry{derks2022 data analysis by scplainer}
+    %\VignetteIndexEntry{scplainer: derks2022 data analysis}
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
@@ -34,7 +34,8 @@ timeStart <- Sys.time()
 
 # Introduction
 
-In this vignette, we will analyse the `derks2022` dataset. The
+In this vignette, we will analyse the `derks2022` dataset using the 
+*scplainer* approach. The
 data were acquired using the plexDIA protocol 
 ([Derks et al. 2022](http://dx.doi.org/10.1038/s41587-022-01389-w)).
 The authors performed mTRAQ-based labelling in DIA mode, and showed
@@ -57,7 +58,6 @@ library("scpdata")
 library("ggplot2")
 library("patchwork")
 library("dplyr")
-library("scater")
 library("camprotR")
 ```
 
@@ -75,7 +75,7 @@ timsTOF-SCP instrument (n = 33).
 
 # Minimal data processing
 
-The minimal data processing workflow consists of 5 main steps:
+The minimal data processing workflow in *scplainer* consists of 5 main steps:
 
 - Data cleaning
 - Feature quality control
@@ -402,7 +402,7 @@ vaRes <- scpAnnotateResults(
 
 By default, we explore the variance for all peptides combined:
 
-```{r, fig.width=2.5, fig.height=4, out.width = "30%"}
+```{r, fig.width=2.5, fig.height=4, out.width = "25%"}
 scpVariancePlot(vaRes)
 ```
 
