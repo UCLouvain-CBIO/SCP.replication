@@ -15,11 +15,11 @@ The replication package can be installed with R >= 4.1 by running:
 BiocManager::install("UCLouvain-CBIO/SCP.replication")
 ```
 
-## Reproduction of SCP data analyses
+## Replication of SCP data analyses
 
-The currently available reproduction vignettes are listed below.
+The currently available replication vignettes are listed below.
 
-### [Reproduction of the SCoPE2 analysis (Specht et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/SCoPE2.html)
+### [Replication of the SCoPE2 analysis (Specht et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/SCoPE2.html)
 
 Project tag: `SCoPE2`
 Docker image: `cvanderaa/scp_replication_docker:v1`
@@ -46,7 +46,7 @@ Docker image: `cvanderaa/scp_replication_docker:v1`
 > Anal. Chem., December.2021, [93, 3,
 > 1658–1666](https://pubs.acs.org/doi/10.1021/acs.analchem.0c04240).
 
-### [Reproduction of the hair-cell development analysis (Zhu et al. 2019, eLife)](https://uclouvain-cbio.github.io/SCP.replication/articles/zhu2019EL.html)
+### [Replication of the hair-cell development analysis (Zhu et al. 2019, eLife)](https://uclouvain-cbio.github.io/SCP.replication/articles/zhu2019EL.html)
 
 Project tag: `zhu2019EL`
 Docker image: `cvanderaa/scp_replication_docker:v1`
@@ -57,7 +57,7 @@ Docker image: `cvanderaa/scp_replication_docker:v1`
 > Expression During Hair-Cell Development.” [Elife 8
 > (November)](https://elifesciences.org/articles/50777).
 
-### [Reproduction of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/schoof2021.html)
+### [Replication of the AML model analysis (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/schoof2021.html)
 
 Project tag: `schoof2021`
 Docker image: `cvanderaa/scp_replication_docker:v1`
@@ -126,7 +126,74 @@ See also
 
 - The author's Github [repository](https://github.com/theislab/singlecell_proteomics)
 
-## Replicate the analyses locally
+## SCP data re-analysis using scplainer
+
+The vignettes that demonstrated how to use scplainer to analyse
+various SCP data sets are listed below.
+
+If you use scplainer for your research, please cite:
+
+>  Vanderaa, Christophe, and Laurent Gatto. 2023. “Scplainer: Using
+>  Linear Models to Understand Mass Spectrometry-Based Single-Cell
+>  Proteomics Data.” bioRxiv.
+>  https://doi.org/10.1101/2023.12.14.571792.
+
+### [scplainer: reanalysis of the plexDIA dataset (Derks et al. 2022)](https://uclouvain-cbio.github.io/SCP.replication/articles/scplainer_derks2022.html)
+
+Project tag: `scplainer_derks2022`
+Docker image: NA
+
+> Derks, Jason, Andrew Leduc, Georg Wallmann, R. Gray Huffman, Matthew
+Willetts, Saad Khan, Harrison Specht, Markus Ralser, Vadim Demichev, 
+and Nikolai Slavov. 2022. “Increasing the Throughput of Sensitive 
+Proteomics by plexDIA.” Nature Biotechnology, July, 2021.11.03.467007.
+
+See also
+
+- The plexDIA [website](https://scp.slavovlab.net/plexDIA)
+- The plexDIA Github [repository](https://github.com/SlavovLab/plexDIA)
+
+### [scplainer: reanalysis of the nPOP dataset (Leduc et al. 2022)](https://uclouvain-cbio.github.io/SCP.replication/articles/scplainer_leduc2022.html)
+
+Project tag: `scplainer_leduc2022`
+Docker image: NA
+
+> Leduc, Andrew, R. Gray Huffman, Joshua Cantlon, Saad Khan, and 
+Nikolai Slavov. 2022. “Exploring Functional Protein Covariation across
+Single Cells Using nPOP.” bioRxiv. https://doi.org/10.1101/2021.04.24.441211.
+
+See also
+
+- The nPOP [website](https://scp.slavovlab.net/nPOP)
+- The nPOP Github [repository](https://github.com/SlavovLab/nPOP)
+
+### [scplainer: reanalysis of the AML dataset (Schoof et al. 2021)](https://uclouvain-cbio.github.io/SCP.replication/articles/scplainer_schoof2021.html)
+
+Project tag: `scplainer_schoof2021`
+Docker image: NA
+
+> Schoof, Erwin M., Benjamin Furtwängler, Nil Üresin, Nicolas Rapin, 
+Simonas Savickas, Coline Gentil, Eric Lechman, Ulrich auf Dem Keller, 
+John E. Dick, and Bo T. Porse. 2021. “Quantitative Single-Cell 
+Proteomics as a Tool to Characterize Cellular Hierarchies.” Nature 
+Communications 12 (1): 745679.
+
+See also
+
+- The SCeptre Github [repository](https://github.com/bfurtwa/SCeptre)
+
+### [scplainer: reanalysis of the macrophage activation dataset (Woo et al. 2022)](https://uclouvain-cbio.github.io/SCP.replication/articles/scplainer_woo2022.html)
+
+Project tag: `scplainer_woo2022`
+Docker image: NA
+
+> Woo, Jongmin, Geremy C. Clair, Sarah M. Williams, Song Feng,
+> Chia-Feng Tsai, Ronald J. Moore, William B. Chrisler, et al. 2022.
+> “Three-Dimensional Feature Matching Improves Coverage for
+> Single-Cell Proteomics Based on Ion Mobility Filtering.” Cell
+> Systems 13 (5): 426–34.e4.
+
+## Reproduce the analyses locally
 
 You can reproduce the analysis vignettes on your local machine using `Docker`. 
 You must first install Docker. Then, pull the image from the 
