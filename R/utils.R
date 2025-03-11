@@ -55,11 +55,11 @@
 ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots = FALSE,
                          mean.only = FALSE, ref.batch = NULL,
                          BPPARAM = BiocParallel::bpparam("SerialParam")) {
-    
+
     ## code taken from sva - used exclusively to reproduce obtained
     ## with version 3.34
     stopifnot(requireNamespace("sva")) ## works for sva_3.37.0
-    
+
     ## these internal function are not exported from the more recent
     ## versions of sva.
     sva_Beta.NA <- function (y, X) {
@@ -68,34 +68,34 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         B <- solve(crossprod(des), crossprod(des, y1))
         B
     }
-    
+
     sva_aprior  <- function (gamma.hat) {
         m <- mean(gamma.hat)
         s2 <- var(gamma.hat)
         (2 * s2 + m^2)/s2
     }
-    
+
     sva_bprior <- function (gamma.hat) {
         m <- mean(gamma.hat)
         s2 <- var(gamma.hat)
         (m * s2 + m^3)/s2
     }
-    
+
     sva_dinvgamma  <- function (x, shape, rate = 1/scale, scale = 1) {
         stopifnot(shape > 0)
         stopifnot(rate > 0)
         ifelse(x <= 0, 0, ((rate^shape)/gamma(shape)) * x^(-shape -
                                                                1) * exp(-rate/x))
     }
-    
+
     sva_postmean <- function (g.hat, g.bar, n, d.star, t2) {
         (t2 * n * g.hat + d.star * g.bar)/(t2 * n + d.star)
     }
-    
+
     sva_postvar <- function (sum2, n, a, b) {
         (0.5 * sum2 + b)/(n/2 + a - 1)
     }
-    
+
     sva_it.sol  <- function (sdat, g.hat, d.hat, g.bar, t2, a, b, conv = 1e-04) {
         n <- rowSums(!is.na(sdat))
         g.old <- g.hat
@@ -116,8 +116,8 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         rownames(adjust) <- c("g.star", "d.star")
         adjust
     }
-    
-    
+
+
     sva_int.eprior <- function (sdat, g.hat, d.hat) {
         g.star <- d.star <- NULL
         r <- nrow(sdat)
@@ -139,7 +139,7 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
         rownames(adjust) <- c("g.star", "d.star")
         adjust
     }
-    
+
     if (mean.only) {
         message("Using the 'mean only' version of ComBat")
     }
@@ -386,52 +386,52 @@ ComBatv3.34 <- function (dat, batch, mod = NULL, par.prior = TRUE, prior.plots =
 ##'     https://github.com/SlavovLab/SCoPE2
 ##'
 imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
-    
+
     oldi <- i
     exp <- object[[i]]
     dat <- assay(exp)
-    
+
     # Create a copy of the data, NA values to be filled in later
     dat.imp<-dat
-    
+
     # Calculate similarity metrics for all column pairs (default is Euclidean distance)
     dist.mat<-as.matrix( dist(t(dat)) )
     #dist.mat<-as.matrix(as.dist( dist.cosine(t(dat)) ))
-    
+
     # Column names of the similarity matrix, same as data matrix
     cnames<-colnames(dist.mat)
-    
+
     # For each column in the data...
     for(X in cnames){
-        
+
         # Find the distances of all other columns to that column
         distances<-dist.mat[, X]
-        
+
         # Reorder the distances, smallest to largest (this will reorder the column names as well)
         distances.ordered<-distances[order(distances, decreasing = F)]
-        
+
         # Reorder the data matrix columns, smallest distance to largest from the column of interest
         # Obviously, first column will be the column of interest, column X
         dat.reordered<-dat[ , names(distances.ordered ) ]
-        
+
         # Take the values in the column of interest
         vec<-dat[, X]
-        
+
         # Which entries are missing and need to be imputed...
         na.index<-which( is.na(vec) )
-        
+
         # For each of the missing entries (rows) in column X...
         for(i in na.index){
-            
+
             # Find the most similar columns that have a non-NA value in this row
             closest.columns<-names( which( !is.na(dat.reordered[i, ])  ) )
-            
+
             # If there are more than k such columns, take the first k most similar
             if( length(closest.columns)>k ){
                 # Replace NA in column X with the mean the same row in k of the most similar columns
                 vec[i]<-mean( dat[ i, closest.columns[1:k] ] )
             }
-            
+
             # If there are less that or equal to k columns, take all the columns
             if( length(closest.columns)<=k ){
                 # Replace NA in column X with the mean the same row in all of the most similar columns
@@ -441,7 +441,7 @@ imputeKnnSCoPE2 <- function(object, i, name = "KNNimputedAssay", k = 3){
         # Populate a the matrix with the new, imputed values
         dat.imp[,X]<-vec
     }
-    
+
     assay(exp) <- dat.imp
     object <- addAssay(object, exp, name = name)
     addAssayLinkOneToOne(object, from = oldi, to = name)
@@ -511,37 +511,37 @@ pcaSCoPE2 <- function(object, scale = FALSE, center = FALSE) {
 ##' @title Isotopic carryover correction for plexDIA data
 ##'
 ##' @description
-##' 
-##' This function performs isotopic carryover correction. Currently, 
-##' only isotopic correction for mTRAQ is available. 
+##'
+##' This function performs isotopic carryover correction. Currently,
+##' only isotopic correction for mTRAQ is available.
 ##'
 ##' @param x An object that inherits from the `SummarizedExperiment`
-##'     class. 
+##'     class.
 ##'
 ##' @return An object of same class as `x` with the isotopic correction
-##'     applied. 
-##' 
+##'     applied.
+##'
 ##' @import OrgMassSpecR
 ##' @import reticulate
-##' 
+##'
 ##' @export
 correctIsotopicCarryover <- function (x) {
     ## Load the python functions to compute isotopic distributions
     pyFuns <- paste0(path.package("SCP.replication"),
                      "/scripts/python_functions.py")
     source_python(pyFuns)
-    
+
     ## Check arguments
     rd <- rowData(x)
     required <- c("Modified.Sequence", "Stripped.Sequence")
     if (any(mis <- !required %in% colnames(rd)))
         stop(paste(required[mis], collapse = ", "), " is/are missing in rowData(x)")
-    
+
     ## Generate the atomic composition of the unmodified precursor
     atomsPerPrec <- t(sapply(rd$Stripped.Sequence, function(x) {
         unlist(OrgMassSpecR::ConvertPeptide(x))
     }))
-    
+
     ## Generate the atomic composition of each modified precursor
     ## Get the atomic composition table for each modification
     atomsPerMod <- matrix(c(rep(12, 3), rep(1, 3), -1, 0, 3, rep(1, 3), rep(0, 3)), ncol = 5,
@@ -555,7 +555,7 @@ correctIsotopicCarryover <- function (x) {
     }))
     ## Compute the number of atoms for the modified precursors
     atomsPerModPrec <- atomsPerPrec + modsPerPrec %*% atomsPerMod
-    
+
     ## Generate the atomic composition of each modified and labeled precursors
     ## Get the atomic composition table for each label
     atomsPerLabel <- matrix(c(7, 4, 1, 2, 1, 0, 0, 0, 2, -1, 0, 1, rep(0, 3)), ncol = 5,
@@ -572,7 +572,7 @@ correctIsotopicCarryover <- function (x) {
     for (j in seq_len(dims[2])) { ## tensor sweep with matrix
         atomsPerModLabPrec[, j, ] <- atomsPerModLabPrec[, j, ] + atomsPerModPrec
     }
-    
+
     ## Get the carry over from the atomic composition
     carryOver <- array(dim = dims[1:2], dimnames = dimn[1:2])
     for (j in seq_len(dims[2])) {
@@ -586,55 +586,55 @@ correctIsotopicCarryover <- function (x) {
         ## Compute the carry over from the isotopic enveloppe
         carryOver[, j] <- rowSums(isoEnv[, 5:6]) / rowSums(isoEnv[, c(1:2, 5:6)])
     }
-    
+
     ## Get the uncorrected MS1 quantifications
     xmat <- assay(x)
     labels <- sub("^.*(\\d)$", "mTRAQ\\1", colnames(xmat))
     ## The label cross-contamination design
-    design <- matrix(c(1, -1, 0, 0, 1, -1, 0, 0, 1), nrow = 3, 
+    design <- matrix(c(1, -1, 0, 0, 1, -1, 0, 0, 1), nrow = 3,
                      dimnames = list(dimn[[2]], dimn[[2]]))
     ## Compute isotopic correction
     xmatzero <- xmat
-    xmatzero[is.na(xmatzero)] <- 0 ## This is to ignore NAs 
+    xmatzero[is.na(xmatzero)] <- 0 ## This is to ignore NAs
     assay(x) <- xmat + xmatzero * (carryOver %*% design)[,labels]
     x
 }
 
-##' @title  Read DIA-NN output as a QFeatures objects for single-cell 
+##' @title  Read DIA-NN output as a QFeatures objects for single-cell
 ##' proteomics data
 ##'
 ##' @description
-##' 
-##' This function takes the output tables from DIA-NN and converts them
-##' into a QFeatures object using the scp framework. 
+##'
+##' Use the `readSCPfromDIANN()` function from the `scp` package to lead DIA-NN
+##' report files. This function is kept for the vignette backward compatibility.
 ##'
 ##' @param colData A data.frame or any object that can be coerced to a
-##'     data.frame. colData is expected to contains all the sample 
+##'     data.frame. colData is expected to contains all the sample
 ##'     annotations. We require the table to contain a column called
 ##'     `File.Name` that links to the `File.Name` in the DIA-NN report
 ##'     table. If `multiplexing = "mTRAQ"`, we require a second column
 ##'     called `Label` that links the label to the sample (the labels
 ##'     identified by DIA-NN can be retrieved from `Modified Sequence`
-##'     column in the report table). 
-##' @param reportData A data.frame or any object that can be coerced 
+##'     column in the report table).
+##' @param reportData A data.frame or any object that can be coerced
 ##'     to a data.frame that contains the data from the `Report.tsv`
-##'     file generated by DIA-NN. 
-##' @param extractedData A data.frame or any object that can be coerced 
+##'     file generated by DIA-NN.
+##' @param extractedData A data.frame or any object that can be coerced
 ##'     to a data.frame that contains the data from the `*_ms1_extracted.tsv`
-##'     file generated by DIA-NN. This argument is optional and is 
-##'     only applicable for mulitplixed experiments 
-##' @param multiplexing A `character(1)` indicating the type of 
+##'     file generated by DIA-NN. This argument is optional and is
+##'     only applicable for mulitplixed experiments
+##' @param multiplexing A `character(1)` indicating the type of
 ##'     multiplexing used in the experiment. Provide `"none"` if the
 ##'     experiment is label-free (default). Available options are:
-##'     `"mTRAQ"`. 
+##'     `"mTRAQ"`.
 ##' @param ... Further arguments passed to `readSCP()`
 ##'
-##' @return An instance of class QFeatures. The expression data of 
-##'     each acquisition run is stored in a separate assay as a 
+##' @return An instance of class QFeatures. The expression data of
+##'     each acquisition run is stored in a separate assay as a
 ##'     SingleCellExperiment object.
-##' 
+##'
 ##' @export
-##' 
+##'
 readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
                              multiplexing = "none", # "none" or "mTRAQ"
                              ...) {
@@ -645,15 +645,15 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
         stop("'reportData' is not an expected DIA-NN report table ",
              "output. This function expects the main output file as ",
              "described here: https://github.com/vdemichev/DiaNN#main-output-reference")
-    if (!"File.Name" %in% colnames(colData)) 
+    if (!"File.Name" %in% colnames(colData))
         stop("'colData' must contain a column named 'File.Name' that provides ",
              "a link to the 'File.Name' column in 'reportData'")
-    if (multiplexing == "none" && !is.null(extractedData)) 
+    if (multiplexing == "none" && !is.null(extractedData))
         stop("Providing 'extractedData' for label-free experiments ",
              "('multiplexed == \"none\"') is not expected. Raise an ",
              "issue if you need this feature: ",
              "https://github.com/UCLouvain-CBIO/scp/issues/new/choose")
-    
+
     args <- list(...)
     ## Get the label used for the reportData
     if (multiplexing == "mTRAQ") {
@@ -662,9 +662,9 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
         reportData$Precursor.Id <- gsub("\\(mTRAQ.*?\\)", "(mTRAQ)", reportData$Precursor.Id)
         args$sep <- "."
         ## Make sure the colData has the Label column
-        if (!"Label" %in% colnames(colData)) 
+        if (!"Label" %in% colnames(colData))
             stop("'colData' must contain a column named 'Label' that ",
-                 "provides the mTRAQ reagent used to label the ", 
+                 "provides the mTRAQ reagent used to label the ",
                  "samples and/or single cells.")
         if (any(mis <- !colData$Label %in% reportData$Label)) {
             stop("Some labels from 'colData$Label' were not found as",
@@ -681,7 +681,7 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
         idCols <- names(nLevels)[nLevels == nIds]
         ## Transform the reportData to a wide format with respect to label
         reportData <- pivot_wider(reportData, id_cols = all_of(idCols),
-                                  names_from = "Label", 
+                                  names_from = "Label",
                                   values_from = "Ms1.Area")
     } else if (multiplexing == "none") {
         colData$Label <- "Ms1.Area"
@@ -692,18 +692,18 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
              "implemented. Raise an issue if you need this feature: ",
              "https://github.com/UCLouvain-CBIO/scp/issues/new/choose")
     }
-    
+
     ## Read using readSCP
     out <- do.call(readSCP, c(args, list(featureData = reportData,
                                          colData = colData,
                                          batchCol = "File.Name",
                                          channelCol = "Label")))
-    
+
     ## Optionally, add the extractedData
     if (!is.null(extractedData)) {
         labs <- unique(colData$Label)
         ## DIA-NN appends the label to the run name
-        quantCols <- grep(paste0("[", paste0(labs, collapse = ""), "]$"), 
+        quantCols <- grep(paste0("[", paste0(labs, collapse = ""), "]$"),
                           colnames(extractedData))
         extractedData <- readSingleCellExperiment(extractedData,
                                                   ecol = quantCols,
@@ -719,9 +719,9 @@ readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
         ## Add the assay to the QFeatures object
         anames <- names(out)
         out <- addAssay(out, extractedData, name = "Ms1Extracted")
-        out <- addAssayLink(out, 
+        out <- addAssayLink(out,
                             from = anames, to = "Ms1Extracted",
-                            varFrom = rep("Precursor.Id", length(anames)), 
+                            varFrom = rep("Precursor.Id", length(anames)),
                             varTo = "Precursor.Id")
     }
     out

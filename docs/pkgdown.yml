@@ -1,18 +1,17 @@
-pandoc: 2.17.1.1
-pkgdown: 2.0.7
+pandoc: 3.1.3
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
-  SCoPE2: SCoPE2.html
   brunner2022: brunner2022.html
   derks2022: derks2022.html
   leduc2022: leduc2022.html
   liang2020: liang2020.html
   schoof2021: schoof2021.html
+  SCoPE2: SCoPE2.html
   scplainer_derks2022: scplainer_derks2022.html
   scplainer_leduc2022: scplainer_leduc2022.html
   scplainer_schoof2021: scplainer_schoof2021.html
   scplainer_woo2022: scplainer_woo2022.html
   williams2020_tmt: williams2020_tmt.html
   zhu2019EL: zhu2019EL.html
-last_built: 2023-12-18T15:43Z
-
+last_built: 2025-03-11T19:47Z

@@ -45,6 +45,6 @@ each acquisition run is stored in a separate assay as a
 SingleCellExperiment object.
 }
 \description{
-This function takes the output tables from DIA-NN and converts them
-into a QFeatures object using the scp framework.
+Use the \code{readSCPfromDIANN()} function from the \code{scp} package to lead DIA-NN
+report files. This function is kept for the vignette backward compatibility.
 }
