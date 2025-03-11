@@ -1,6 +1,6 @@
 Package: SCP.replication
 Title: SCP Replication Vignettes
-Version: 0.2.1
+Version: 0.2.2
 Authors@R:
     c(person("Christophe", "Vanderaa",
               email = "christophe.vanderaa@uclouvain.be",
