@@ -638,6 +638,7 @@ correctIsotopicCarryover <- function (x) {
 readSCPfromDIANN <- function(colData, reportData, extractedData = NULL,
                              multiplexing = "none", # "none" or "mTRAQ"
                              ...) {
+    .Deprecated("readSCPfromDIANN", package = "scp")
     diannReportCols <- c("File.Name", "Precursor.Id", "Modified.Sequence",
                          "Ms1.Area")
     if (!all(diannReportCols %in% colnames(reportData)))
